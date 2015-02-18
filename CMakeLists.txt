@@ -1,0 +1,118 @@
+cmake_minimum_required( VERSION 3.0 )
+
+set( PROJECT_NAME "csignal" )
+
+project( ${PROJECT_NAME} )
+
+message( STATUS "Project: ${PROJECT_NAME}" )
+message( STATUS "Project directory: ${PROJECT_SOURCE_DIR}" )
+
+set( SOURCE_DIR "${PROJECT_SOURCE_DIR}/src" )
+set( INCLUDE_DIR "${SOURCE_DIR}/include" )
+set( INSTALL_DIR "${CMAKE_INSTALL_PREFIX}" )
+
+message( STATUS "Source directory: ${SOURCE_DIR}" )
+message( STATUS "Include directory: ${INCLUDE_DIR}" )
+message( STATUS "Install directory: ${INSTALL_DIR}" )
+
+set( SOURCES "${SOURCE_DIR}/csignal.c" )
+
+set( HEADERS "${INCLUDE_DIR}/csignal.h" )
+
+if( ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" )
+  find_library( OBJC_FRAMEWORK objc )
+
+  set (
+        EXTRA_LIBS
+        ${OBJC_FRAMEWORK}
+      )
+
+  message( STATUS "Framework libraries: ${EXTRA_LIBS}" )
+
+  set( DARWINHELPER_INCLUDE_DIR "${darwinhelper_SOURCE_DIR}/src/include" )
+
+  message (
+    STATUS
+    "Working with darwinhelper source directory: ${DARWINHELPER_INCLUDE_DIR}"
+          )
+  
+  include_directories( ${DARWINHELPER_INCLUDE_DIR} )
+elseif( ${PLATFORM} STREQUAL "Generic" AND ${TARGET} MATCHES "^android" )
+  find_library  (
+                  MATH_LIB
+                  m
+                  HINTS "${CMAKE_FIND_ROOT_PATH}/usr/lib"
+                )
+
+  set (
+        EXTRA_LIBS
+        ${OPENSLES_LIB}
+        ${MATH_LIB}
+      )
+
+  message( STATUS "Android libraries: ${EXTRA_LIBS}" )
+else()
+  message( FATAL_ERROR "Unsupported platform: ${PLATFORM}" )
+endif()
+
+message( STATUS "C source files found: ${SOURCES}" )
+message( STATUS "C header files found: ${HEADERS}" )
+
+set( CPCOMMON_INCLUDE_DIR "${cpcommon_SOURCE_DIR}/src/include" )
+
+message (
+  STATUS
+  "Working with cpcommon source directory: ${CPCOMMON_INCLUDE_DIR}"
+        )
+
+message (
+  STATUS
+  "Working with cpcommon source directory: ${CPCOMMON_INCLUDE_DIR}"
+        )
+
+include_directories( ${INCLUDE_DIR} )
+include_directories( ${CPCOMMON_INCLUDE_DIR} )
+
+add_library( ${PROJECT_NAME} STATIC ${SOURCES} ${HEADERS} )
+
+if( "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" )
+  target_link_libraries( ${PROJECT_NAME} darwinhelper )
+endif()
+
+target_link_libraries( ${PROJECT_NAME} cpcommon )
+
+target_link_libraries( ${PROJECT_NAME} ${EXTRA_LIBS} )
+
+install (
+          TARGETS ${PROJECT_NAME}
+          ARCHIVE DESTINATION "${INSTALL_DIR}/lib"
+          LIBRARY DESTINATION "${INSTALL_DIR}/lib"
+        )
+install( FILES ${HEADERS} DESTINATION "${INSTALL_DIR}/include/${PROJECT_NAME}" )
+
+# Build test suite as well
+add_subdirectory( test )
+
+enable_testing()
+
+find_package( Doxygen )
+
+if( DOXYGEN_FOUND )
+  set( DOXYGEN_OUTPUT "${INSTALL_DIR}/doc/${PROJECT_NAME}" )
+
+  configure_file  (
+    ${PROJECT_SOURCE_DIR}/Doxyfile.in
+    ${PROJECT_BINARY_DIR}/Doxyfile
+    @ONLY
+                  )
+  add_custom_target (
+    doc_csignal
+    ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+                    )
+
+  file( MAKE_DIRECTORY ${DOXYGEN_OUTPUT} )
+
+endif(DOXYGEN_FOUND)
+
