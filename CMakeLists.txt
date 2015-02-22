@@ -18,6 +18,7 @@ message( STATUS "Install directory: ${INSTALL_DIR}" )
 set( SOURCES "${SOURCE_DIR}/csignal.c" )
 
 set( HEADERS "${INCLUDE_DIR}/csignal.h" )
+list( APPEND HEADERS "${INCLUDE_DIR}/csignal_error_codes.h" )
 
 if( ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" )
   find_library( OBJC_FRAMEWORK objc )
