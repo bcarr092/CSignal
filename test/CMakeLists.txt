@@ -60,7 +60,9 @@ swig_link_libraries( ${PROJECT_NAME} ${PYTHON_LIBRARIES} cpcommon csignal )
 
 set( SCRIPTS "${PROJECT_SOURCE_DIR}/test_driver.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_csignal.py" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector.dat" )
+list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_2_7_1.dat" )
+list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_7_89_20.dat" )
+list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_32_100200007_40000000.dat" )
 
 set( WRAPPERS "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.py" )
 

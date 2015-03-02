@@ -8,8 +8,98 @@ import tempfile
 import re
 
 class TestsCSignal( unittest.TestCase ):
+  def test_get_spreading_code_degree_32( self ):
+    spreading_code = csignal_tests.python_initialize_spreading_code( 32, 0x00200007, 0x40000000 )
+
+    self.assertNotEquals( spreading_code, None )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 80000 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 10000 )
+
+    index = 0
+
+    with open( 'PNSequenceTestVector_32_100200007_40000000.dat' ) as file_pointer:
+      for line in file_pointer:
+        expression = re.compile( '^(\d+)$' )
+
+        result = re.match( expression, line )
+
+        if( result ):
+          self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
+
+          index += 1
+
+  def test_get_spreading_code_degree_7( self ):
+    spreading_code = csignal_tests.python_initialize_spreading_code( 7, 0x12000000, 0x40000000 )
+
+    self.assertNotEquals( spreading_code, None )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 80000 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 10000 )
+
+    index = 0
+
+    with open( 'PNSequenceTestVector_7_89_20.dat' ) as file_pointer:
+      for line in file_pointer:
+        expression = re.compile( '^(\d+)$' )
+
+        result = re.match( expression, line )
+
+        if( result ):
+          self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
+
+          index += 1
+
+  def test_get_spreading_code_degree_2( self ):
+    spreading_code = csignal_tests.python_initialize_spreading_code( 2, 0xC0000000, 0x40000000 )
+
+    self.assertNotEquals( spreading_code, None )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 80000 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 10000 )
+
+    index = 0
+
+    with open( 'PNSequenceTestVector_2_7_1.dat' ) as file_pointer:
+      for line in file_pointer:
+        expression = re.compile( '^(\d+)$' )
+
+        result = re.match( expression, line )
+
+        if( result ):
+          self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
+
+          index += 1
+
+  def test_initialize_spreading_code( self ):
+    spreading_code = csignal_tests.python_initialize_spreading_code( 1, 0x10000000, 0x10000000 )
+
+    self.assertEquals( spreading_code, None )
+
+    spreading_code = csignal_tests.python_initialize_spreading_code( 33, 0x10000000, 0x10000000 )
+
+    self.assertEquals( spreading_code, None )
+
+    spreading_code = csignal_tests.python_initialize_spreading_code( 2, 0x80000000, 0x10000000 )
+
+    self.assertEquals( spreading_code, None )
+
+    spreading_code = csignal_tests.python_initialize_spreading_code( 2, 0xE0000000, 0x10000000 )
+
+    self.assertEquals( spreading_code, None )
+
+    spreading_code = csignal_tests.python_initialize_spreading_code( 2, 0xC0000000, 0x40000000 )
+
+    self.assertNotEquals( spreading_code, None )
+
   def test_get_spreading_code_size( self ):
-    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, 0x12345678 )
+    spreading_code = csignal_tests.python_initialize_spreading_code( 2, 0xC0000000, 0x40000000 )
 
     self.assertNotEquals( spreading_code, None )
 
@@ -27,45 +117,41 @@ class TestsCSignal( unittest.TestCase ):
     self.assertNotEquals( codes, None )
     self.assertEquals( len( codes ), 2 )
 
-  def test_get_spreading_code( self ):
-    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400006, 0x12345678 )
-
-    self.assertEquals( spreading_code, None )
-
-    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, 0x12345678 )
+    spreading_code = csignal_tests.python_initialize_spreading_code( 7, 0x12000000, 0x40000000 )
 
     self.assertNotEquals( spreading_code, None )
 
-    codes = csignal_tests.python_get_spreading_code( spreading_code, 80000 )
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 0 )
+
+    self.assertEquals( codes, None )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 8 )
 
     self.assertNotEquals( codes, None )
-    self.assertEquals( len( codes ), 10000 )
+    self.assertEquals( len( codes ), 1 )
 
-    index = 0
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 16 )
 
-    with open( 'PNSequenceTestVector.dat' ) as file_pointer:
-      for line in file_pointer:
-        expression = re.compile( '^(\d+)$' )
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 2 )
 
-        result = re.match( expression, line )
-
-        if( result ):
-          self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
-
-          index += 1
-
-  def test_initialize_spreading_code( self ):
-    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, 0x12345678 )
+    spreading_code = csignal_tests.python_initialize_spreading_code( 32, 0x00200007, 0x40000000 )
 
     self.assertNotEquals( spreading_code, None )
 
-    spreading_code = csignal_tests.python_initialize_spreading_code( -1, 0x12345678 )
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 0 )
 
-    self.assertEquals( spreading_code, None )
+    self.assertEquals( codes, None )
 
-    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, -1 )
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 8 )
 
-    self.assertEquals( spreading_code, None )
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 1 )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 16 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 2 )
 
   def test_write_wav_random( self ):
     bits_per_symbol     = 8

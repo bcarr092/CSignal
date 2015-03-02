@@ -86,6 +86,7 @@ static PyObject* python_get_spreading_code  (
 }
 
 /*! \fn     spreading_code* python_initialize_spreading_code  (
+                                int in_degree,
                                 int in_generator_polynomial,
                                 int in_initial_state
                                                               )
@@ -96,24 +97,27 @@ static PyObject* python_get_spreading_code  (
  */
 spreading_code*
 python_initialize_spreading_code  (
-                                int in_generator_polynomial,
-                                int in_initial_state
+                                int in_degree,
+                                long in_generator_polynomial,
+                                long in_initial_state
                                   )
 {
   spreading_code* shift_register = NULL;
 
-  if( 0 > in_generator_polynomial || 0 > in_initial_state )
+  if( 0 > in_generator_polynomial || 0 > in_initial_state || 0 > in_degree )
   {
     CPC_ERROR (
-      "Generator polynomial (0x%x) or state 0x%x) are negative.",
+      "Generator polynomial (0x%x), state 0x%x), or degree (0x%x)  are negative.",
       in_generator_polynomial,
-      in_initial_state
+      in_initial_state,
+      in_degree
               );
   }
   else
   {
     csignal_error_code return_value =
       csignal_initialize_spreading_code (
+        in_degree,
         in_generator_polynomial,
         in_initial_state,
         &shift_register
