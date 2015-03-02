@@ -8,6 +8,8 @@
 
 #include <cpcommon.h>
 
+#include "wav.h"
+#include "spreading_code.h"
 #include "csignal_error_codes.h"
 
 /*! \var    csignal_symbol_tracker
@@ -129,7 +131,7 @@ csignal_get_symbol  (
 /*! \fn     csignal_error_code csignal_modulate_symbol (
               UINT32   in_symbol,
               UINT32   in_constellation_size,
-              FLOAT32  in_sample_rate,
+              UINT32   in_sample_rate,
               UINT32   in_symbol_duration,
               INT16    in_baseband_pulse_amplitude,
               FLOAT32  in_carrier_frequency,
@@ -178,7 +180,7 @@ csignal_error_code
 csignal_modulate_symbol (
                          UINT32   in_symbol,
                          UINT32   in_constellation_size,
-                         FLOAT32  in_sample_rate,
+                         UINT32   in_sample_rate,
                          UINT32   in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,

@@ -3,8 +3,213 @@ import unittest
 import string
 import random
 import types
+import os
+import tempfile
+import re
 
 class TestsCSignal( unittest.TestCase ):
+  def test_get_spreading_code_size( self ):
+    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, 0x12345678 )
+
+    self.assertNotEquals( spreading_code, None )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 0 )
+
+    self.assertEquals( codes, None )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 8 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 1 )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 16 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 2 )
+
+  def test_get_spreading_code( self ):
+    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400006, 0x12345678 )
+
+    self.assertEquals( spreading_code, None )
+
+    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, 0x12345678 )
+
+    self.assertNotEquals( spreading_code, None )
+
+    codes = csignal_tests.python_get_spreading_code( spreading_code, 80000 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 10000 )
+
+    index = 0
+
+    with open( 'PNSequenceTestVector.dat' ) as file_pointer:
+      for line in file_pointer:
+        expression = re.compile( '^(\d+)$' )
+
+        result = re.match( expression, line )
+
+        if( result ):
+          self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
+
+          index += 1
+
+  def test_initialize_spreading_code( self ):
+    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, 0x12345678 )
+
+    self.assertNotEquals( spreading_code, None )
+
+    spreading_code = csignal_tests.python_initialize_spreading_code( -1, 0x12345678 )
+
+    self.assertEquals( spreading_code, None )
+
+    spreading_code = csignal_tests.python_initialize_spreading_code( 0x00400007, -1 )
+
+    self.assertEquals( spreading_code, None )
+
+  def test_write_wav_random( self ):
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32000
+    carrier_frequency   = 22000
+
+    ( file_handle, file_name ) = self.touch_random_file()
+
+    file_handle.close()
+
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    
+    symbol_tracker = csignal_tests.python_intialize_symbol_tracker( data )
+
+    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    signal = []
+
+    while( symbol != None ):
+      part = csignal_tests.python_modulate_symbol (
+          symbol,
+          constellation_size,
+          sample_rate,
+          sample_rate,
+          baseband_amplitude,
+          carrier_frequency
+                                                  )
+  
+      self.assertNotEquals( part, None )
+
+      signal = signal + part
+
+      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    samples = [ signal, signal ]
+
+    error = csignal_tests.python_write_LPCM_wav (
+      file_name,
+      len( samples ),
+      sample_rate,
+      len( signal ),
+      samples
+                                                )
+
+    self.assertEquals( error, csignal_tests.CPC_TRUE )
+
+  def touch_random_file( self ):
+    file_handle = tempfile.NamedTemporaryFile()
+
+    file_name = file_handle.name
+
+    return( file_handle, file_name )
+
+  def test_write_wav_basic( self ):
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32000
+    carrier_frequency   = 22000
+
+    data = '\x12'
+    
+    symbol_tracker = csignal_tests.python_intialize_symbol_tracker( data )
+
+    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    signal = csignal_tests.python_modulate_symbol (
+        symbol,
+        constellation_size,
+        sample_rate,
+        sample_rate,
+        baseband_amplitude,
+        carrier_frequency
+                                                  )
+
+    self.assertNotEquals( signal, None )
+
+    samples = [ signal, signal ]
+
+    ( file_handle, file_name ) = self.touch_random_file()
+
+    error = csignal_tests.python_write_LPCM_wav (
+      file_name,
+      len( samples ),
+      sample_rate,
+      len( signal ),
+      samples
+                                                )
+    
+    file_handle.close()
+
+    self.assertEquals( error, csignal_tests.CPC_FALSE )
+
+    error = csignal_tests.python_write_LPCM_wav (
+      "/test.WAV",
+      len( samples ),
+      sample_rate,
+      len( signal ),
+      samples
+                                                )
+
+    self.assertEquals( error, csignal_tests.CPC_FALSE )
+
+  def test_write_wav( self ):
+    file_name           = "/tmp/test.WAV"
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32000
+    carrier_frequency   = 22000
+
+    data = '\x12'
+    
+    symbol_tracker = csignal_tests.python_intialize_symbol_tracker( data )
+
+    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    signal = csignal_tests.python_modulate_symbol (
+        symbol,
+        constellation_size,
+        sample_rate,
+        sample_rate,
+        baseband_amplitude,
+        carrier_frequency
+                                                  )
+
+    self.assertNotEquals( signal, None )
+
+    samples = [ signal, signal ]
+
+    error = csignal_tests.python_write_LPCM_wav (
+      file_name,
+      len( samples ),
+      sample_rate,
+      sample_rate,
+      samples
+                                                )
+
+    self.assertEquals( error, csignal_tests.CPC_TRUE )
+
+    os.unlink( file_name )
+
   def test_generate_signal_random( self ):
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
 

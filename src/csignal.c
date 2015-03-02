@@ -1,3 +1,9 @@
+/*! \fn     csignal.c
+    \breif  This file contains the implementation for generating data modulated
+            audio signals. Currently, implementations for QPSK and DSSS are
+            supported.
+ */
+
 #include "csignal.h"
 
 csignal_error_code
@@ -168,12 +174,11 @@ csignal_get_symbol  (
   return( return_value );
 }
 
-
 csignal_error_code
 csignal_modulate_symbol (
                          UINT32   in_symbol,
                          UINT32   in_constellation_size,
-                         FLOAT32  in_sample_rate,
+                         UINT32   in_sample_rate,
                          UINT32   in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
@@ -184,7 +189,7 @@ csignal_modulate_symbol (
   
   CPC_LOG (
            CPC_LOG_LEVEL_TRACE,
-           "m=0x%x, M=0x%x, T=0x%x, sr=%2.f, |g|=0x%x, f_c=%.2f",
+           "m=0x%x, M=0x%x, T=0x%x, sr=0x%x, |g|=0x%x, f_c=%.2f",
            in_symbol,
            in_constellation_size,
            in_symbol_duration,
@@ -210,13 +215,11 @@ csignal_modulate_symbol (
     
     return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
   }
-  else if( 0 >= in_carrier_frequency || 0> in_sample_rate )
+  else if( 0 >= in_carrier_frequency )
   {
     CPC_ERROR (
-               "Carrier frequency (%.2f) and sample rate (%.2f)"
-               " must be strictly greater than 0.",
-               in_carrier_frequency,
-               in_sample_rate
+               "Carrier frequency (%.2f) must be strictly greater than 0.",
+               in_carrier_frequency
                );
     
     return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
@@ -240,9 +243,9 @@ csignal_modulate_symbol (
       out_signal[ i ] =
         ( INT16 )
         ( in_baseband_pulse_amplitude * 1.0 ) * inphase_component
-          * cos( 2 * M_PI * in_carrier_frequency * i / in_sample_rate )
+          * cos( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) )
         - ( in_baseband_pulse_amplitude * 1.0 ) * quadrature_component
-          * sin( 2 * M_PI * in_carrier_frequency * i / in_sample_rate );
+          * sin( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) );
     }
     
     CPC_LOG_BUFFER  (

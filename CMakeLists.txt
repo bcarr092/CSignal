@@ -16,8 +16,12 @@ message( STATUS "Include directory: ${INCLUDE_DIR}" )
 message( STATUS "Install directory: ${INSTALL_DIR}" )
 
 set( SOURCES "${SOURCE_DIR}/csignal.c" )
+list( APPEND SOURCES "${SOURCE_DIR}/wav.c" )
+list( APPEND SOURCES "${SOURCE_DIR}/spreading_code.c" )
 
 set( HEADERS "${INCLUDE_DIR}/csignal.h" )
+list( APPEND HEADERS "${INCLUDE_DIR}/wav.h" )
+list( APPEND HEADERS "${INCLUDE_DIR}/spreading_code.h" )
 list( APPEND HEADERS "${INCLUDE_DIR}/csignal_error_codes.h" )
 
 if( ${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" )
@@ -66,11 +70,6 @@ message (
   "Working with cpcommon source directory: ${CPCOMMON_INCLUDE_DIR}"
         )
 
-message (
-  STATUS
-  "Working with cpcommon source directory: ${CPCOMMON_INCLUDE_DIR}"
-        )
-
 include_directories( ${INCLUDE_DIR} )
 include_directories( ${CPCOMMON_INCLUDE_DIR} )
 
@@ -81,7 +80,6 @@ if( "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" )
 endif()
 
 target_link_libraries( ${PROJECT_NAME} cpcommon )
-
 target_link_libraries( ${PROJECT_NAME} ${EXTRA_LIBS} )
 
 install (

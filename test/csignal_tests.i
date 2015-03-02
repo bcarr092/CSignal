@@ -4,10 +4,320 @@
 
 #include <csignal.h>
 
+/*! \fn     static PyObject* python_get_spreading_code  (
+                            spreading_code* in_spreading_code,
+                            int             in_number_of_bits
+                                                        )
+    \brief  Requests in_number_of_bits from the LFSR defined by
+            in_spreading_code. For full documentation the parameters for this
+            function please see spreading_code.h. The only additional check
+            done in this wrapper is to ensure in_number_of_bits is
+            non-negative.
+
+    \return Returns a python list of unsigned char values or None if an error
+            occured.
+ */
+static PyObject* python_get_spreading_code  (
+                            spreading_code* in_spreading_code,
+                            int             in_number_of_bits
+                                            )
+{
+  if( 0 > in_number_of_bits )
+  {
+    Py_RETURN_NONE;
+  }
+  else
+  {
+    if( NULL == in_spreading_code )
+    {
+      Py_RETURN_NONE;
+    }
+    else
+    {
+      UINT32 size = 0;
+      UCHAR* code = NULL;
+
+      csignal_error_code return_value =
+        csignal_get_spreading_code  (
+          in_spreading_code,
+          in_number_of_bits,
+          &size,
+          &code
+                                    );
+
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        PyObject* code_list = PyList_New( size );
+
+        if( NULL == code_list )
+        {
+          Py_RETURN_NONE;
+        }
+        else
+        {
+          for( UINT32 i = 0; i < size; i++ )
+          {
+            if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
+            {
+              PyErr_Print();
+            }
+          }
+
+          if( PyList_Check( code_list ) )
+          {
+            return( code_list );
+          }
+          else
+          {
+            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+
+            Py_RETURN_NONE;
+          }
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not get code: 0x%x.", return_value );
+
+        Py_RETURN_NONE;
+      }
+    }
+  }
+}
+
+/*! \fn     spreading_code* python_initialize_spreading_code  (
+                                int in_generator_polynomial,
+                                int in_initial_state
+                                                              )
+    \brief  Initializes the LFSR with a generator polynomial and an intial
+            state. Both the generator and initial state need to be configured
+            properly for the LFSR to function. Please see the documentation
+            in spreading_code.h and spreading_code.c
+ */
+spreading_code*
+python_initialize_spreading_code  (
+                                int in_generator_polynomial,
+                                int in_initial_state
+                                  )
+{
+  spreading_code* shift_register = NULL;
+
+  if( 0 > in_generator_polynomial || 0 > in_initial_state )
+  {
+    CPC_ERROR (
+      "Generator polynomial (0x%x) or state 0x%x) are negative.",
+      in_generator_polynomial,
+      in_initial_state
+              );
+  }
+  else
+  {
+    csignal_error_code return_value =
+      csignal_initialize_spreading_code (
+        in_generator_polynomial,
+        in_initial_state,
+        &shift_register
+                                        );
+
+    if( CPC_ERROR_CODE_NO_ERROR != return_value )
+    {
+      CPC_ERROR (
+        "Could not create spreading code struct: 0x%x.",
+        return_value
+                );
+
+      shift_register = NULL;
+    }
+  }
+
+  return( shift_register );
+}
+
+/*! \fn     int python_write_LPCM_wav (
+                        PyObject* in_file_name,
+                        int       in_number_of_channels,
+                        int       in_sample_rate,
+                        int       in_number_of_samples,
+                        PyObject* in_samples
+                                      )
+    \brief  The python wrapper for the csignal_write_LPCM_wav function. For
+            a complete description of the parameters please see the
+            documentation for csignal_write_LPCM_wav.
+
+    \return CPC_TRUE if the WAV file was successfully created, CPC_FALSE
+            otherwise.
+ */
+int
+python_write_LPCM_wav (
+                        PyObject* in_file_name,
+                        int       in_number_of_channels,
+                        int       in_sample_rate,
+                        int       in_number_of_samples,
+                        PyObject* in_samples
+                      )
+{
+  INT16** samples       = NULL;
+  CPC_BOOL return_value = CPC_TRUE;
+
+  if  (
+        0 >= in_number_of_channels
+        || 0 >= in_sample_rate
+        || 0 >= in_number_of_samples
+      )
+  {
+    CPC_ERROR (
+      "Number of channels: 0x%x, sample rate: 0x%x,"
+      " or number of samples: 0x%x is not positive",
+      in_number_of_channels,
+      in_sample_rate,
+      in_number_of_samples
+              );
+
+    return_value = CPC_FALSE;
+  }
+  else
+  {
+    if( PyString_Check( in_file_name ) )
+    {
+      if( PyList_Check( in_samples ) )
+      {
+        if( PyList_Size( in_samples ) == in_number_of_channels )
+        {
+          for( UINT32 i = 0; i < in_number_of_channels && return_value; i++ )
+          {
+            if  (
+              PyList_Size( PyList_GetItem( in_samples, i ) )
+                != in_number_of_samples
+                )
+            {
+              CPC_ERROR (
+                "Sample list 0x%x is not of correct size (0x%x), should be 0x%x.",
+                i,
+                PyList_Size( PyList_GetItem( in_samples, i ) ),
+                in_number_of_samples
+                        ); 
+              
+              return_value = CPC_FALSE;
+            }
+            else
+            {
+              for( UINT32 j = 0; j < in_number_of_samples; j++ )
+              {
+                PyObject* number =
+                  PyList_GetItem( PyList_GetItem( in_samples, i ), j );
+  
+                if( ! PyInt_Check( number ) )
+                {
+                  CPC_ERROR (
+                    "Item 0x%x, 0x%x is not an integer.",
+                    i,
+                    j
+                            );
+                  
+                  return_value = CPC_FALSE;
+  
+                  break;
+                }
+              }
+            }
+          }
+        }
+        else
+        {
+          CPC_ERROR (
+            "Samples list not of correct size (0x%x), should be 0x%x.",
+            PyList_Size( in_samples ),
+            in_number_of_channels
+                    ); 
+          
+          return_value = CPC_FALSE;
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Samples are not a list: 0x%x.", in_samples );
+          
+        return_value = CPC_FALSE;
+      }
+    }
+    else
+    {
+      CPC_ERROR( "File name is not a tring: 0x%x.", in_file_name );
+  
+      return_value = CPC_FALSE;
+    }
+  }
+  
+  if( return_value )
+  {
+    cpc_error_code error =
+      cpc_safe_malloc (
+        ( void** ) &samples,
+        sizeof( INT16* ) * in_number_of_channels
+                      );
+
+    if( CPC_ERROR_CODE_NO_ERROR == error )
+    {
+      for( UINT32 i = 0; i < in_number_of_channels; i++ )
+      {
+        error =
+          cpc_safe_malloc (
+            ( void** ) &( samples[ i ] ),
+            sizeof( INT16 ) * in_number_of_samples
+                          );
+
+        if( CPC_ERROR_CODE_NO_ERROR == error )
+        {
+          for( UINT32 j = 0; j < in_number_of_samples; j++ )
+          {
+            PyObject* number =
+              PyList_GetItem( PyList_GetItem( in_samples, i ), j );
+
+            samples[ i ][ j ] = PyInt_AsLong( number );
+          }
+        }
+        else
+        {
+          CPC_ERROR( "Could not malloc sample array: 0x%x.", error );
+
+          return_value = CPC_FALSE;
+        }
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not malloc samples array: 0x%x.", error );
+
+      return_value = CPC_FALSE;
+    }
+  }
+
+  if( return_value )
+  {
+    csignal_error_code error =
+      csignal_write_LPCM_wav  (
+        PyString_AsString( in_file_name ),
+        in_number_of_channels,
+        in_sample_rate,
+        in_number_of_samples,
+        samples
+                              );
+
+    if( error )
+    {
+      CPC_ERROR( "Could not write LPCM WAV file: 0x%x.", error );
+
+      return_value = CPC_FALSE;
+    }
+  }
+
+  return( return_value );
+}
+
 /*! \fn     static PyObject* python_modulate_symbol  (
                           int   in_symbol,
                           int   in_constellation_size,
-                          float in_sample_rate,
+                          int   in_sample_rate,
                           int   in_symbol_duration,
                           int   in_baseband_pulse_amplitude,
                           float in_carrier_frequency
@@ -22,7 +332,7 @@ static PyObject*
 python_modulate_symbol  (
                           int   in_symbol,
                           int   in_constellation_size,
-                          float in_sample_rate,
+                          int   in_sample_rate,
                           int   in_symbol_duration,
                           int   in_baseband_pulse_amplitude,
                           float in_carrier_frequency
@@ -37,7 +347,7 @@ python_modulate_symbol  (
       )
   {
     CPC_ERROR (
-                "Invalid input: m=0x%x, M=0x%x, T=0x%x, sr=%.2f"
+                "Invalid input: m=0x%x, M=0x%x, T=0x%x, sr=0x%x"
                 ", |g|=0x%x, f_c=%.2f",
                 in_symbol,
                 in_constellation_size,
@@ -245,10 +555,15 @@ python_intialize_symbol_tracker (
 %apply size_t * { SIZE *  }
 
 %include <csignal.h>
+%include <wav.h>
+%include <spreading_code.h>
+%include <csignal_error_codes.h>
 
 // These have to be included because we don't recursively parse headers
-%include <csignal_error_codes.h>
 %include <types.h>
 %include <cpcommon_error_codes.h>
 %include <log_definitions.h>
 %include <log_functions.h>
+
+%include <cpointer.i>
+%pointer_functions( double, doubleP )
