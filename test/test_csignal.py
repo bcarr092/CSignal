@@ -8,6 +8,111 @@ import tempfile
 import re
 
 class TestsCSignal( unittest.TestCase ):
+  def test_get_gold_code_degree_7( self ):
+    gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+
+    self.assertNotEquals( gold_code, None )
+
+    codes = csignal_tests.python_get_gold_code( gold_code, 80000 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 10000 )
+
+    index = 0
+
+    with open( 'GoldSequenceTestVector_7_89_8F_20_20.dat' ) as file_pointer:
+      for line in file_pointer:
+        expression = re.compile( '^(\d+)$' )
+
+        result = re.match( expression, line )
+
+        if( result ):
+          self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
+
+          index += 1
+
+    result = csignal_tests.csignal_destroy_gold_code( gold_code )
+
+    self.assertEquals( result, csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+  def test_get_gold_code_size( self ):
+    gold_code = csignal_tests.python_initialize_gold_code( 2, 0xC0000000, 0xC0000000, 0x40000000, 0x80000000 )
+
+    self.assertNotEquals( gold_code, None )
+
+    codes = csignal_tests.python_get_gold_code( gold_code, 0 )
+
+    self.assertEquals( codes, None )
+
+    codes = csignal_tests.python_get_gold_code( gold_code, 8 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 1 )
+
+    codes = csignal_tests.python_get_gold_code( gold_code, 16 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 2 )
+
+    result = csignal_tests.csignal_destroy_gold_code( gold_code )
+
+    self.assertEquals( result, csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+
+    self.assertNotEquals( gold_code, None )
+
+    codes = csignal_tests.python_get_gold_code( gold_code, 0 )
+
+    self.assertEquals( codes, None )
+
+    codes = csignal_tests.python_get_gold_code( gold_code, 8 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 1 )
+
+    codes = csignal_tests.python_get_gold_code( gold_code, 16 )
+
+    self.assertNotEquals( codes, None )
+    self.assertEquals( len( codes ), 2 )
+
+    result = csignal_tests.csignal_destroy_gold_code( gold_code )
+
+    self.assertEquals( result, csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+  def test_initialize_gold_code( self ):
+    gold_code = csignal_tests.python_initialize_gold_code( 1, 0x10000000, 0x10000000, 0x10000000, 0x10000000 )
+
+    self.assertEquals( gold_code, None )
+
+    gold_code = csignal_tests.python_initialize_gold_code( 33, 0x10000000, 0x10000000, 0x10000000, 0x10000000 )
+
+    self.assertEquals( gold_code, None )
+
+    gold_code = csignal_tests.python_initialize_gold_code( 2, 0x80000000, 0x10000000, 0xC0000000, 0x10000000 )
+
+    self.assertEquals( gold_code, None )
+
+    gold_code = csignal_tests.python_initialize_gold_code( 2, 0xC0000000, 0x10000000, 0x80000000, 0x10000000 )
+
+    self.assertEquals( gold_code, None )
+
+    gold_code = csignal_tests.python_initialize_gold_code( 2, 0xE0000000, 0x10000000, 0xC0000000, 0x10000000 )
+
+    self.assertEquals( gold_code, None )
+
+    gold_code = csignal_tests.python_initialize_gold_code( 2, 0xC0000000, 0x10000000, 0xE0000000, 0x10000000 )
+
+    self.assertEquals( gold_code, None )
+
+    gold_code = csignal_tests.python_initialize_gold_code( 2, 0xC0000000, 0x40000000, 0xC0000000, 0x40000000 )
+
+    self.assertNotEquals( gold_code, None )
+
+    result = csignal_tests.csignal_destroy_gold_code( gold_code )
+
+    self.assertEquals( result, csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
   def test_get_spreading_code_degree_32( self ):
     spreading_code = csignal_tests.python_initialize_spreading_code( 32, 0x00200007, 0x40000000 )
 

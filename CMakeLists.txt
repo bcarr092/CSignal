@@ -17,10 +17,12 @@ message( STATUS "Install directory: ${INSTALL_DIR}" )
 
 set( SOURCES "${SOURCE_DIR}/csignal.c" )
 list( APPEND SOURCES "${SOURCE_DIR}/wav.c" )
+list( APPEND SOURCES "${SOURCE_DIR}/gold_code.c" )
 list( APPEND SOURCES "${SOURCE_DIR}/spreading_code.c" )
 
 set( HEADERS "${INCLUDE_DIR}/csignal.h" )
 list( APPEND HEADERS "${INCLUDE_DIR}/wav.h" )
+list( APPEND HEADERS "${INCLUDE_DIR}/gold_code.h" )
 list( APPEND HEADERS "${INCLUDE_DIR}/spreading_code.h" )
 list( APPEND HEADERS "${INCLUDE_DIR}/csignal_error_codes.h" )
 

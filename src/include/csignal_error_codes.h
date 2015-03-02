@@ -13,11 +13,15 @@
       Used to indicate that no data is left in a buffer
  \var CSIGNAL_ERROR_CODE_WRITE_ERROR
       Used to indicate an error occurred when writing to a WAV file
+ \var CSIGNAL_ERROR_CODE_MISMATCH
+      Used to indidate that when generating a sequence of gold codes the
+      component LFSRs did not generate the same number of bits.
  */
 enum csignal_error_codes
 {
   CSIGNAL_ERROR_CODE_NO_DATA                  = -100,
   CSIGNAL_ERROR_CODE_WRITE_ERROR              = -101,
+  CSIGNAL_ERROR_CODE_LENGTH_MISMATCH          = -102,
 };
 
 /*! \var    csignal_error_codes

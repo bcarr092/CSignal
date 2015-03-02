@@ -134,7 +134,8 @@ csignal_initialize_spreading_code (
  
     \param  in_spreading_code The generator and initial state of the LFSR.
     \param  in_number_of_bits The number of code bits to get from the LFSR.
-    \param  out_size  The size of the byte array containing the code bits.
+    \param  out_size  The size of the byte array containing the code bits (in
+                      bytes).
     \param  out_code  The code bits generated
     \return Returns NO_ERROR upon succesful execution or one of these errors
             (see cpc_safe_malloc and csignal_get_spreading_code_bit for other

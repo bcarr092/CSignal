@@ -4,6 +4,155 @@
 
 #include <csignal.h>
 
+/*! \fn     static PyObject* python_get_gold_code (
+                            gold_code*  in_gold_code,
+                            int         in_number_of_bits
+                                                  )
+    \brief  Requests in_number_of_bits from the LFSRs defined by
+            in_gold_code. For full documentation the parameters for this
+            function please see gold_code.h. The only additional check
+            done in this wrapper is to ensure in_number_of_bits is
+            non-negative.
+
+    \return Returns a python list of unsigned char values or None if an error
+            occured.
+ */
+static PyObject* python_get_gold_code  (
+                            gold_code*  in_gold_code,
+                            int         in_number_of_bits
+                                       )
+{
+  if( 0 > in_number_of_bits )
+  {
+    Py_RETURN_NONE;
+  }
+  else
+  {
+    if( NULL == in_gold_code )
+    {
+      Py_RETURN_NONE;
+    }
+    else
+    {
+      UINT32 size = 0;
+      UCHAR* code = NULL;
+
+      csignal_error_code return_value =
+        csignal_get_gold_code (
+          in_gold_code,
+          in_number_of_bits,
+          &size,
+          &code
+                              );
+
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        PyObject* code_list = PyList_New( size );
+
+        if( NULL == code_list )
+        {
+          Py_RETURN_NONE;
+        }
+        else
+        {
+          for( UINT32 i = 0; i < size; i++ )
+          {
+            if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
+            {
+              PyErr_Print();
+            }
+          }
+
+          if( PyList_Check( code_list ) )
+          {
+            return( code_list );
+          }
+          else
+          {
+            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+
+            Py_RETURN_NONE;
+          }
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not get code: 0x%x.", return_value );
+
+        Py_RETURN_NONE;
+      }
+    }
+  }
+}
+
+/*! \fn     gold_code* python_initialize_gold_code  (
+                                int in_degree,
+                                long in_generator_polynomial_1,
+                                long in_generator_polynomial_2,
+                                long in_initial_state_1,
+                                long in_initial_state_2
+                                                    )
+    \brief  Initializes gold code LFSRs generator polynomials and an intial
+            states. Both the generators and initial states need to be
+            configured properly for the gold code generator to function
+            correctly. Please see the documentation in gold_code.h and
+            spreading_code.h
+ */
+gold_code*
+python_initialize_gold_code (
+                              int in_degree,
+                              long in_generator_polynomial_1,
+                              long in_generator_polynomial_2,
+                              long in_initial_state_1,
+                              long in_initial_state_2
+                            )
+{
+  gold_code* shift_registers = NULL;
+
+  if  (
+        0 > in_generator_polynomial_1
+        || 0 > in_generator_polynomial_2
+        || 0 > in_initial_state_1
+        || 0 > in_initial_state_2
+        || 0 > in_degree
+      )
+  {
+    CPC_ERROR (
+      "Generator polynomial 1 (0x%x), state 1 (0x%x), degree (0x%x)"
+      " generator polynomial 2 (0x%x), or state 2 (0x%x) are negative.",
+      in_generator_polynomial_1,
+      in_initial_state_1,
+      in_degree,
+      in_generator_polynomial_2,
+      in_initial_state_2
+              );
+  }
+  else
+  {
+    csignal_error_code return_value =
+      csignal_initialize_gold_code  (
+        in_degree,
+        in_generator_polynomial_1,
+        in_generator_polynomial_2,
+        in_initial_state_1,
+        in_initial_state_2,
+        &shift_registers
+                                    );
+
+    if( CPC_ERROR_CODE_NO_ERROR != return_value )
+    {
+      CPC_ERROR (
+        "Could not create gold code struct: 0x%x.",
+        return_value
+                );
+
+      shift_registers = NULL;
+    }
+  }
+
+  return( shift_registers );
+}
+
 /*! \fn     static PyObject* python_get_spreading_code  (
                             spreading_code* in_spreading_code,
                             int             in_number_of_bits
@@ -86,9 +235,9 @@ static PyObject* python_get_spreading_code  (
 }
 
 /*! \fn     spreading_code* python_initialize_spreading_code  (
-                                int in_degree,
-                                int in_generator_polynomial,
-                                int in_initial_state
+                                int   in_degree,
+                                long  in_generator_polynomial,
+                                long  in_initial_state
                                                               )
     \brief  Initializes the LFSR with a generator polynomial and an intial
             state. Both the generator and initial state need to be configured
@@ -561,6 +710,7 @@ python_intialize_symbol_tracker (
 %include <csignal.h>
 %include <wav.h>
 %include <spreading_code.h>
+%include <gold_code.h>
 %include <csignal_error_codes.h>
 
 // These have to be included because we don't recursively parse headers

@@ -63,6 +63,7 @@ list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_csignal.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_2_7_1.dat" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_7_89_20.dat" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_32_100200007_40000000.dat" )
+list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/GoldSequenceTestVector_7_89_8F_20_20.dat" )
 
 set( WRAPPERS "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.py" )
 
