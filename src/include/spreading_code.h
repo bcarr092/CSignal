@@ -10,6 +10,9 @@
 
 #include "csignal_error_codes.h"
 
+#define SPREADING_WAVEFORM_POSITIVE 1
+#define SPREADING_WAVEFORM_NEGATIVE -1
+
 /*! \var    spreading_code
     \brief  Spreading codes are generated using a linear feedback shift register
             (LFSR) and should be used to generate m-sequences. That is maximum
@@ -122,7 +125,7 @@ csignal_initialize_spreading_code (
                                    );
 
 /*! \fn     csignal_error_code csignal_get_spreading_code  (
-              spreading_code*  in_spreading_code,
+              spreading_code*  io_spreading_code,
               UINT32           in_number_of_code_bits,
               UINT32*          out_size,
               UCHAR**          out_code
@@ -132,7 +135,7 @@ csignal_initialize_spreading_code (
             as a byte array in out_code. The size of the byte array is in
             out_size.
  
-    \param  in_spreading_code The generator and initial state of the LFSR.
+    \param  io_spreading_code The generator and initial state of the LFSR.
     \param  in_number_of_bits The number of code bits to get from the LFSR.
     \param  out_size  The size of the byte array containing the code bits (in
                       bytes).
@@ -147,10 +150,35 @@ csignal_initialize_spreading_code (
  */
 csignal_error_code
 csignal_get_spreading_code  (
-                             spreading_code*  in_spreading_code,
+                             spreading_code*  io_spreading_code,
                              UINT32           in_number_of_code_bits,
                              UINT32*          out_size,
                              UCHAR**          out_code
                              );
+
+/*! \fn     csignal_error_code csignal_set_spreading_signal  (
+              UCHAR  in_bit,
+              UINT32 in_signal_size,
+              INT16* out_signal
+            )
+    \brief  Generates a spreading signal based on in_bit. If in_bit is non-zero
+            than a signal consisting of +1 values is generated, otherwise
+            a signal consisting of -1 values is generated.
+ 
+    \param  in_bit  Bit value which determines if the signal will consist of +1
+            or -1 values, which will occurr for non-zero and zero bit values
+            respectively.
+    \param  in_signal_size  The length of the signal buffer
+    \param  out_signal  An empty buffer to be filled with samples of +1 or -1.
+    \return Returns NO_ERROR upon succesful exection or one of these errors:
+      
+            CPC_ERROR_CODE_NULL_POINTER If out_signal is null.
+ */
+csignal_error_code
+csignal_set_spreading_signal  (
+                               UCHAR  in_bit,
+                               UINT32 in_signal_size,
+                               INT16* out_signal
+                               );
 
 #endif  /*  __SPREADING_CODE_H__  */

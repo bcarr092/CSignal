@@ -104,7 +104,7 @@ csignal_destroy_gold_code (
                            );
 
 /*! \fn     csignal_error_code csignal_get_gold_code  (
-              gold_code*  in_gold_code,
+              gold_code*  io_gold_code,
               UINT32      in_number_of_code_bits,
               UINT32*     out_size,
               UCHAR**     out_code
@@ -114,7 +114,7 @@ csignal_destroy_gold_code (
             returned as a byte array in out_code. The size of the byte array is
             in out_size.
  
-    \param  in_gold_code  The generator and initial state of the gold code
+    \param  io_gold_code  The generator and initial state of the gold code
                           sequence generator.
     \param  in_number_of_bits The number of code bits to get from the LFSRs.
     \param  out_size  The size of the byte array containing the code bits (in
@@ -130,7 +130,7 @@ csignal_destroy_gold_code (
  */
 csignal_error_code
 csignal_get_gold_code  (
-                        gold_code*  in_gold_code,
+                        gold_code*  io_gold_code,
                         UINT32      in_number_of_code_bits,
                         UINT32*     out_size,
                         UCHAR**     out_code

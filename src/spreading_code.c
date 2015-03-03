@@ -337,3 +337,36 @@ csignal_sum_ones  (
   
   return( ( sum % 2 ) );
 }
+
+csignal_error_code
+csignal_set_spreading_signal  (
+                               UCHAR  in_bit,
+                               UINT32 in_signal_size,
+                               INT16* out_signal
+                               )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == out_signal )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null." );
+    
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+  }
+  else
+  {
+    for( UINT32 i = 0; i < in_signal_size; i++ )
+    {
+      if( in_bit )
+      {
+        out_signal[ i ] = SPREADING_WAVEFORM_POSITIVE;
+      }
+      else
+      {
+        out_signal[ i ] = SPREADING_WAVEFORM_NEGATIVE;
+      }
+    }
+  }
+  
+  return( return_value );
+}
