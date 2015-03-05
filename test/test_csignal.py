@@ -80,6 +80,49 @@ class TestsCSignal( unittest.TestCase ):
 
     os.unlink( file_name )
 
+  def test_initialize_kaiser_filter( self ):
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 6000, 5000, 0.1, 80, 0 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 6000, 5000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 6000, 6000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 9000, 8000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 8000, 8000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 2000, 6000, 8000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 3000, 6000, 8000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 5000, 4000, 6000, 8000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 4000, 4000, 6000, 8000, 0.1, 80, 20000 )
+
+    self.assertEquals( filter, None )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 6000, 8000, 0.1, 80, 20000 )
+
+    self.assertNotEquals( filter, None )
+
+    csignal_tests.csignal_destroy_passband_filter( filter )
+
   def test_get_gold_code_degree_7( self ):
     gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
 

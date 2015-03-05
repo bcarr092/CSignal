@@ -4,6 +4,73 @@
 
 #include <csignal.h>
 
+/*! \fn     fir_passband_filter* python_initialize_kaiser_filter (
+              float in_first_stopband,
+              float in_first_passband,
+              float in_second_passband,
+              float in_second_stopband,
+              float in_passband_attenuation,
+              float in_stopband_attenuation,
+              int   in_sampling_frequency
+                                )
+    \brief  This is the python wrapper to create a Kaiser filter. Please see
+            the documentation in kaiser_filter.h for a complete description of
+            the permitted values.
+  */
+fir_passband_filter*
+python_initialize_kaiser_filter (
+  float in_first_stopband,
+  float in_first_passband,
+  float in_second_passband,
+  float in_second_stopband,
+  float in_passband_attenuation,
+  float in_stopband_attenuation,
+  int   in_sampling_frequency
+                                )
+{
+  fir_passband_filter* filter = NULL;
+
+  if( 0 >= in_sampling_frequency )
+  {
+    CPC_ERROR (
+      "Sampling frequency (%d Hz) must be positive.",
+      in_sampling_frequency
+              );
+  }
+  else
+  {
+    csignal_error_code return_value =
+      csignal_initialize_kaiser_filter  (
+        in_first_stopband,
+        in_first_passband,
+        in_second_passband,
+        in_second_stopband,
+        in_passband_attenuation,
+        in_stopband_attenuation,
+        in_sampling_frequency,
+        &filter
+                                        );
+
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      CPC_LOG_BUFFER_FLOAT32  (
+        CPC_LOG_LEVEL_TRACE,
+        "Coefficients:",
+        filter->coefficients,
+        filter->number_of_taps,
+        8
+                              );
+    }
+    else
+    {
+      CPC_ERROR( "Could not initialize kaiser filter: 0x%x.", return_value );
+
+      filter = NULL;
+    }
+  }
+
+  return( filter );
+}
 /*! \fn     static PyObject* python_get_gold_code (
                             gold_code*  in_gold_code,
                             int         in_number_of_bits
@@ -846,6 +913,8 @@ python_intialize_symbol_tracker (
 %include <spreading_code.h>
 %include <gold_code.h>
 %include <csignal_error_codes.h>
+%include <fir_filter.h>
+%include <kaiser_filter.h>
 
 // These have to be included because we don't recursively parse headers
 %include <types.h>

@@ -11,6 +11,9 @@
 #include "wav.h"
 #include "spreading_code.h"
 #include "gold_code.h"
+#include "fir_filter.h"
+#include "kaiser_filter.h"
+
 #include "csignal_error_codes.h"
 
 /*! \var    csignal_symbol_tracker
