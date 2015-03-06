@@ -147,4 +147,44 @@ csignal_destroy_passband_filter(
                                 fir_passband_filter* io_filter
                                 );
 
+/*! \fn     csignal_error_code csignal_filter_signal (
+              fir_passband_filter* in_filter,
+              UINT32               in_signal_length,
+              INT16*               in_signal,
+              UINT32*              out_filtered_signal_length,
+              INT16**              out_filtered_signal
+            )
+    \brief  Performs a convolution of the coefficients in in_filter and the
+            signal values in in_signal. Stores the results in
+            out_filtered_signal. If an error occurrs out_filtered_signal_length
+            will be set to 0 and out_filtered_signal will be set to NULL.
+ 
+    \param  in_filter The filter to apply to in_signal.
+    \param  in_signal_length  The number of samples in in_signal.
+    \param  in_signal The samples to filter.
+    \param  out_filtered_signal_length  The length of the filtered signal. Since
+                                        convolution is performeed this will be
+                                        in_signal_length + the number of taps in
+                                        in_filter (if no error occurs).
+    \param  out_filtered_signal The filtered signal. Note that if over or under
+                                flow occur in filtering the signal the max/min
+                                INT16 value will be used as the sample value.
+    \return Returns NO_ERROR upon succesful execution or one of these errors
+            (see cpc_safe_free for other possible errors):
+
+            CPC_ERROR_CODE_NULL_POINTER If in_filer, in_signal, 
+                                        out_filtered_signal_length or 
+                                        out_filtered_signal are null.
+            CPC_ERROR_CODE_INVALID_PARAMETER  If in_signal_length is 0 or the
+                                              number of taps in in_filter is 0.
+ */
+csignal_error_code
+csignal_filter_signal (
+                       fir_passband_filter* in_filter,
+                       UINT32               in_signal_length,
+                       INT16*               in_signal,
+                       UINT32*              out_filtered_signal_length,
+                       INT16**              out_filtered_signal
+                       );
+
 #endif  /*  __FIR_FILTER_H__  */

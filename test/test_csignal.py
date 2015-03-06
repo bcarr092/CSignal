@@ -15,6 +15,102 @@ def touch_random_file():
   return( file_handle, file_name )
 
 class TestsCSignal( unittest.TestCase ):
+  def test_filter_signal( self ): 
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32767 
+    carrier_frequency   = 12000
+    symbol_duration     = 1000
+    chip_duration       = 10
+
+    first_stopband  = 10000
+    first_passband  = 11000
+    second_passband = 13000
+    second_stopband = 14000
+
+    passband_attenuation = 0.1
+    stopband_attenuation = 80
+
+    ( file_handle, file_name ) = touch_random_file()
+
+    file_handle.close()
+
+    filter = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
+
+    self.assertNotEquals( filter, None )
+
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    
+    symbol_tracker = csignal_tests.python_intialize_symbol_tracker( data )
+
+    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+
+    signal = []
+
+    while( symbol != None ):
+      part = csignal_tests.python_modulate_symbol (
+          symbol,
+          constellation_size,
+          sample_rate,
+          symbol_duration,
+          baseband_amplitude,
+          carrier_frequency
+                                                  )
+  
+      self.assertNotEquals( part, None )
+
+      part = csignal_tests.python_spread_signal (
+          gold_code,
+          chip_duration,
+          part
+                                                )
+
+      self.assertNotEquals( part, None )
+
+      signal = signal + part
+
+      self.assertNotEquals( signal, None )
+
+      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    self.assertNotEquals( signal, None )
+
+    self.assertNotEqual( len( signal ), None )
+
+    signal = csignal_tests.python_filter_signal( filter, signal )
+
+    self.assertNotEquals( signal, None )
+
+    self.assertNotEquals( len( signal ), 0 )
+
+    empty_signal = []
+
+    for _ in range( len( signal )  ):
+     empty_signal.append( 0 )
+
+    samples = [ signal, signal ]
+
+    error = csignal_tests.python_write_LPCM_wav (
+      file_name,
+      len( samples ),
+      sample_rate,
+      len( signal ),
+      samples
+                                                )
+
+    self.assertEquals( error, csignal_tests.CPC_TRUE )
+
+    self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    os.unlink( file_name )
+
   def test_spread_signal( self ):
     bits_per_symbol     = 8
     constellation_size  = 2 ** bits_per_symbol
@@ -471,12 +567,15 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( error, csignal_tests.CPC_FALSE )
 
   def test_write_wav( self ):
-    file_name           = "/tmp/test.WAV"
     bits_per_symbol     = 8
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32000
     carrier_frequency   = 22000
+
+    ( file_handle, file_name ) = touch_random_file()
+
+    file_handle.close()
 
     data = '\x12'
     

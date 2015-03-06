@@ -4,6 +4,145 @@
 
 #include <csignal.h>
 
+/*! \fn     static PyObject* python_filter_signal  (
+              fir_passband_filter*  in_filter,
+              PyObject*             in_signal
+                                                    )
+    \brief  Filters in_signal using the filter defined in in_filter. Returns
+            a Python list of filtered samples. See the documentation for
+            csignal_filter_signal for more information regarding the behaviour
+            of the filter function and the desired parameters.
+ */
+static PyObject*
+python_filter_signal  (
+  fir_passband_filter*  in_filter,
+  PyObject*             in_signal
+                      )
+{
+  if( NULL == in_filter )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Filter is null." );
+
+    Py_RETURN_NONE;
+  }
+  else if( ! PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
+  {
+    CPC_LOG_STRING  (
+      CPC_LOG_LEVEL_ERROR,
+      "Signal must be a list with elements."
+                    );
+
+    Py_RETURN_NONE;
+  }
+  else
+  {
+    SSIZE size    = PyList_Size( in_signal ); 
+    INT16* signal = NULL;
+
+    csignal_error_code return_value =
+      cpc_safe_malloc( ( void** ) &signal, sizeof( INT16 ) * size );
+
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      for( UINT32 i = 0; i < size; i++ )
+      {
+        if( PyInt_Check( PyList_GetItem( in_signal, i ) ) )
+        {
+          signal[ i ] = PyInt_AsLong( PyList_GetItem( in_signal, i ) );
+        }
+        else
+        {
+          CPC_ERROR( "Entry 0x%x is not an integer.", i );
+
+          return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+        }
+      }
+
+      CPC_LOG_BUFFER  (
+        CPC_LOG_LEVEL_TRACE,
+        "Signal",
+        ( UCHAR* ) signal,
+        sizeof( INT16 ) * size,
+        8
+                      );
+
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        UINT32 filtered_signal_length = 0;
+        INT16* filtered_signal        = NULL;
+    
+        return_value =
+          csignal_filter_signal (
+            in_filter,
+            size,
+            signal,
+            &filtered_signal_length,
+            &filtered_signal
+                                );
+
+        if( CPC_ERROR_CODE_NO_ERROR == return_value )
+        {
+          CPC_LOG_BUFFER  (
+            CPC_LOG_LEVEL_TRACE,
+            "Filtered signal",
+            ( UCHAR* ) filtered_signal,
+            sizeof( INT16 )
+              *
+              ( filtered_signal_length > 200 ? 200 : filtered_signal_length ),
+            8
+                          );
+
+          PyObject* filtered_list = PyList_New( filtered_signal_length );
+
+          if( NULL == filtered_list )
+          {
+            cpc_safe_free( ( void** ) &filtered_signal );
+
+            Py_RETURN_NONE;
+          }
+          else
+          {
+            for( UINT32 i = 0; i < filtered_signal_length; i++ )
+            {
+              if  (
+                    0
+                    != PyList_SetItem (
+                        filtered_list,
+                        i,
+                        Py_BuildValue( "B", filtered_signal[ i ] )
+                                      )
+                  )
+              {
+                PyErr_Print();
+              }
+            }
+
+            cpc_safe_free( ( void** ) &filtered_signal );
+
+            if( PyList_Check( filtered_list ) )
+            {
+              return( filtered_list );
+            }
+            else
+            {
+              CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+  
+              Py_RETURN_NONE;
+            }
+          }   
+        }
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not malloc signal: 0x%x.", return_value );
+    }
+  }
+
+
+  Py_RETURN_NONE;
+}
+
 /*! \fn     fir_passband_filter* python_initialize_kaiser_filter (
               float in_first_stopband,
               float in_first_passband,
