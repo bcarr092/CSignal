@@ -81,7 +81,7 @@ csignal_destroy_symbol_tracker  (
 csignal_error_code
 csignal_get_symbol  (
                      csignal_symbol_tracker*  in_symbol_tracker,
-                     UINT32                   in_number_of_bits,
+                     USIZE                    in_number_of_bits,
                      UINT32*                  out_symbol
                      )
 {
@@ -122,13 +122,13 @@ csignal_get_symbol  (
     else
     {
       
-      UINT32 mask       = 0;
-      UINT32 new_offset = 0;
-      UINT32 num_bytes  = CPC_MIN  (
-                                    UINT32,
+      USIZE mask        = 0;
+      USIZE new_offset  = 0;
+      USIZE num_bytes   = CPC_MIN  (
+                                    USIZE,
                                     in_symbol_tracker->data_length
                                     - in_symbol_tracker->byte_offset,
-                                    sizeof( UINT32 )
+                                    sizeof( USIZE )
                                     );
       
       *out_symbol = 0;
@@ -154,11 +154,11 @@ csignal_get_symbol  (
       *out_symbol >>= ( sizeof( UINT32 ) * 8 )
         - ( in_symbol_tracker->bit_offset + in_number_of_bits );
       
-      for( UINT32 i = 0; i < in_number_of_bits; i++ )
+      for( USIZE i = 0; i < in_number_of_bits; i++ )
       {
         mask <<= 1;
         
-        mask |= 0x00000001;
+        mask |= 0x1;
       }
       
       *out_symbol &= mask;
@@ -194,7 +194,7 @@ csignal_modulate_symbol (
                          UINT32   in_symbol,
                          UINT32   in_constellation_size,
                          UINT32   in_sample_rate,
-                         UINT32   in_symbol_duration,
+                         USIZE    in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
                          INT16*   out_signal
@@ -267,9 +267,9 @@ csignal_modulate_symbol (
       out_signal[ i ] =
         ( INT16 )
         ( in_baseband_pulse_amplitude * 1.0 ) * inphase_component
-          * cos( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) )
+        * cos( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) )
         - ( in_baseband_pulse_amplitude * 1.0 ) * quadrature_component
-          * sin( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) );
+        * sin( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) );
     }
     
     CPC_LOG_BUFFER  (
@@ -296,7 +296,7 @@ csignal_error_code
 csignal_spread_signal (
                        gold_code* io_gold_code,
                        UINT32     in_chip_duration,
-                       UINT32     in_signal_size,
+                       USIZE      in_signal_size,
                        INT16*     io_signal
                        )
 {
@@ -333,8 +333,8 @@ csignal_spread_signal (
   }
   else
   {
-    UINT32 number_of_code_bits  = in_signal_size / in_chip_duration;
-    UINT32 size                 = 0;
+    USIZE number_of_code_bits   = in_signal_size / in_chip_duration;
+    USIZE size                  = 0;
     UCHAR* code                 = NULL;
     
     return_value =

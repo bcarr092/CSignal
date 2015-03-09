@@ -82,7 +82,7 @@ typedef struct fir_passband_filter_t
   /*! \var    number_of_taps
       \brief  The number of taps, or samples in the impulse response.
    */
-  UINT32    number_of_taps;
+  USIZE     number_of_taps;
   
   /*! \var    coefficients
       \brief  The values of the impulse response.
@@ -95,7 +95,7 @@ typedef struct fir_passband_filter_t
               FLOAT32               in_first_passband,
               FLOAT32               in_second_passband,
               UINT32                in_sampling_frequency,
-              UINT32                in_number_of_taps,
+              USIZE                 in_number_of_taps,
               fir_passband_filter*  out_filter
             )
     \brief  Initializes a fir_passband_filter struct with the passed in values.
@@ -126,7 +126,7 @@ csignal_initialize_passband_filter (
                                     FLOAT32               in_first_passband,
                                     FLOAT32               in_second_passband,
                                     UINT32                in_sampling_frequency,
-                                    UINT32                in_number_of_taps,
+                                    USIZE                 in_number_of_taps,
                                     fir_passband_filter*  out_filter
                                     );
 
@@ -149,9 +149,9 @@ csignal_destroy_passband_filter(
 
 /*! \fn     csignal_error_code csignal_filter_signal (
               fir_passband_filter* in_filter,
-              UINT32               in_signal_length,
+              USIZE                in_signal_length,
               INT16*               in_signal,
-              UINT32*              out_filtered_signal_length,
+              USIZE*               out_filtered_signal_length,
               INT16**              out_filtered_signal
             )
     \brief  Performs a convolution of the coefficients in in_filter and the
@@ -181,9 +181,9 @@ csignal_destroy_passband_filter(
 csignal_error_code
 csignal_filter_signal (
                        fir_passband_filter* in_filter,
-                       UINT32               in_signal_length,
+                       USIZE                in_signal_length,
                        INT16*               in_signal,
-                       UINT32*              out_filtered_signal_length,
+                       USIZE*               out_filtered_signal_length,
                        INT16**              out_filtered_signal
                        );
 

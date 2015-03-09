@@ -5,7 +5,7 @@ csignal_initialize_passband_filter (
                                     FLOAT32               in_first_passband,
                                     FLOAT32               in_second_passband,
                                     UINT32                in_sampling_frequency,
-                                    UINT32                in_number_of_taps,
+                                    USIZE                 in_number_of_taps,
                                     fir_passband_filter*  out_filter
                                     )
 {
@@ -21,17 +21,15 @@ csignal_initialize_passband_filter (
            0 >= in_first_passband
            || 0 >= in_second_passband
            || in_first_passband >= in_second_passband
-           || 0 == in_number_of_taps
            || 0 == in_sampling_frequency
            )
   {
     CPC_ERROR (
                "First passband (%.2f) must be positive and strictly less than"
-               " second passband (%.2f). The number of taps (0x%x) must be"
-               " positive. The sampling frequency (%d Hz) must be positive.",
+               " second passband (%.2f). The sampling frequency (%d Hz) must be"
+               " positive.",
                in_first_passband,
                in_second_passband,
-               in_number_of_taps,
                in_sampling_frequency
                );
     
@@ -93,9 +91,9 @@ csignal_destroy_passband_filter(
 csignal_error_code
 csignal_filter_signal (
                        fir_passband_filter* in_filter,
-                       UINT32               in_signal_length,
+                       USIZE                in_signal_length,
                        INT16*               in_signal,
-                       UINT32*              out_filtered_signal_length,
+                       USIZE*               out_filtered_signal_length,
                        INT16**              out_filtered_signal
                        )
 {
@@ -145,17 +143,17 @@ csignal_filter_signal (
       *out_filtered_signal_length =
         in_signal_length + in_filter->number_of_taps;
       
-      for( INT32 i = 0; i < *out_filtered_signal_length; i++ )
+      for( SSIZE i = 0; i < *out_filtered_signal_length; i++ )
       {
         FLOAT64 value = 0;
         
-        INT32 min =
+        SSIZE min =
           ( i >= in_filter->number_of_taps - 1 )
           ? i - ( in_filter->number_of_taps - 1 ) : 0;
         
-        INT32 max = ( i < in_signal_length - 1 ) ? i : in_signal_length - 1 ;
+        SSIZE max = ( i < in_signal_length - 1 ) ? i : in_signal_length - 1 ;
         
-        for( INT32 j = min; j <= max; j++ )
+        for( SSIZE j = min; j <= max; j++ )
         {
           FLOAT64 signal_value = in_signal[ j ] * 1.0;
           

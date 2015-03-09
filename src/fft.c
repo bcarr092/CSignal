@@ -21,8 +21,8 @@
  */
 #define SWAP( in_a, in_b ) tempr=(in_a); (in_a)=(in_b); (in_b)=tempr;
 
-/*! \fn     UINT32 csignal_calculate_closest_power_of_two  (
-              UINT32 in_number
+/*! \fn     USIZE csignal_calculate_closest_power_of_two  (
+              USIZE in_number
             )
     \brief  Finds the next power of 2 larger than or equal to in_number.
  
@@ -30,15 +30,15 @@
                       parameter.
     \return A power of 2 larger than or equal to in_number.
  */
-UINT32
+USIZE
 csignal_calculate_closest_power_of_two  (
-                                         UINT32 in_number
+                                         USIZE in_number
                                          );
 
 /*! \fn     csignal_error_code csignal_convert_real_array_to_complex_array (
-              UINT32   in_real_signal_length,
+              USIZE    in_real_signal_length,
               INT16*   in_real_signal,
-              UINT32   in_complex_signal_length,
+              USIZE    in_complex_signal_length,
               FLOAT32* in_complex_signal
             )
     \brief  Takes the elements in in_real_signal and copies their values to
@@ -65,15 +65,15 @@ csignal_calculate_closest_power_of_two  (
  */
 csignal_error_code
 csignal_convert_real_array_to_complex_array (
-                                             UINT32   in_real_signal_length,
+                                             USIZE    in_real_signal_length,
                                              INT16*   in_real_signal,
-                                             UINT32   in_complex_signal_length,
+                                             USIZE    in_complex_signal_length,
                                              FLOAT32* in_complex_signal
                                              );
 
 /*! \fn     void csignal_fft (
               FLOAT32* io_data,
-              UINT32   in_data_length,
+              USIZE    in_data_length,
               CHAR     in_sign
             )
     \brief  The Numerical Recipes implementation of the FFT algorithm.
@@ -87,15 +87,15 @@ csignal_convert_real_array_to_complex_array (
 void
 csignal_fft (
              FLOAT32* io_data,
-             UINT32   in_data_length,
+             USIZE    in_data_length,
              CHAR     in_sign
              );
 
 csignal_error_code
 csignal_calculate_FFT (
-                       UINT32     in_signal_length,
+                       USIZE      in_signal_length,
                        INT16*     in_signal,
-                       UINT32*    out_fft_length,
+                       USIZE*     out_fft_length,
                        FLOAT32**  out_fft
                        )
 {
@@ -140,7 +140,7 @@ csignal_calculate_FFT (
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
         //  The -1 is required for the first parameter because of the way the
-        //  fft algorithm was written.
+        //  fft algorithm was written in Numerical Recipes.
         csignal_fft( *out_fft - 1, *out_fft_length / 2, CALCULATE_FFT );
       }
     }
@@ -156,15 +156,15 @@ csignal_calculate_FFT (
 void
 csignal_fft (
              FLOAT32* io_data,
-             UINT32   in_data_length,
+             USIZE    in_data_length,
              CHAR     in_sign
              )
 {
   FLOAT32*  data = io_data;
-  UINT32    nn = in_data_length;
+  USIZE     nn = in_data_length;
   INT32     isign = in_sign;
   
-  UINT32  n,mmax,m,j,istep,i;
+  USIZE   n,mmax,m,j,istep,i;
   FLOAT64 wtemp,wr,wpr,wpi,wi,theta;
   FLOAT32 tempr,tempi;
   
@@ -216,9 +216,9 @@ csignal_fft (
 
 csignal_error_code
 csignal_convert_real_array_to_complex_array (
-                                             UINT32   in_real_signal_length,
+                                             USIZE    in_real_signal_length,
                                              INT16*   in_real_signal,
-                                             UINT32   in_complex_signal_length,
+                                             USIZE    in_complex_signal_length,
                                              FLOAT32* in_complex_signal
                                              )
 {
@@ -252,7 +252,7 @@ csignal_convert_real_array_to_complex_array (
   else
   {
     for (
-         UINT32 i = 0;
+         USIZE i = 0;
          i < in_complex_signal_length && ( i / 2 ) < in_real_signal_length;
          i += 2
          )
@@ -264,9 +264,9 @@ csignal_convert_real_array_to_complex_array (
   return( return_value );
 }
 
-UINT32
+USIZE
 csignal_calculate_closest_power_of_two  (
-                                         UINT32 in_number
+                                         USIZE in_number
                                          )
 {
   FLOAT32 number  = ( in_number * 1.0 );
@@ -294,5 +294,5 @@ csignal_calculate_closest_power_of_two  (
            number
            );
   
-  return( ( UINT32 ) number );
+  return( ( USIZE ) number );
 }

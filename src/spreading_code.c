@@ -168,8 +168,8 @@ csignal_initialize_spreading_code (
 csignal_error_code
 csignal_get_spreading_code  (
                              spreading_code*  in_spreading_code,
-                             UINT32           in_number_of_code_bits,
-                             UINT32*          out_size,
+                             USIZE            in_number_of_code_bits,
+                             USIZE*           out_size,
                              UCHAR**          out_code
                              )
 {
@@ -195,8 +195,8 @@ csignal_get_spreading_code  (
   }
   else
   {
-    UINT32 byte_index = 0;
-    UINT32 bit_index  = 0;
+    USIZE byte_index = 0;
+    USIZE bit_index  = 0;
     
     *out_size = 0;
     *out_code = NULL;
@@ -341,7 +341,7 @@ csignal_sum_ones  (
 csignal_error_code
 csignal_set_spreading_signal  (
                                UCHAR  in_bit,
-                               UINT32 in_signal_size,
+                               USIZE 	in_signal_size,
                                INT16* out_signal
                                )
 {
@@ -355,7 +355,7 @@ csignal_set_spreading_signal  (
   }
   else
   {
-    for( UINT32 i = 0; i < in_signal_size; i++ )
+    for( USIZE i = 0; i < in_signal_size; i++ )
     {
       if( in_bit )
       {

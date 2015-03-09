@@ -95,8 +95,8 @@ csignal_destroy_gold_code (
 csignal_error_code
 csignal_get_gold_code  (
                         gold_code*  in_gold_code,
-                        UINT32      in_number_of_code_bits,
-                        UINT32*     out_size,
+                        USIZE       in_number_of_code_bits,
+                        USIZE*      out_size,
                         UCHAR**     out_code
                         )
 {
@@ -125,8 +125,8 @@ csignal_get_gold_code  (
     UCHAR* code_1 = NULL;
     UCHAR* code_2 = NULL;
     
-    UINT32 size_1 = 0;
-    UINT32 size_2 = 0;
+    USIZE size_1 = 0;
+    USIZE size_2 = 0;
     
     return_value =
       csignal_get_spreading_code  (

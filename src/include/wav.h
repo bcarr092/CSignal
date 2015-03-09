@@ -53,9 +53,9 @@
 
 /*! \fn     csignal_error_code csignal_write_LPCM_wav  (
               CHAR*    in_file_name,
-              UINT16   in_number_of_channels,
+              USIZE    in_number_of_channels,
               UINT32   in_sample_rate,
-              UINT32   in_number_of_samples,
+              USIZE    in_number_of_samples,
               INT16**  in_samples
             )
     \brief  Main entry point to create a WAV file. Will write the data stored 
@@ -70,25 +70,30 @@
     \param  in_file_name  The file name to use when creating the WAV file. This
                           function will fail if the file already exists.
     \param  in_number_of_channels The length of in_samples. There must be a
-                                  data stream for each channel.
+                                  data stream for each channel. Must be smaller
+                                  than or equal to a UINT16.
     \param  in_sample_rate  The sample rate that the samples were generated at.
     \param  in_number_of_samples  The number of samples in each channel buffer.
+                                  Must be smaller than or equal to a UINT32.
     \param  in_samples  The samples array it is an in_number_of_channels X
                         in_samples data buffer.
     \param  Returns NO_ERROR upon succesful execution or one of these errors:
 
             CPC_ERROR_CODE_INVALID_PARAMETER  If a file with the name
                                               in_file_name already exists or
-                                              could not be created.
+                                              could not be created. If the
+                                              number of channels or the number
+                                              of samples is larger than a UINT16
+                                              or UINT32, respectively.
             CSIGNAL_ERROR_CODE_WRITE_ERROR  If data could not be written to
                                             the WAV file.
  */
 csignal_error_code
 csignal_write_LPCM_wav  (
                          CHAR*    in_file_name,
-                         UINT16   in_number_of_channels,
+                         USIZE    in_number_of_channels,
                          UINT32   in_sample_rate,
-                         UINT32   in_number_of_samples,
+                         USIZE    in_number_of_samples,
                          INT16**  in_samples
                          );
 

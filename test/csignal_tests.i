@@ -54,7 +54,7 @@ python_fft  (
 
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
-        UINT32 fft_length = 0;
+        USIZE fft_length  = 0;
         FLOAT32* fft      = NULL;
 
         return_value = csignal_calculate_FFT( size, signal, &fft_length, &fft );
@@ -167,7 +167,7 @@ python_filter_signal  (
 
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
-        UINT32 filtered_signal_length = 0;
+        USIZE filtered_signal_length  = 0;
         INT16* filtered_signal        = NULL;
     
         return_value =
@@ -301,7 +301,7 @@ python_initialize_kaiser_filter (
 }
 /*! \fn     static PyObject* python_get_gold_code (
                             gold_code*  in_gold_code,
-                            int         in_number_of_bits
+                            size        in_number_of_bits
                                                   )
     \brief  Requests in_number_of_bits from the LFSRs defined by
             in_gold_code. For full documentation the parameters for this
@@ -315,68 +315,61 @@ python_initialize_kaiser_filter (
 static PyObject*
 python_get_gold_code  (
                         gold_code*  in_gold_code,
-                        int         in_number_of_bits
+                        size_t      in_number_of_bits
                       )
 {
-  if( 0 > in_number_of_bits )
+  if( NULL == in_gold_code )
   {
     Py_RETURN_NONE;
   }
   else
   {
-    if( NULL == in_gold_code )
-    {
-      Py_RETURN_NONE;
-    }
-    else
-    {
-      UINT32 size = 0;
-      UCHAR* code = NULL;
+    USIZE size  = 0;
+    UCHAR* code = NULL;
 
-      csignal_error_code return_value =
-        csignal_get_gold_code (
-          in_gold_code,
-          in_number_of_bits,
-          &size,
-          &code
-                              );
+    csignal_error_code return_value =
+      csignal_get_gold_code (
+        in_gold_code,
+        in_number_of_bits,
+        &size,
+        &code
+                            );
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      PyObject* code_list = PyList_New( size );
+
+      if( NULL == code_list )
       {
-        PyObject* code_list = PyList_New( size );
-
-        if( NULL == code_list )
-        {
-          Py_RETURN_NONE;
-        }
-        else
-        {
-          for( UINT32 i = 0; i < size; i++ )
-          {
-            if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
-            {
-              PyErr_Print();
-            }
-          }
-
-          if( PyList_Check( code_list ) )
-          {
-            return( code_list );
-          }
-          else
-          {
-            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-
-            Py_RETURN_NONE;
-          }
-        }
+        Py_RETURN_NONE;
       }
       else
       {
-        CPC_ERROR( "Could not get code: 0x%x.", return_value );
+        for( UINT32 i = 0; i < size; i++ )
+        {
+          if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
+          {
+            PyErr_Print();
+          }
+        }
 
-        Py_RETURN_NONE;
+        if( PyList_Check( code_list ) )
+        {
+          return( code_list );
+        }
+        else
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+
+          Py_RETURN_NONE;
+        }
       }
+    }
+    else
+    {
+      CPC_ERROR( "Could not get code: 0x%x.", return_value );
+
+      Py_RETURN_NONE;
     }
   }
 }
@@ -451,7 +444,7 @@ python_initialize_gold_code (
 
 /*! \fn     static PyObject* python_get_spreading_code  (
                             spreading_code* in_spreading_code,
-                            int             in_number_of_bits
+                            size            in_number_of_bits
                                                         )
     \brief  Requests in_number_of_bits from the LFSR defined by
             in_spreading_code. For full documentation the parameters for this
@@ -465,68 +458,61 @@ python_initialize_gold_code (
 static PyObject*
 python_get_spreading_code (
                             spreading_code* in_spreading_code,
-                            int             in_number_of_bits
+                            size_t          in_number_of_bits
                           )
 {
-  if( 0 > in_number_of_bits )
+  if( NULL == in_spreading_code )
   {
-    Py_RETURN_NONE;
+     Py_RETURN_NONE;
   }
   else
   {
-    if( NULL == in_spreading_code )
-    {
-      Py_RETURN_NONE;
-    }
-    else
-    {
-      UINT32 size = 0;
-      UCHAR* code = NULL;
+    USIZE size  = 0;
+    UCHAR* code = NULL;
 
-      csignal_error_code return_value =
-        csignal_get_spreading_code  (
-          in_spreading_code,
-          in_number_of_bits,
-          &size,
-          &code
-                                    );
+    csignal_error_code return_value =
+      csignal_get_spreading_code  (
+      in_spreading_code,
+      in_number_of_bits,
+      &size,
+      &code
+                                  );
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      PyObject* code_list = PyList_New( size );
+
+      if( NULL == code_list )
       {
-        PyObject* code_list = PyList_New( size );
-
-        if( NULL == code_list )
-        {
-          Py_RETURN_NONE;
-        }
-        else
-        {
-          for( UINT32 i = 0; i < size; i++ )
-          {
-            if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
-            {
-              PyErr_Print();
-            }
-          }
-
-          if( PyList_Check( code_list ) )
-          {
-            return( code_list );
-          }
-          else
-          {
-            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-
-            Py_RETURN_NONE;
-          }
-        }
+        Py_RETURN_NONE;
       }
       else
       {
-        CPC_ERROR( "Could not get code: 0x%x.", return_value );
+        for( UINT32 i = 0; i < size; i++ )
+        {
+          if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
+          {
+            PyErr_Print();
+          }
+        }
 
-        Py_RETURN_NONE;
+        if( PyList_Check( code_list ) )
+        {
+          return( code_list );
+        }
+        else
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+
+          Py_RETURN_NONE;
+        }
       }
+    }
+    else
+    {
+      CPC_ERROR( "Could not get code: 0x%x.", return_value );
+
+      Py_RETURN_NONE;
     }
   }
 }

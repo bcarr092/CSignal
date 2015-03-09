@@ -105,8 +105,8 @@ csignal_destroy_gold_code (
 
 /*! \fn     csignal_error_code csignal_get_gold_code  (
               gold_code*  io_gold_code,
-              UINT32      in_number_of_code_bits,
-              UINT32*     out_size,
+              USIZE       in_number_of_code_bits,
+              USIZE*      out_size,
               UCHAR**     out_code
             )
     \brief  Gets the next in_number_of_bits from the gold code sequence
@@ -131,8 +131,8 @@ csignal_destroy_gold_code (
 csignal_error_code
 csignal_get_gold_code  (
                         gold_code*  io_gold_code,
-                        UINT32      in_number_of_code_bits,
-                        UINT32*     out_size,
+                        USIZE       in_number_of_code_bits,
+                        USIZE*      out_size,
                         UCHAR**     out_code
                         );
 

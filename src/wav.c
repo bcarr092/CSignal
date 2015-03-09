@@ -120,15 +120,37 @@ csignal_convert_int_to_little_endian  (
 csignal_error_code
 csignal_write_LPCM_wav  (
                          CHAR*    in_file_name,
-                         UINT16   in_number_of_channels,
+                         USIZE    in_number_of_channels,
                          UINT32   in_sample_rate,
-                         UINT32   in_number_of_samples,
+                         USIZE    in_number_of_samples,
                          INT16**  in_samples
                          )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
   
-  if( ! cpc_check_if_file_exists( in_file_name ) )
+  if( cpc_check_if_file_exists( in_file_name ) )
+  {
+    CPC_ERROR( "File (%s) exists, cannot overwrite.", in_file_name );
+    
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+  }
+  else if (
+           in_number_of_channels > MAX_UINT16
+           || in_number_of_samples > MAX_UINT32
+           )
+  {
+    CPC_ERROR (
+               "Number of channels (0x%x) must be smaller than 0x%x and"
+               " number of samples (0x%x) must be smaller than 0x$x.",
+               in_number_of_channels,
+               MAX_UINT16,
+               in_number_of_samples,
+               MAX_UINT32
+               );
+    
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+  }
+  else
   {
     FILE* file_pointer = fopen( in_file_name, "wb" );
     
@@ -170,12 +192,6 @@ csignal_write_LPCM_wav  (
       
       return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
     }
-  }
-  else
-  {
-    CPC_ERROR( "File (%s) exists, cannot overwrite.", in_file_name );
-    
-    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
   }
   
   return( return_value );

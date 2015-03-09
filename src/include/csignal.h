@@ -38,7 +38,7 @@ typedef struct csignal_symbol_tracker_t
       \brief  A pointer to the buffer that will be read from in the next
               invocation of csignal_read_symbol
    */
-  UINT32 byte_offset;
+  USIZE byte_offset;
   
   /*! \var    bit_offset
       \brief  A pointer to the bit in current_byte that will be read from in
@@ -99,7 +99,7 @@ csignal_destroy_symbol_tracker  (
 
 /*! \fn     csignal_error_code csignal_get_symbol  (
               csignal_symbol_tracker*  in_symbol_tracker,
-              UINT32                   in_number_of_bits,
+              USIZE                    in_number_of_bits,
               UINT32*                  out_symbol
             )
     \brief  Returns a symbol from the symbol tracker of lenght in_number_of_bits
@@ -129,7 +129,7 @@ csignal_destroy_symbol_tracker  (
 csignal_error_code
 csignal_get_symbol  (
                      csignal_symbol_tracker*  in_symbol_tracker,
-                     UINT32                   in_number_of_bits,
+                     USIZE                    in_number_of_bits,
                      UINT32*                  out_symbol
                      );
 
@@ -189,7 +189,7 @@ csignal_modulate_symbol (
                          UINT32   in_symbol,
                          UINT32   in_constellation_size,
                          UINT32   in_sample_rate,
-                         UINT32   in_symbol_duration,
+                         USIZE    in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
                          INT16*   out_signal
@@ -198,7 +198,7 @@ csignal_modulate_symbol (
 /*! \fn     csignal_error_code csignal_spread_signal (
               gold_code* io_gold_code,
               UINT32     in_chip_duration,
-              UINT32     in_signal_size,
+              USIZE      in_signal_size,
               INT16*     io_signal
             )
     \brief  This function will spread the signal in io_signal according to the
@@ -224,7 +224,7 @@ csignal_error_code
 csignal_spread_signal (
                        gold_code* io_gold_code,
                        UINT32     in_chip_duration,
-                       UINT32     in_signal_size,
+                       USIZE      in_signal_size,
                        INT16*     io_signal
                        );
 
