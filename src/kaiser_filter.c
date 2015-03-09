@@ -61,9 +61,9 @@ csignal_set_kaiser_impulse_response  (
                                       );
 
 /*! \fn     csignal_error_code csignal_set_kaiser_weights  (
-              FLOAT32              in_first_cutoff_frequency,
-              FLOAT32              in_second_cutoff_frequency,
-              FLOAT32              in_alpha,
+              FLOAT64              in_first_cutoff_frequency,
+              FLOAT64              in_second_cutoff_frequency,
+              FLOAT64              in_alpha,
               fir_passband_filter* io_filter
             )
     \brief  Calculates and sets the weights of the impulse response.
@@ -86,9 +86,9 @@ csignal_set_kaiser_impulse_response  (
  */
 csignal_error_code
 csignal_set_kaiser_weights  (
-                             FLOAT32              in_first_cutoff_frequency,
-                             FLOAT32              in_second_cutoff_frequency,
-                             FLOAT32              in_alpha,
+                             FLOAT64              in_first_cutoff_frequency,
+                             FLOAT64              in_second_cutoff_frequency,
+                             FLOAT64              in_alpha,
                              fir_passband_filter* io_filter
                              );
 
@@ -216,18 +216,29 @@ csignal_set_kaiser_impulse_response  (
   }
   else
   {
-    FLOAT32 delta_f =
+    FLOAT64 delta_f =
       CPC_MIN (
                FLOAT32,
                ( in_first_passband - in_first_stopband ),
                ( in_second_stopband - in_second_passband )
                );
     
-    FLOAT32 cutoff_a = in_first_passband - ( 0.5 * delta_f );
-    FLOAT32 cutoff_b = in_second_passband + ( 0.5 * delta_f );
+    FLOAT64 cutoff_a = in_first_passband - ( 0.5 * delta_f );
+    FLOAT64 cutoff_b = in_second_passband + ( 0.5 * delta_f );
     
-    FLOAT32 w_a = ( 2 * M_PI * cutoff_a ) / ( 1.0 * in_sampling_frequency );
-    FLOAT32 w_b = ( 2 * M_PI * cutoff_b ) / ( 1.0 * in_sampling_frequency );
+    FLOAT64 w_a = ( 2 * M_PI * cutoff_a ) / ( 1.0 * in_sampling_frequency );
+    FLOAT64 w_b = ( 2 * M_PI * cutoff_b ) / ( 1.0 * in_sampling_frequency );
+    
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "pi=%.40f", M_PI );
+    
+    CPC_LOG (
+             CPC_LOG_LEVEL_TRACE,
+             "f_a=%.20f, w_a=%.20f, f_b=%.20f, w_b=%.20f",
+             cutoff_a,
+             w_a,
+             cutoff_b,
+             w_b
+             );
     
     CPC_LOG (
              CPC_LOG_LEVEL_TRACE,
@@ -240,15 +251,15 @@ csignal_set_kaiser_impulse_response  (
              w_b
              );
     
-    FLOAT32 delta_passband =
-      ( CPC_POW( FLOAT32, 10, in_passband_attenuation / 20.0 ) - 1 )
-      / ( CPC_POW( FLOAT32, 10, in_passband_attenuation / 20.0 ) + 1 );
-    FLOAT32 delta_stopband =
-      CPC_POW( FLOAT32, 10, ( -1.0 * in_stopband_attenuation ) / 20.0 );
+    FLOAT64 delta_passband =
+      ( CPC_POW( FLOAT64, 10, in_passband_attenuation / 20.0 ) - 1 )
+      / ( CPC_POW( FLOAT64, 10, in_passband_attenuation / 20.0 ) + 1 );
+    FLOAT64 delta_stopband =
+      CPC_POW( FLOAT64, 10, ( -1.0 * in_stopband_attenuation ) / 20.0 );
     
-    FLOAT32 delta = CPC_MIN( FLOAT32, delta_passband, delta_stopband );
+    FLOAT64 delta = CPC_MIN( FLOAT64, delta_passband, delta_stopband );
     
-    FLOAT32 attenuation = -20 * CPC_LOGARITHM_10( FLOAT32, delta );
+    FLOAT64 attenuation = -20 * CPC_LOGARITHM_10( FLOAT64, delta );
     
     CPC_LOG (
              CPC_LOG_LEVEL_TRACE,
@@ -260,8 +271,8 @@ csignal_set_kaiser_impulse_response  (
              attenuation
              );
     
-    FLOAT32 alpha             = 0;
-    FLOAT32 transition_width  = 0;
+    FLOAT64 alpha             = 0;
+    FLOAT64 transition_width  = 0;
     UINT32 number_of_taps     = 0;
     
     if( 50 <= attenuation )
@@ -271,7 +282,7 @@ csignal_set_kaiser_impulse_response  (
     else if( 21 <= attenuation && 50 > attenuation )
     {
       alpha =
-        0.5842 * CPC_POW( FLOAT32, attenuation - 21, 0.4 ) + 0.07886
+        0.5842 * CPC_POW( FLOAT64, attenuation - 21, 0.4 ) + 0.07886
         * ( attenuation - 21 );
     }
     
@@ -286,7 +297,7 @@ csignal_set_kaiser_impulse_response  (
     
     number_of_taps =
       CPC_CEIL  (
-                 FLOAT32,
+                 FLOAT64,
                  ( transition_width * in_sampling_frequency ) / delta_f + 1
                  );
     
@@ -336,9 +347,9 @@ csignal_set_kaiser_impulse_response  (
 
 csignal_error_code
 csignal_set_kaiser_weights  (
-                             FLOAT32              in_first_cutoff_frequency,
-                             FLOAT32              in_second_cutoff_frequency,
-                             FLOAT32              in_alpha,
+                             FLOAT64              in_first_cutoff_frequency,
+                             FLOAT64              in_second_cutoff_frequency,
+                             FLOAT64              in_alpha,
                              fir_passband_filter* io_filter
                              )
 {
@@ -375,14 +386,14 @@ csignal_set_kaiser_weights  (
     
     for( INT32 i = 0; i < io_filter->number_of_taps; i++ )
     {
-      FLOAT32 numerator =
+      FLOAT64 numerator =
         ( in_alpha * CPC_SQRT( FLOAT32, i * ( 2 * middle_tap - i ) ) )
         / middle_tap;
       
-      FLOAT32 window_coefficient =
+      FLOAT64 window_coefficient =
         cpc_bessel_i0( numerator ) / cpc_bessel_i0( in_alpha );
       
-      FLOAT32 filter_coefficient = 0;
+      FLOAT64 filter_coefficient = 0;
       
       if( i != middle_tap )
       {
@@ -407,6 +418,23 @@ csignal_set_kaiser_weights  (
                window_coefficient,
                filter_coefficient,
                io_filter->coefficients[ i ]
+               );
+      
+      CPC_LOG (
+               CPC_LOG_LEVEL_TRACE,
+               "w_a=%.20f, w_b=%.20f",
+               in_first_cutoff_frequency,
+               in_second_cutoff_frequency
+               );
+      
+      CPC_LOG (
+               CPC_LOG_LEVEL_TRACE,
+               "%.20f -> %.20f, %.20f -> %.20f, %.20f",
+               in_second_cutoff_frequency * ( ( i - middle_tap ) * 1.0 ),
+               sin( in_second_cutoff_frequency * ( ( i - middle_tap ) * 1.0 ) ),
+               in_first_cutoff_frequency * ( ( i - middle_tap ) * 1.0 ),
+               sin( in_first_cutoff_frequency * ( ( i - middle_tap ) * 1.0 ) ),
+               M_PI * ( ( i - middle_tap ) * 1.0 )
                );
     }
   }

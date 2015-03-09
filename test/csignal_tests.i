@@ -4,6 +4,105 @@
 
 #include <csignal.h>
 
+/*! \fn     static PyObject* python_fft  (
+              PyObject* in_signal
+            )
+    \brief  Calculates the FFT of in_signal and returns a list of complex
+            values in the return value. See the function definition for
+            csignal_calculated_FFT for more details on return codes.
+
+    \return A list of Python Complex values is returned or None if an error
+            occurrs.
+ */
+static PyObject*
+python_fft  (
+  PyObject* in_signal
+            )
+{
+  if( ! PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
+  {
+    CPC_LOG_STRING  (
+      CPC_LOG_LEVEL_ERROR,
+      "Signal must be a list with elements."
+                    );
+
+    Py_RETURN_NONE;
+  }
+  else
+  {
+    SSIZE size    = PyList_Size( in_signal ); 
+    INT16* signal = NULL;
+
+    csignal_error_code return_value =
+      cpc_safe_malloc( ( void** ) &signal, sizeof( INT16 ) * size );
+
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      for( UINT32 i = 0; i < size; i++ )
+      {
+        if( PyInt_Check( PyList_GetItem( in_signal, i ) ) )
+        {
+          signal[ i ] = PyInt_AsLong( PyList_GetItem( in_signal, i ) );
+        }
+        else
+        {
+          CPC_ERROR( "Entry 0x%x is not an integer.", i );
+
+          return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+        }
+      }
+
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        UINT32 fft_length = 0;
+        FLOAT32* fft      = NULL;
+
+        return_value = csignal_calculate_FFT( size, signal, &fft_length, &fft );
+
+        if( CPC_ERROR_CODE_NO_ERROR == return_value )
+        {
+          PyObject* fft_list = PyList_New( fft_length / 2 );
+
+          if( NULL == fft_list )
+          {
+            cpc_safe_free( ( void** ) &fft );
+
+            Py_RETURN_NONE;
+          }
+          else
+          {
+            for( UINT32 i = 0; i < fft_length; i += 2 )
+            {
+              PyObject* complex =
+                PyComplex_FromDoubles( fft[ i ], fft[ i + 1 ] );
+
+              if( 0 != PyList_SetItem ( fft_list, ( i / 2 ), complex ) )
+              {
+                PyErr_Print();
+              }
+            }
+
+            cpc_safe_free( ( void** ) &fft );
+
+            if( PyList_Check( fft_list ) )
+            {
+              return( fft_list);
+            }
+            else
+            {
+              CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+  
+              Py_RETURN_NONE;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  Py_RETURN_NONE;
+}
+
 /*! \fn     static PyObject* python_filter_signal  (
               fir_passband_filter*  in_filter,
               PyObject*             in_signal
@@ -190,17 +289,7 @@ python_initialize_kaiser_filter (
         &filter
                                         );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
-    {
-      CPC_LOG_BUFFER_FLOAT32  (
-        CPC_LOG_LEVEL_TRACE,
-        "Coefficients:",
-        filter->coefficients,
-        filter->number_of_taps,
-        8
-                              );
-    }
-    else
+    if( CPC_ERROR_CODE_NO_ERROR != return_value )
     {
       CPC_ERROR( "Could not initialize kaiser filter: 0x%x.", return_value );
 
@@ -589,7 +678,7 @@ python_spread_signal  (
 
         CPC_LOG_BUFFER  (
           CPC_LOG_LEVEL_TRACE,
-          "Signal",
+          "Spread signal",
           ( UCHAR* ) signal,
           sizeof( INT16 ) * size,
           8

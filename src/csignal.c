@@ -345,6 +345,8 @@ csignal_spread_signal (
       INT16* spreading_signal = NULL;
       UINT32 signal_offset    = 0;
       
+      CPC_LOG_BUFFER( CPC_LOG_LEVEL_DEBUG, "Code:", code, size, 8 );
+      
       return_value =
         cpc_safe_malloc (
                          ( void** ) &spreading_signal,

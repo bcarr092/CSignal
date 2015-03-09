@@ -6,6 +6,7 @@ import types
 import os
 import tempfile
 import re
+import math
 
 def touch_random_file():
   file_handle = tempfile.NamedTemporaryFile()
@@ -15,6 +16,173 @@ def touch_random_file():
   return( file_handle, file_name )
 
 class TestsCSignal( unittest.TestCase ):
+  def test_filter( self ):
+    sample_rate     = 48000
+
+    first_stopband  = 19000
+    first_passband  = 20000
+    second_passband = 22000
+    second_stopband = 23000
+
+    passband_attenuation = 0.1
+    stopband_attenuation = 80
+
+    signal = []
+
+    for _ in range( 48000 ):
+      signal.append( int( 32767 * random.normalvariate( 0, 1 ) ) )
+
+    filter    = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
+
+    """
+    file_handle = open( 'signal_before.dat', 'w' )
+
+    for sample in signal:
+      file_handle.write( "%d\n" %( sample ) )
+
+    file_handle.close()
+    """
+
+    signal = csignal_tests.python_filter_signal( filter, signal )
+
+    self.assertNotEquals( signal, None )
+
+    """
+    file_handle = open( 'signal_after.dat', 'w' )
+
+    for sample in signal:
+      file_handle.write( "%d\n" %( sample ) )
+
+    file_handle.close()
+    """
+
+  def test_fft( self ):
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32767
+    carrier_frequency   = 21000
+    symbol_duration     = 48000
+    chip_duration       = 48
+
+    first_stopband  = 19000
+    first_passband  = 20000
+    second_passband = 22000
+    second_stopband = 23000
+
+    passband_attenuation = 10 
+    stopband_attenuation = 80
+
+    gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x12345678, 0x12345678 )
+    filter    = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
+
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 1 ) )
+    
+    symbol_tracker = csignal_tests.python_intialize_symbol_tracker( data )
+
+    self.assertNotEquals( symbol_tracker, None )
+
+    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    self.assertNotEquals( symbol, None )
+
+    signal = []
+
+    while( symbol != None ):
+      part = csignal_tests.python_modulate_symbol (
+          symbol,
+          constellation_size,
+          sample_rate,
+          symbol_duration,
+          baseband_amplitude,
+          carrier_frequency
+                                                    )
+
+      self.assertNotEquals( part, None )
+      self.assertEquals( len( part ), symbol_duration )
+
+      part = csignal_tests.python_spread_signal (
+          gold_code,
+          chip_duration,
+          part
+                                                  )
+    
+      self.assertNotEquals( part, None )
+      self.assertEquals( len( part ), symbol_duration )
+
+      signal = signal + part
+
+      self.assertNotEquals( signal, None )
+
+      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    file_handle = open( 'signal_before.dat', 'w' )
+
+    for sample in signal:
+      file_handle.write( "%d\n" %( sample ) )
+
+    file_handle.close()
+
+    signal = csignal_tests.python_filter_signal( filter, signal )
+
+    self.assertNotEquals( signal, None )
+
+    file_handle = open( 'signal_after.dat', 'w' )
+
+    for sample in signal:
+      file_handle.write( "%d\n" %( sample ) )
+
+    file_handle.close()
+
+    fft = csignal_tests.python_fft( signal )
+
+    self.assertNotEquals( fft, None )
+
+    fft_mag = map( lambda x: abs( x ), fft )
+
+    N = len( fft_mag )
+    delta = 1.0 / sample_rate
+
+    max_value = -1
+
+    for magnitude in fft_mag:
+      if( magnitude > max_value ):
+        max_value = magnitude
+    
+    fft_mag = map( lambda x: 10**-12 if x == 0 else x, fft_mag )
+    fft_mag = map( lambda x: 10 * math.log10( x / max_value ), fft_mag )
+
+    print "Length of signal is %d, N is %d." %( len( signal ), N )
+    print "Length of fft is %d, sampling rate is %d Hz." %( len( fft_mag ), sample_rate )
+    print "Delta (sample interval) is %.6f s, frequency interval is %.2f Hz." %( delta, 1.0 / ( delta * N ) )
+    print "Max magnitude is %.2f. Max frequency is %.2f Hz" %( max_value, ( N / 2 ) * ( 1.0 / ( delta * N ) ) )
+
+    file_handle = open( 'test.dat', 'w' )
+
+    for index in range( len( fft_mag ) ):
+      if( index > ( N / 2 ) ):
+        n = index - N
+      else:
+        n = index
+
+      file_handle.write( "%.2f\t%.2f\n" %( n / ( delta * N ), fft_mag[ index ] ) )
+
+    file_handle.close()
+
+    samples = [ signal ]
+
+    os.unlink( '/tmp/test.WAV' )
+
+    error = csignal_tests.python_write_LPCM_wav (
+      '/tmp/test.WAV',
+      len( samples ), 
+      sample_rate,
+      len( signal ),
+      samples
+                                                )
+
+    self.assertEquals( error, csignal_tests.CPC_TRUE )
+
   def test_filter_signal( self ): 
     bits_per_symbol     = 8
     constellation_size  = 2 ** bits_per_symbol

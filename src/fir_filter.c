@@ -42,7 +42,7 @@ csignal_initialize_passband_filter (
     return_value =
       cpc_safe_malloc (
                        ( void** ) &( out_filter->coefficients ),
-                       sizeof( FLOAT32 ) * in_number_of_taps
+                       sizeof( FLOAT64 ) * in_number_of_taps
                        );
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
@@ -142,22 +142,24 @@ csignal_filter_signal (
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
-      *out_filtered_signal_length = in_signal_length + in_filter->number_of_taps;
+      *out_filtered_signal_length =
+        in_signal_length + in_filter->number_of_taps;
       
       for( INT32 i = 0; i < *out_filtered_signal_length; i++ )
       {
-        FLOAT32 value = 0;
+        FLOAT64 value = 0;
         
-        for( INT32 j = 0; j < in_filter->number_of_taps; j++ )
+        INT32 min =
+          ( i >= in_filter->number_of_taps - 1 )
+          ? i - ( in_filter->number_of_taps - 1 ) : 0;
+        
+        INT32 max = ( i < in_signal_length - 1 ) ? i : in_signal_length - 1 ;
+        
+        for( INT32 j = min; j <= max; j++ )
         {
-          INT16 signal_value = 0;
+          FLOAT64 signal_value = in_signal[ j ] * 1.0;
           
-          if( ( i - j ) >= 0 && ( i - j ) < in_signal_length )
-          {
-            signal_value = in_signal[ ( i -  j ) ];
-          }
-          
-          value += ( signal_value * 1.0 ) * in_filter->coefficients[ j ];
+          value += signal_value * in_filter->coefficients[ i - j ];
         }
         
         if( MAX_INT16 < value )
@@ -170,7 +172,7 @@ csignal_filter_signal (
         }
         else
         {
-          ( *out_filtered_signal )[ i ] = ( INT16 ) value;
+          ( *out_filtered_signal )[ i ] = ( INT16 ) CPC_ROUND( FLOAT64, value );
         }
       }
     }

@@ -13,6 +13,7 @@
 #include "gold_code.h"
 #include "fir_filter.h"
 #include "kaiser_filter.h"
+#include "fft.h"
 
 #include "csignal_error_codes.h"
 

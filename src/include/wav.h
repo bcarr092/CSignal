@@ -72,6 +72,7 @@
     \param  in_number_of_channels The length of in_samples. There must be a
                                   data stream for each channel.
     \param  in_sample_rate  The sample rate that the samples were generated at.
+    \param  in_number_of_samples  The number of samples in each channel buffer.
     \param  in_samples  The samples array it is an in_number_of_channels X
                         in_samples data buffer.
     \param  Returns NO_ERROR upon succesful execution or one of these errors:

@@ -87,7 +87,7 @@ typedef struct fir_passband_filter_t
   /*! \var    coefficients
       \brief  The values of the impulse response.
    */
-  FLOAT32*  coefficients;
+  FLOAT64*  coefficients;
   
 } fir_passband_filter;
 
@@ -99,7 +99,7 @@ typedef struct fir_passband_filter_t
               fir_passband_filter*  out_filter
             )
     \brief  Initializes a fir_passband_filter struct with the passed in values.
-            Mallocs enough FLOAT32 values in the coefficients member to hold
+            Mallocs enough FLOAT64 values in the coefficients member to hold
             in_number_of_taps values and initializes them to zero. Validates
             the input parameters as well.
  
