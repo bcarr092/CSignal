@@ -29,7 +29,7 @@
                             equal to in_signal_length. It is 2x larger because
                             a real and imaginary component are returned in
                             adjacent indices in out_fft.
-    \param  out_fft  The FFT of in_signal. The positive frequency components are
+    \param  out_fft The FFT of in_signal. The positive frequency components are
                     returned first starting with DC f=0Hz all the way up to the
                     sampling rate that in_signal was generated at divided by 2.
                     Then the negative freqeuncy components follow.

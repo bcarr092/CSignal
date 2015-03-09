@@ -121,6 +121,14 @@ csignal_calculate_FFT (
     *out_fft_length =
       csignal_calculate_closest_power_of_two( in_signal_length ) * 2;
     
+    CPC_LOG (
+             CPC_LOG_LEVEL_DEBUG,
+             "Power of 2 is %d (%d), length is %d.",
+             csignal_calculate_closest_power_of_two( in_signal_length ),
+             in_signal_length,
+             *out_fft_length
+             );
+    
     return_value =
       cpc_safe_malloc (
                        ( void** ) out_fft,
@@ -269,29 +277,31 @@ csignal_calculate_closest_power_of_two  (
                                          USIZE in_number
                                          )
 {
-  FLOAT32 number  = ( in_number * 1.0 );
-  UINT32 exponent = ( UINT32 )
-    CPC_LOGARITHM_10( FLOAT32, in_number ) / CPC_LOGARITHM_10( FLOAT32, 2.0 );
+  FLOAT64 number  = ( in_number * 1.0 );
+  FLOAT64 exponent  =
+    CPC_LOGARITHM_10( FLOAT64, number ) / CPC_LOGARITHM_10( FLOAT64, 2.0 );
   
   CPC_LOG (
-           CPC_LOG_LEVEL_TRACE,
-           "Number is 0x%x, exponent is 0x%x.",
-           in_number,
+           CPC_LOG_LEVEL_DEBUG,
+           "Number is %.2lf, exponent is (%.6f / %.6f) %.6f.",
+           number,
+           CPC_LOGARITHM_10( FLOAT64, number ),
+           CPC_LOGARITHM_10( FLOAT64, 2.0 ),
            exponent
            );
   
-  if( CPC_POW( FLOAT32, 2.0, exponent ) != number )
+  if( CPC_POW( FLOAT64, 2.0, CPC_FLOOR( FLOAT64, exponent ) ) != number )
   {
-    number = CPC_POW( FLOAT32, 2.0, ( exponent + 1 ) );
+    number = CPC_POW( FLOAT64, 2.0, CPC_CEIL( FLOAT64, exponent ) );
   }
   
   CPC_LOG (
-           CPC_LOG_LEVEL_TRACE,
-           "Number is 0x%x, exponent is 0x%x, next power is 0x%x-%e.",
+           CPC_LOG_LEVEL_DEBUG,
+           "Starting number is %d, exponent is %.2f, next power is %.2lf (%d).",
            in_number,
            exponent,
-           ( UINT32 ) number,
-           number
+           number,
+           ( USIZE ) number
            );
   
   return( ( USIZE ) number );
