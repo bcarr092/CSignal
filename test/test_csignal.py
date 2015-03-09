@@ -16,8 +16,14 @@ def touch_random_file():
   return( file_handle, file_name )
 
 class TestsCSignal( unittest.TestCase ):
-  def test_filter( self ):
-    sample_rate     = 48000
+  def test_fft( self ):
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32767
+    carrier_frequency   = 21000
+    symbol_duration     = 24000
+    chip_duration       = 24 
 
     first_stopband  = 19000
     first_passband  = 20000
@@ -27,56 +33,10 @@ class TestsCSignal( unittest.TestCase ):
     passband_attenuation = 0.1
     stopband_attenuation = 80
 
-    signal = []
-
-    for _ in range( 48000 ):
-      signal.append( 32767 * random.normalvariate( 0, 1 ) )
-
-    filter    = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
-
-    """
-    file_handle = open( 'signal_before.dat', 'w' )
-
-    for sample in signal:
-      file_handle.write( "%d\n" %( sample ) )
-
-    file_handle.close()
-    """
-
-    signal = csignal_tests.python_filter_signal( filter, signal )
-
-    self.assertNotEquals( signal, None )
-
-    """
-    file_handle = open( 'signal_after.dat', 'w' )
-
-    for sample in signal:
-      file_handle.write( "%d\n" %( sample ) )
-
-    file_handle.close()
-    """
-
-  def test_fft( self ):
-    bits_per_symbol     = 8
-    constellation_size  = 2 ** bits_per_symbol
-    sample_rate         = 48000
-    baseband_amplitude  = 32767
-    carrier_frequency   = 21000
-    symbol_duration     = 48000
-    chip_duration       = 48
-
-    first_stopband  = 19000
-    first_passband  = 20000
-    second_passband = 22000
-    second_stopband = 23000
-
-    passband_attenuation = 10 
-    stopband_attenuation = 80
-
     gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x12345678, 0x12345678 )
     filter    = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
 
-    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 1 ) )
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
     
     symbol_tracker = csignal_tests.python_intialize_symbol_tracker( data )
 
@@ -96,7 +56,7 @@ class TestsCSignal( unittest.TestCase ):
           symbol_duration,
           baseband_amplitude,
           carrier_frequency
-                                                    )
+                                                            )
 
       self.assertNotEquals( part, None )
       self.assertEquals( len( part ), symbol_duration )
@@ -105,7 +65,7 @@ class TestsCSignal( unittest.TestCase ):
           gold_code,
           chip_duration,
           part
-                                                  )
+                                                )
     
       self.assertNotEquals( part, None )
       self.assertEquals( len( part ), symbol_duration )
@@ -116,21 +76,22 @@ class TestsCSignal( unittest.TestCase ):
 
       symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
 
-    file_handle = open( 'signal_before.dat', 'w' )
-
-    for sample in signal:
-      file_handle.write( "%d\n" %( sample ) )
-
-    file_handle.close()
-
     signal = csignal_tests.python_filter_signal( filter, signal )
 
     self.assertNotEquals( signal, None )
 
+    signal_max = -1;
+
+    for sample in signal:
+      if( abs( sample ) > signal_max ):
+        signal_max = abs( sample )
+
+    signal = map( lambda x: x / signal_max, signal )
+
     file_handle = open( 'signal_after.dat', 'w' )
 
     for sample in signal:
-      file_handle.write( "%d\n" %( sample ) )
+      file_handle.write( "%e\n" %( sample ) )
 
     file_handle.close()
 
@@ -165,7 +126,7 @@ class TestsCSignal( unittest.TestCase ):
       else:
         n = index
 
-      file_handle.write( "%.2f\t%.2f\n" %( n / ( delta * N ), fft_mag[ index ] ) )
+      file_handle.write( "%e\t%e\n" %( n / ( delta * N ), fft_mag[ index ] ) )
 
     file_handle.close()
 
@@ -174,7 +135,7 @@ class TestsCSignal( unittest.TestCase ):
     if( os.path.exists( '/tmp/test.WAV' ) ):
       os.unlink( '/tmp/test.WAV' )
 
-    error = csignal_tests.python_write_LPCM_wav (
+    error = csignal_tests.python_write_FLOAT_wav (
       '/tmp/test.WAV',
       len( samples ), 
       sample_rate,
@@ -183,6 +144,55 @@ class TestsCSignal( unittest.TestCase ):
                                                 )
 
     self.assertEquals( error, csignal_tests.CPC_TRUE )
+
+  def test_filter( self ):
+    sample_rate     = 48000
+
+    first_stopband  = 19000
+    first_passband  = 20000
+    second_passband = 22000
+    second_stopband = 23000
+
+    passband_attenuation = 0.1
+    stopband_attenuation = 80
+
+    signal = []
+
+    for i in range( 100 ):
+      part = []
+
+      for j in range( 200 ):
+        part.append( 32767 * random.normalvariate( 0, 1 ) )
+
+      #part = csignal_tests.python_fft_filter( first_passband, second_passband, sample_rate, part )
+
+      #self.assertNotEquals( part, None )
+
+      signal = signal + part
+
+      self.assertNotEquals( signal, None )
+
+    signal_max = -1;
+
+    for sample in signal:
+      if( abs( sample ) > signal_max ):
+        signal_max = abs( sample )
+
+
+    signal = map( lambda x: x / signal_max, signal )
+
+    filter    = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
+
+    signal = csignal_tests.python_filter_signal( filter, signal )
+
+    self.assertNotEquals( signal, None )
+
+    file_handle = open( 'signal.dat', 'w' )
+
+    for sample in signal:
+      file_handle.write( "%e\n" %( sample ) )
+
+    file_handle.close()
 
   def test_filter_signal( self ): 
     bits_per_symbol     = 8
@@ -262,7 +272,7 @@ class TestsCSignal( unittest.TestCase ):
 
     samples = [ signal, signal ]
 
-    error = csignal_tests.python_write_LPCM_wav (
+    error = csignal_tests.python_write_FLOAT_wav (
       file_name,
       len( samples ),
       sample_rate,
@@ -334,7 +344,7 @@ class TestsCSignal( unittest.TestCase ):
 
     samples = [ signal, signal ]
 
-    error = csignal_tests.python_write_LPCM_wav (
+    error = csignal_tests.python_write_FLOAT_wav (
       file_name,
       len( samples ),
       sample_rate,
@@ -677,7 +687,7 @@ class TestsCSignal( unittest.TestCase ):
 
     samples = [ signal, signal ]
 
-    error = csignal_tests.python_write_LPCM_wav (
+    error = csignal_tests.python_write_FLOAT_wav (
       file_name,
       len( samples ),
       sample_rate,
@@ -715,7 +725,7 @@ class TestsCSignal( unittest.TestCase ):
 
     ( file_handle, file_name ) = touch_random_file()
 
-    error = csignal_tests.python_write_LPCM_wav (
+    error = csignal_tests.python_write_FLOAT_wav (
       file_name,
       len( samples ),
       sample_rate,
@@ -727,7 +737,7 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( error, csignal_tests.CPC_FALSE )
 
-    error = csignal_tests.python_write_LPCM_wav (
+    error = csignal_tests.python_write_FLOAT_wav (
       "/test.WAV",
       len( samples ),
       sample_rate,
@@ -767,7 +777,7 @@ class TestsCSignal( unittest.TestCase ):
 
     samples = [ signal, signal ]
 
-    error = csignal_tests.python_write_LPCM_wav (
+    error = csignal_tests.python_write_FLOAT_wav (
       file_name,
       len( samples ),
       sample_rate,

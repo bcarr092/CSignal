@@ -699,22 +699,22 @@ python_spread_signal  (
   Py_RETURN_NONE;
 }
 
-/*! \fn     int python_write_LPCM_wav (
+/*! \fn     int python_write_FLOAT_wav (
                         PyObject* in_file_name,
                         size_t    in_number_of_channels,
                         int       in_sample_rate,
                         size_t    in_number_of_samples,
                         PyObject* in_samples
                                       )
-    \brief  The python wrapper for the csignal_write_LPCM_wav function. For
+    \brief  The python wrapper for the csignal_write_FLOAT_wav function. For
             a complete description of the parameters please see the
-            documentation for csignal_write_LPCM_wav.
+            documentation for csignal_write_FLOAT_wav.
 
     \return CPC_TRUE if the WAV file was successfully created, CPC_FALSE
             otherwise.
  */
 int
-python_write_LPCM_wav (
+python_write_FLOAT_wav (
                         PyObject* in_file_name,
                         size_t    in_number_of_channels,
                         int       in_sample_rate,
@@ -722,7 +722,7 @@ python_write_LPCM_wav (
                         PyObject* in_samples
                       )
 {
-  INT16** samples       = NULL;
+  FLOAT64** samples     = NULL;
   CPC_BOOL return_value = CPC_TRUE;
 
   if  (
@@ -819,7 +819,7 @@ python_write_LPCM_wav (
     cpc_error_code error =
       cpc_safe_malloc (
         ( void** ) &samples,
-        sizeof( INT16* ) * in_number_of_channels
+        sizeof( FLOAT64* ) * in_number_of_channels
                       );
 
     if( CPC_ERROR_CODE_NO_ERROR == error )
@@ -829,7 +829,7 @@ python_write_LPCM_wav (
         error =
           cpc_safe_malloc (
             ( void** ) &( samples[ i ] ),
-            sizeof( INT16 ) * in_number_of_samples
+            sizeof( FLOAT64 ) * in_number_of_samples
                           );
 
         if( CPC_ERROR_CODE_NO_ERROR == error )
@@ -839,7 +839,7 @@ python_write_LPCM_wav (
             PyObject* number =
               PyList_GetItem( PyList_GetItem( in_samples, i ), j );
 
-            samples[ i ][ j ] = ( INT16 ) PyFloat_AsDouble( number );
+            samples[ i ][ j ] = PyFloat_AsDouble( number );
           }
         }
         else
@@ -861,7 +861,7 @@ python_write_LPCM_wav (
   if( return_value )
   {
     csignal_error_code error =
-      csignal_write_LPCM_wav  (
+      csignal_write_FLOAT_wav  (
         PyString_AsString( in_file_name ),
         in_number_of_channels,
         in_sample_rate,
@@ -871,7 +871,7 @@ python_write_LPCM_wav (
 
     if( error )
     {
-      CPC_ERROR( "Could not write LPCM WAV file: 0x%x.", error );
+      CPC_ERROR( "Could not write FLOAT WAV file: 0x%x.", error );
 
       return_value = CPC_FALSE;
     }

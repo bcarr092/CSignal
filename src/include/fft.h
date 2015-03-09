@@ -47,4 +47,5 @@ csignal_calculate_FFT (
                        FLOAT64**  out_fft
                        );
 
+
 #endif  /*  __FFT_H__ */
