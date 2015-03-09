@@ -4,7 +4,7 @@
 
 #include <csignal.h>
 
-/*! \fn     static PyObject* python_fft  (
+/*! \fn     static PyObject* python_calculate_FFT  (
               PyObject* in_signal
             )
     \brief  Calculates the FFT of in_signal and returns a list of complex
@@ -15,9 +15,9 @@
             occurrs.
  */
 static PyObject*
-python_fft  (
+python_calculate_FFT  (
   PyObject* in_signal
-            )
+                      )
 {
   if( ! PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
   {
@@ -30,19 +30,19 @@ python_fft  (
   }
   else
   {
-    SSIZE size    = PyList_Size( in_signal ); 
-    INT16* signal = NULL;
+    SSIZE size      = PyList_Size( in_signal ); 
+    FLOAT64* signal = NULL;
 
     csignal_error_code return_value =
-      cpc_safe_malloc( ( void** ) &signal, sizeof( INT16 ) * size );
+      cpc_safe_malloc( ( void** ) &signal, sizeof( FLOAT64 ) * size );
 
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
       for( UINT32 i = 0; i < size; i++ )
       {
-        if( PyInt_Check( PyList_GetItem( in_signal, i ) ) )
+        if( PyFloat_Check( PyList_GetItem( in_signal, i ) ) )
         {
-          signal[ i ] = PyInt_AsLong( PyList_GetItem( in_signal, i ) );
+          signal[ i ] = PyFloat_AsDouble( PyList_GetItem( in_signal, i ) );
         }
         else
         {
@@ -55,7 +55,7 @@ python_fft  (
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
         USIZE fft_length  = 0;
-        FLOAT32* fft      = NULL;
+        FLOAT64* fft      = NULL;
 
         return_value = csignal_calculate_FFT( size, signal, &fft_length, &fft );
 
@@ -135,19 +135,19 @@ python_filter_signal  (
   }
   else
   {
-    SSIZE size    = PyList_Size( in_signal ); 
-    INT16* signal = NULL;
+    USIZE size      = PyList_Size( in_signal ); 
+    FLOAT64* signal = NULL;
 
     csignal_error_code return_value =
-      cpc_safe_malloc( ( void** ) &signal, sizeof( INT16 ) * size );
+      cpc_safe_malloc( ( void** ) &signal, sizeof( FLOAT64 ) * size );
 
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
-      for( UINT32 i = 0; i < size; i++ )
+      for( USIZE i = 0; i < size; i++ )
       {
-        if( PyInt_Check( PyList_GetItem( in_signal, i ) ) )
+        if( PyFloat_Check( PyList_GetItem( in_signal, i ) ) )
         {
-          signal[ i ] = PyInt_AsLong( PyList_GetItem( in_signal, i ) );
+          signal[ i ] = PyFloat_AsDouble( PyList_GetItem( in_signal, i ) );
         }
         else
         {
@@ -157,18 +157,18 @@ python_filter_signal  (
         }
       }
 
-      CPC_LOG_BUFFER  (
+      CPC_LOG_BUFFER_FLOAT64  (
         CPC_LOG_LEVEL_TRACE,
         "Signal",
-        ( UCHAR* ) signal,
-        sizeof( INT16 ) * size,
+        signal,
+        size,
         8
                       );
 
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
         USIZE filtered_signal_length  = 0;
-        INT16* filtered_signal        = NULL;
+        FLOAT64* filtered_signal      = NULL;
     
         return_value =
           csignal_filter_signal (
@@ -181,15 +181,13 @@ python_filter_signal  (
 
         if( CPC_ERROR_CODE_NO_ERROR == return_value )
         {
-          CPC_LOG_BUFFER  (
+          CPC_LOG_BUFFER_FLOAT64  (
             CPC_LOG_LEVEL_TRACE,
             "Filtered signal",
-            ( UCHAR* ) filtered_signal,
-            sizeof( INT16 )
-              *
-              ( filtered_signal_length > 200 ? 200 : filtered_signal_length ),
+            filtered_signal,
+            ( filtered_signal_length > 200 ? 200 : filtered_signal_length ),
             8
-                          );
+                                  );
 
           PyObject* filtered_list = PyList_New( filtered_signal_length );
 
@@ -201,14 +199,14 @@ python_filter_signal  (
           }
           else
           {
-            for( UINT32 i = 0; i < filtered_signal_length; i++ )
+            for( USIZE i = 0; i < filtered_signal_length; i++ )
             {
               if  (
                     0
                     != PyList_SetItem (
                         filtered_list,
                         i,
-                        Py_BuildValue( "B", filtered_signal[ i ] )
+                        Py_BuildValue( "d", filtered_signal[ i ] )
                                       )
                   )
               {
@@ -301,7 +299,7 @@ python_initialize_kaiser_filter (
 }
 /*! \fn     static PyObject* python_get_gold_code (
                             gold_code*  in_gold_code,
-                            size        in_number_of_bits
+                            size_t      in_number_of_bits
                                                   )
     \brief  Requests in_number_of_bits from the LFSRs defined by
             in_gold_code. For full documentation the parameters for this
@@ -444,7 +442,7 @@ python_initialize_gold_code (
 
 /*! \fn     static PyObject* python_get_spreading_code  (
                             spreading_code* in_spreading_code,
-                            size            in_number_of_bits
+                            size_t          in_number_of_bits
                                                         )
     \brief  Requests in_number_of_bits from the LFSR defined by
             in_spreading_code. For full documentation the parameters for this
@@ -571,7 +569,7 @@ python_initialize_spreading_code  (
 
 /*! \fn     static PyObject* python_spread_signal (
                         gold_code*  io_gold_code,
-                        int         in_chip_duration,
+                        size_t      in_chip_duration,
                         PyObject*   in_signal
                                                   )
     \brief  Spreads the signal in in_signal by the code generated by
@@ -583,7 +581,7 @@ python_initialize_spreading_code  (
 static PyObject*
 python_spread_signal  (
                         gold_code*  io_gold_code,
-                        int         in_chip_duration,
+                        size_t      in_chip_duration,
                         PyObject*   in_signal
                       )
 {
@@ -613,19 +611,19 @@ python_spread_signal  (
   }
   else
   {
-    SSIZE size    = PyList_Size( in_signal ); 
-    INT16* signal = NULL;
+    USIZE size      = PyList_Size( in_signal ); 
+    FLOAT64* signal = NULL;
 
     csignal_error_code return_value =
-      cpc_safe_malloc( ( void** ) &signal, sizeof( INT16 ) * size );
+      cpc_safe_malloc( ( void** ) &signal, sizeof( FLOAT64 ) * size );
 
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
-      for( UINT32 i = 0; i < size; i++ )
+      for( USIZE i = 0; i < size; i++ )
       {
-        if( PyInt_Check( PyList_GetItem( in_signal, i ) ) )
+        if( PyFloat_Check( PyList_GetItem( in_signal, i ) ) )
         {
-          signal[ i ] = PyInt_AsLong( PyList_GetItem( in_signal, i ) );
+          signal[ i ] = PyFloat_AsDouble( PyList_GetItem( in_signal, i ) );
         }
         else
         {
@@ -635,13 +633,13 @@ python_spread_signal  (
         }
       }
 
-      CPC_LOG_BUFFER  (
+      CPC_LOG_BUFFER_FLOAT64  (
         CPC_LOG_LEVEL_TRACE,
         "Signal",
-        ( UCHAR* ) signal,
-        sizeof( INT16 ) * size,
+        signal,
+        size,
         8
-                      );
+                              );
     }
     else
     {
@@ -662,21 +660,21 @@ python_spread_signal  (
       {
         PyObject* new_signal = PyList_New( size );
 
-        CPC_LOG_BUFFER  (
+        CPC_LOG_BUFFER_FLOAT64  (
           CPC_LOG_LEVEL_TRACE,
           "Spread signal",
-          ( UCHAR* ) signal,
-          sizeof( INT16 ) * size,
+          signal,
+          size,
           8
-                        );
+                                );
 
-        for( UINT32 i = 0; i < size; i++ )
+        for( USIZE i = 0; i < size; i++ )
         {
           if  (
                 0 !=  PyList_SetItem  (
                         new_signal,
                         i,
-                        Py_BuildValue( "h", signal[ i ] )
+                        Py_BuildValue( "d", signal[ i ] )
                                       )
               )
           {
@@ -703,9 +701,9 @@ python_spread_signal  (
 
 /*! \fn     int python_write_LPCM_wav (
                         PyObject* in_file_name,
-                        int       in_number_of_channels,
+                        size_t    in_number_of_channels,
                         int       in_sample_rate,
-                        int       in_number_of_samples,
+                        size_t    in_number_of_samples,
                         PyObject* in_samples
                                       )
     \brief  The python wrapper for the csignal_write_LPCM_wav function. For
@@ -718,9 +716,9 @@ python_spread_signal  (
 int
 python_write_LPCM_wav (
                         PyObject* in_file_name,
-                        int       in_number_of_channels,
+                        size_t    in_number_of_channels,
                         int       in_sample_rate,
-                        int       in_number_of_samples,
+                        size_t    in_number_of_samples,
                         PyObject* in_samples
                       )
 {
@@ -751,7 +749,7 @@ python_write_LPCM_wav (
       {
         if( PyList_Size( in_samples ) == in_number_of_channels )
         {
-          for( UINT32 i = 0; i < in_number_of_channels && return_value; i++ )
+          for( USIZE i = 0; i < in_number_of_channels && return_value; i++ )
           {
             if  (
               PyList_Size( PyList_GetItem( in_samples, i ) )
@@ -769,12 +767,12 @@ python_write_LPCM_wav (
             }
             else
             {
-              for( UINT32 j = 0; j < in_number_of_samples; j++ )
+              for( USIZE j = 0; j < in_number_of_samples; j++ )
               {
                 PyObject* number =
                   PyList_GetItem( PyList_GetItem( in_samples, i ), j );
   
-                if( ! PyInt_Check( number ) )
+                if( ! PyFloat_Check( number ) )
                 {
                   CPC_ERROR (
                     "Item 0x%x, 0x%x is not an integer.",
@@ -826,7 +824,7 @@ python_write_LPCM_wav (
 
     if( CPC_ERROR_CODE_NO_ERROR == error )
     {
-      for( UINT32 i = 0; i < in_number_of_channels; i++ )
+      for( USIZE i = 0; i < in_number_of_channels; i++ )
       {
         error =
           cpc_safe_malloc (
@@ -836,12 +834,12 @@ python_write_LPCM_wav (
 
         if( CPC_ERROR_CODE_NO_ERROR == error )
         {
-          for( UINT32 j = 0; j < in_number_of_samples; j++ )
+          for( USIZE j = 0; j < in_number_of_samples; j++ )
           {
             PyObject* number =
               PyList_GetItem( PyList_GetItem( in_samples, i ), j );
 
-            samples[ i ][ j ] = PyInt_AsLong( number );
+            samples[ i ][ j ] = ( INT16 ) PyFloat_AsDouble( number );
           }
         }
         else
@@ -883,12 +881,12 @@ python_write_LPCM_wav (
 }
 
 /*! \fn     static PyObject* python_modulate_symbol  (
-                          int   in_symbol,
-                          int   in_constellation_size,
-                          int   in_sample_rate,
-                          int   in_symbol_duration,
-                          int   in_baseband_pulse_amplitude,
-                          float in_carrier_frequency
+                          int     in_symbol,
+                          int     in_constellation_size,
+                          int     in_sample_rate,
+                          size_t  in_symbol_duration,
+                          int     in_baseband_pulse_amplitude,
+                          float   in_carrier_frequency
                         )
     \brief  Modulates in_symbol into a signal of length in_symbol_duration. For
             a complete description of each parameter and the function please
@@ -898,28 +896,26 @@ python_write_LPCM_wav (
   */
 static PyObject*
 python_modulate_symbol  (
-                          int   in_symbol,
-                          int   in_constellation_size,
-                          int   in_sample_rate,
-                          int   in_symbol_duration,
-                          int   in_baseband_pulse_amplitude,
-                          float in_carrier_frequency
+                          int     in_symbol,
+                          int     in_constellation_size,
+                          int     in_sample_rate,
+                          size_t  in_symbol_duration,
+                          int     in_baseband_pulse_amplitude,
+                          float   in_carrier_frequency
                         )
 {
   if  (
         0 > in_symbol
         || 0 >= in_constellation_size
         || 0 >= in_sample_rate
-        || 0 > in_symbol_duration
         || 0 >= in_carrier_frequency
       )
   {
     CPC_ERROR (
-                "Invalid input: m=0x%x, M=0x%x, T=0x%x, sr=0x%x"
+                "Invalid input: m=0x%x, M=0x%x, sr=0x%x"
                 ", |g|=0x%x, f_c=%.2f",
                 in_symbol,
                 in_constellation_size,
-                in_symbol_duration,
                 in_sample_rate,
                 in_baseband_pulse_amplitude,
                 in_carrier_frequency
@@ -929,12 +925,12 @@ python_modulate_symbol  (
   }
   else
   {
-    INT16* signal = NULL;
+    FLOAT64* signal = NULL;
 
     csignal_error_code return_value =
       cpc_safe_malloc (
         ( void** ) &signal,
-        in_symbol_duration * sizeof( INT16 )
+        sizeof( FLOAT64 ) * in_symbol_duration
                       );
 
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
@@ -956,9 +952,9 @@ python_modulate_symbol  (
 
         if( NULL != list )
         {
-          for( UINT32 i = 0; i < in_symbol_duration; i++ )
+          for( USIZE i = 0; i < in_symbol_duration; i++ )
           {
-            if( 0 != PyList_SetItem( list, i, Py_BuildValue( "h", signal[ i ] ) ) )
+            if( 0 != PyList_SetItem( list, i, Py_BuildValue( "d", signal[ i ] ) ) )
             {
               PyErr_Print();
             }
@@ -1000,7 +996,7 @@ python_modulate_symbol  (
 
 /*! \fn     static PyObject* python_get_symbol (
               csignal_symbol_tracker* in_symbol_tracker,
-              int                     in_number_of_bits
+              size_t                  in_number_of_bits
             )
     \brief  Wrapper around csignal_get_symbol that checks for errors returned
             by the function and either returns 'None' or a symbol if an error
@@ -1015,7 +1011,7 @@ python_modulate_symbol  (
 static PyObject*
 python_get_symbol (
                     csignal_symbol_tracker* in_symbol_tracker,
-                    int                     in_number_of_bits
+                    size_t                  in_number_of_bits
                   )
 {
   UINT32 symbol = 0;

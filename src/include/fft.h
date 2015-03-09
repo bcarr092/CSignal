@@ -16,9 +16,9 @@
 
 /*! \fn     csignal_error_code csignal_calculate_FFT (
               USIZE      in_signal_length,
-              INT16*     in_signal,
+              FLOAT64*   in_signal,
               USIZE*     out_fft_length,
-              FLOAT32**  out_fft
+              FLOAT64**  out_fft
             )
     \brief  Calculates the FFT of the input signal, in_signal.
  
@@ -42,9 +42,9 @@
 csignal_error_code
 csignal_calculate_FFT (
                        USIZE      in_signal_length,
-                       INT16*     in_signal,
+                       FLOAT64*   in_signal,
                        USIZE*     out_fft_length,
-                       FLOAT32**  out_fft
+                       FLOAT64**  out_fft
                        );
 
 #endif  /*  __FFT_H__ */

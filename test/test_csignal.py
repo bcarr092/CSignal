@@ -30,7 +30,7 @@ class TestsCSignal( unittest.TestCase ):
     signal = []
 
     for _ in range( 48000 ):
-      signal.append( int( 32767 * random.normalvariate( 0, 1 ) ) )
+      signal.append( 32767 * random.normalvariate( 0, 1 ) )
 
     filter    = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
 
@@ -134,7 +134,7 @@ class TestsCSignal( unittest.TestCase ):
 
     file_handle.close()
 
-    fft = csignal_tests.python_fft( signal )
+    fft = csignal_tests.python_calculate_FFT( signal )
 
     self.assertNotEquals( fft, None )
 
@@ -171,7 +171,8 @@ class TestsCSignal( unittest.TestCase ):
 
     samples = [ signal ]
 
-    os.unlink( '/tmp/test.WAV' )
+    if( os.path.exists( '/tmp/test.WAV' ) ):
+      os.unlink( '/tmp/test.WAV' )
 
     error = csignal_tests.python_write_LPCM_wav (
       '/tmp/test.WAV',
@@ -277,7 +278,8 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( csignal_tests.csignal_destroy_gold_code( gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
-    os.unlink( file_name )
+    if( os.path.exists( file_name ) ):
+      os.unlink( file_name )
 
   def test_spread_signal( self ):
     bits_per_symbol     = 8
@@ -342,7 +344,8 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( error, csignal_tests.CPC_TRUE )
 
-    os.unlink( file_name )
+    if( os.path.exists( file_name ) ): 
+      os.unlink( file_name )
 
   def test_initialize_kaiser_filter( self ):
     filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 6000, 5000, 0.1, 80, 0 )
@@ -774,7 +777,8 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( error, csignal_tests.CPC_TRUE )
 
-    os.unlink( file_name )
+    if( os.path.exists( file_name ) ):
+      os.unlink( file_name )
 
   def test_generate_signal_random( self ):
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
@@ -820,11 +824,6 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals (
       csignal_tests.python_modulate_symbol( 1, 8, -1, 10, 16000, 22000 ),
-      None
-                      )
-
-    self.assertEquals (
-      csignal_tests.python_modulate_symbol( 1, 8, 48000, -1, 16000, 22000 ),
       None
                       )
 

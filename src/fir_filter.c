@@ -92,9 +92,9 @@ csignal_error_code
 csignal_filter_signal (
                        fir_passband_filter* in_filter,
                        USIZE                in_signal_length,
-                       INT16*               in_signal,
+                       FLOAT64*             in_signal,
                        USIZE*               out_filtered_signal_length,
-                       INT16**              out_filtered_signal
+                       FLOAT64**            out_filtered_signal
                        )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -134,7 +134,7 @@ csignal_filter_signal (
     return_value =
       cpc_safe_malloc (
                        ( void** ) out_filtered_signal,
-                       sizeof( INT16 )
+                       sizeof( FLOAT64 )
                         * ( in_filter->number_of_taps + in_signal_length )
                        );
     
@@ -155,23 +155,10 @@ csignal_filter_signal (
         
         for( SSIZE j = min; j <= max; j++ )
         {
-          FLOAT64 signal_value = in_signal[ j ] * 1.0;
-          
-          value += signal_value * in_filter->coefficients[ i - j ];
+          value += in_signal[ j ] * in_filter->coefficients[ i - j ];
         }
         
-        if( MAX_INT16 < value )
-        {
-          ( *out_filtered_signal )[ i ] = MAX_INT16;
-        }
-        else if( MIN_INT16 > value )
-        {
-          ( *out_filtered_signal )[ i ] = MIN_INT16;
-        }
-        else
-        {
-          ( *out_filtered_signal )[ i ] = ( INT16 ) CPC_ROUND( FLOAT64, value );
-        }
+        ( *out_filtered_signal )[ i ] = value;
       }
     }
     else

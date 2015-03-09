@@ -340,9 +340,9 @@ csignal_sum_ones  (
 
 csignal_error_code
 csignal_set_spreading_signal  (
-                               UCHAR  in_bit,
-                               USIZE 	in_signal_size,
-                               INT16* out_signal
+                               UCHAR    in_bit,
+                               USIZE    in_signal_size,
+                               FLOAT64* out_signal
                                )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;

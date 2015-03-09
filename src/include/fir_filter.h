@@ -150,9 +150,9 @@ csignal_destroy_passband_filter(
 /*! \fn     csignal_error_code csignal_filter_signal (
               fir_passband_filter* in_filter,
               USIZE                in_signal_length,
-              INT16*               in_signal,
+              FLOAT64*             in_signal,
               USIZE*               out_filtered_signal_length,
-              INT16**              out_filtered_signal
+              FLOAT64**            out_filtered_signal
             )
     \brief  Performs a convolution of the coefficients in in_filter and the
             signal values in in_signal. Stores the results in
@@ -182,9 +182,9 @@ csignal_error_code
 csignal_filter_signal (
                        fir_passband_filter* in_filter,
                        USIZE                in_signal_length,
-                       INT16*               in_signal,
+                       FLOAT64*             in_signal,
                        USIZE*               out_filtered_signal_length,
-                       INT16**              out_filtered_signal
+                       FLOAT64**            out_filtered_signal
                        );
 
 #endif  /*  __FIR_FILTER_H__  */

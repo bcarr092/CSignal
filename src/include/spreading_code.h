@@ -10,8 +10,8 @@
 
 #include "csignal_error_codes.h"
 
-#define SPREADING_WAVEFORM_POSITIVE 1
-#define SPREADING_WAVEFORM_NEGATIVE -1
+#define SPREADING_WAVEFORM_POSITIVE 1.0
+#define SPREADING_WAVEFORM_NEGATIVE -1.0
 
 /*! \var    spreading_code
     \brief  Spreading codes are generated using a linear feedback shift register
@@ -157,9 +157,9 @@ csignal_get_spreading_code  (
                              );
 
 /*! \fn     csignal_error_code csignal_set_spreading_signal  (
-              UCHAR  in_bit,
-              UINT32 in_signal_size,
-              INT16* out_signal
+              UCHAR     in_bit,
+              UINT32    in_signal_size,
+              FLOAT64*  out_signal
             )
     \brief  Generates a spreading signal based on in_bit. If in_bit is non-zero
             than a signal consisting of +1 values is generated, otherwise
@@ -176,9 +176,9 @@ csignal_get_spreading_code  (
  */
 csignal_error_code
 csignal_set_spreading_signal  (
-                               UCHAR  in_bit,
-                               USIZE  in_signal_size,
-                               INT16* out_signal
+                               UCHAR    in_bit,
+                               USIZE    in_signal_size,
+                               FLOAT64* out_signal
                                );
 
 #endif  /*  __SPREADING_CODE_H__  */

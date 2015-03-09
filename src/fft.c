@@ -37,9 +37,9 @@ csignal_calculate_closest_power_of_two  (
 
 /*! \fn     csignal_error_code csignal_convert_real_array_to_complex_array (
               USIZE    in_real_signal_length,
-              INT16*   in_real_signal,
+              FLOAT64* in_real_signal,
               USIZE    in_complex_signal_length,
-              FLOAT32* in_complex_signal
+              FLOAT64* in_complex_signal
             )
     \brief  Takes the elements in in_real_signal and copies their values to
             the even elements in in_complex_signal and sets the the odd elements
@@ -66,13 +66,13 @@ csignal_calculate_closest_power_of_two  (
 csignal_error_code
 csignal_convert_real_array_to_complex_array (
                                              USIZE    in_real_signal_length,
-                                             INT16*   in_real_signal,
+                                             FLOAT64* in_real_signal,
                                              USIZE    in_complex_signal_length,
-                                             FLOAT32* in_complex_signal
+                                             FLOAT64* in_complex_signal
                                              );
 
 /*! \fn     void csignal_fft (
-              FLOAT32* io_data,
+              FLOAT64* io_data,
               USIZE    in_data_length,
               CHAR     in_sign
             )
@@ -86,7 +86,7 @@ csignal_convert_real_array_to_complex_array (
  */
 void
 csignal_fft (
-             FLOAT32* io_data,
+             FLOAT64* io_data,
              USIZE    in_data_length,
              CHAR     in_sign
              );
@@ -94,9 +94,9 @@ csignal_fft (
 csignal_error_code
 csignal_calculate_FFT (
                        USIZE      in_signal_length,
-                       INT16*     in_signal,
+                       FLOAT64*   in_signal,
                        USIZE*     out_fft_length,
-                       FLOAT32**  out_fft
+                       FLOAT64**  out_fft
                        )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -124,7 +124,7 @@ csignal_calculate_FFT (
     return_value =
       cpc_safe_malloc (
                        ( void** ) out_fft,
-                       sizeof( FLOAT32 ) * *out_fft_length
+                       sizeof( FLOAT64 ) * *out_fft_length
                        );
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
@@ -155,18 +155,18 @@ csignal_calculate_FFT (
 
 void
 csignal_fft (
-             FLOAT32* io_data,
+             FLOAT64* io_data,
              USIZE    in_data_length,
              CHAR     in_sign
              )
 {
-  FLOAT32*  data = io_data;
-  USIZE     nn = in_data_length;
-  INT32     isign = in_sign;
+  FLOAT64* data = io_data;
+  USIZE nn      = in_data_length;
+  FLOAT64 isign = ( in_sign * 1.0 );
   
-  USIZE   n,mmax,m,j,istep,i;
+  USIZE n,mmax,m,j,istep,i;
   FLOAT64 wtemp,wr,wpr,wpi,wi,theta;
-  FLOAT32 tempr,tempi;
+  FLOAT64 tempr,tempi;
   
   n=nn << 1;
   j=1;
@@ -217,9 +217,9 @@ csignal_fft (
 csignal_error_code
 csignal_convert_real_array_to_complex_array (
                                              USIZE    in_real_signal_length,
-                                             INT16*   in_real_signal,
+                                             FLOAT64* in_real_signal,
                                              USIZE    in_complex_signal_length,
-                                             FLOAT32* in_complex_signal
+                                             FLOAT64* in_complex_signal
                                              )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;

@@ -197,7 +197,7 @@ csignal_modulate_symbol (
                          USIZE    in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
-                         INT16*   out_signal
+                         FLOAT64* out_signal
                          )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -250,10 +250,10 @@ csignal_modulate_symbol (
              gray_code_symbol
              );
     
-    FLOAT32 inphase_component =
-      cos( 2 * M_PI * in_symbol / in_constellation_size );
-    FLOAT32 quadrature_component =
-      sin( 2 * M_PI * in_symbol / in_constellation_size );
+    FLOAT64 inphase_component =
+      cos( 2 * M_PI * gray_code_symbol / in_constellation_size );
+    FLOAT64 quadrature_component =
+      sin( 2 * M_PI * gray_code_symbol / in_constellation_size );
     
     CPC_LOG (
              CPC_LOG_LEVEL_TRACE,
@@ -265,20 +265,19 @@ csignal_modulate_symbol (
     for( UINT32 i = 0; i < in_symbol_duration; i++ )
     {
       out_signal[ i ] =
-        ( INT16 )
         ( in_baseband_pulse_amplitude * 1.0 ) * inphase_component
         * cos( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) )
         - ( in_baseband_pulse_amplitude * 1.0 ) * quadrature_component
         * sin( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) );
     }
     
-    CPC_LOG_BUFFER  (
-                     CPC_LOG_LEVEL_TRACE,
-                     "Signal:",
-                     ( UCHAR* ) out_signal,
-                     in_symbol_duration * ( sizeof( INT16 ) / sizeof( UCHAR ) ),
-                     8
-                     );
+    CPC_LOG_BUFFER_FLOAT64  (
+                             CPC_LOG_LEVEL_TRACE,
+                             "Signal:",
+                             out_signal,
+                             in_symbol_duration,
+                             8
+                             );
   }
   
   return( return_value );
@@ -297,7 +296,7 @@ csignal_spread_signal (
                        gold_code* io_gold_code,
                        UINT32     in_chip_duration,
                        USIZE      in_signal_size,
-                       INT16*     io_signal
+                       FLOAT64*   io_signal
                        )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -342,23 +341,23 @@ csignal_spread_signal (
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
-      INT16* spreading_signal = NULL;
-      UINT32 signal_offset    = 0;
+      FLOAT64* spreading_signal = NULL;
+      USIZE signal_offset       = 0;
       
       CPC_LOG_BUFFER( CPC_LOG_LEVEL_DEBUG, "Code:", code, size, 8 );
       
       return_value =
         cpc_safe_malloc (
                          ( void** ) &spreading_signal,
-                         sizeof( INT16 ) * in_chip_duration
+                         sizeof( FLOAT64 ) * in_chip_duration
                          );
       
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
-        for( UINT32 i = 0; i < number_of_code_bits; i++ )
+        for( USIZE i = 0; i < number_of_code_bits; i++ )
         {
-          UINT32 bit_offset   = i % ( sizeof( UCHAR ) * 8 );
-          UINT32 byte_offset  = i / ( sizeof( UCHAR ) * 8 );
+          USIZE bit_offset  = i % ( sizeof( UCHAR ) * 8 );
+          USIZE byte_offset = i / ( sizeof( UCHAR ) * 8 );
           
           UCHAR mask = ( 0x80 >> bit_offset );
           UCHAR bit   = code[ byte_offset ] & mask;
@@ -370,7 +369,7 @@ csignal_spread_signal (
                                            spreading_signal
                                            );
           
-          for( UINT32 j = 0; j < in_chip_duration; j++ )
+          for( USIZE j = 0; j < in_chip_duration; j++ )
           {
             io_signal[ signal_offset++ ] *= spreading_signal[ j ];
           }

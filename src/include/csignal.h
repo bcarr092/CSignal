@@ -2,6 +2,11 @@
     \brief  This is the main include file for the csignal library. This is the
             only header file that needs to be included by external libraries/
             binaries.
+ 
+    \note   In this library all signals are stored as FLOAT64 values (double)
+            as are all filter values as well as functions performed on signals
+            (e.g. FFT). It is the responsibility of the caller to convert the
+            signals into the format that they require.
  */
 #ifndef __CSIGNAL_H__
 #define __CSIGNAL_H__
@@ -192,7 +197,7 @@ csignal_modulate_symbol (
                          USIZE    in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
-                         INT16*   out_signal
+                         FLOAT64* out_signal
                          );
 
 /*! \fn     csignal_error_code csignal_spread_signal (
@@ -225,7 +230,7 @@ csignal_spread_signal (
                        gold_code* io_gold_code,
                        UINT32     in_chip_duration,
                        USIZE      in_signal_size,
-                       INT16*     io_signal
+                       FLOAT64*   io_signal
                        );
 
 #endif  /*  __CSIGNAL_H__ */
