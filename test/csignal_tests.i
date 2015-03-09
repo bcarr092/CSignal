@@ -19,26 +19,31 @@ python_calculate_FFT  (
   PyObject* in_signal
                       )
 {
+  PyObject* return_value = NULL;
+
+  USIZE size        = 0;
+  FLOAT64*  signal  = NULL;
+
+  USIZE fft_length  = 0;
+  FLOAT64* fft      = NULL;
+
   if( ! PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
   {
     CPC_LOG_STRING  (
       CPC_LOG_LEVEL_ERROR,
       "Signal must be a list with elements."
                     );
-
-    Py_RETURN_NONE;
   }
   else
   {
-    SSIZE size      = PyList_Size( in_signal ); 
-    FLOAT64* signal = NULL;
+    size    = PyList_Size( in_signal ); 
 
-    csignal_error_code return_value =
+    csignal_error_code return_code =
       cpc_safe_malloc( ( void** ) &signal, sizeof( FLOAT64 ) * size );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
-      for( UINT32 i = 0; i < size; i++ )
+      for( USIZE i = 0; i < size; i++ )
       {
         if( PyFloat_Check( PyList_GetItem( in_signal, i ) ) )
         {
@@ -48,59 +53,60 @@ python_calculate_FFT  (
         {
           CPC_ERROR( "Entry 0x%x is not an integer.", i );
 
-          return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
         }
       }
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      if( CPC_ERROR_CODE_NO_ERROR == return_code )
       {
-        USIZE fft_length  = 0;
-        FLOAT64* fft      = NULL;
+        return_code = csignal_calculate_FFT( size, signal, &fft_length, &fft );
 
-        return_value = csignal_calculate_FFT( size, signal, &fft_length, &fft );
-
-        if( CPC_ERROR_CODE_NO_ERROR == return_value )
+        if( CPC_ERROR_CODE_NO_ERROR == return_code )
         {
           PyObject* fft_list = PyList_New( fft_length / 2 );
 
-          if( NULL == fft_list )
+          for( USIZE i = 0; i < fft_length; i += 2 )
           {
-            cpc_safe_free( ( void** ) &fft );
+            PyObject* complex =
+              PyComplex_FromDoubles( fft[ i ], fft[ i + 1 ] );
 
-            Py_RETURN_NONE;
+            if( 0 != PyList_SetItem ( fft_list, ( i / 2 ), complex ) )
+            {
+              PyErr_Print();
+            }
+          }
+
+          if( PyList_Check( fft_list ) )
+          {
+            return_value = fft_list;
           }
           else
           {
-            for( UINT32 i = 0; i < fft_length; i += 2 )
-            {
-              PyObject* complex =
-                PyComplex_FromDoubles( fft[ i ], fft[ i + 1 ] );
-
-              if( 0 != PyList_SetItem ( fft_list, ( i / 2 ), complex ) )
-              {
-                PyErr_Print();
-              }
-            }
-
-            cpc_safe_free( ( void** ) &fft );
-
-            if( PyList_Check( fft_list ) )
-            {
-              return( fft_list);
-            }
-            else
-            {
-              CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-  
-              Py_RETURN_NONE;
-            }
+            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
           }
         }
       }
     }
   }
 
-  Py_RETURN_NONE;
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+
+  if( NULL != fft )
+  {
+    cpc_safe_free( ( void** ) &fft );
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
 }
 
 /*! \fn     static PyObject* python_filter_signal  (
@@ -118,11 +124,17 @@ python_filter_signal  (
   PyObject*             in_signal
                       )
 {
+  PyObject* return_value = NULL;
+
+  USIZE size      = 0; 
+  FLOAT64* signal = NULL;
+
+  USIZE filtered_signal_length  = 0;
+  FLOAT64* filtered_signal      = NULL;
+
   if( NULL == in_filter )
   {
     CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Filter is null." );
-
-    Py_RETURN_NONE;
   }
   else if( ! PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
   {
@@ -130,18 +142,15 @@ python_filter_signal  (
       CPC_LOG_LEVEL_ERROR,
       "Signal must be a list with elements."
                     );
-
-    Py_RETURN_NONE;
   }
   else
   {
-    USIZE size      = PyList_Size( in_signal ); 
-    FLOAT64* signal = NULL;
+    size = PyList_Size( in_signal ); 
 
-    csignal_error_code return_value =
+    csignal_error_code return_code =
       cpc_safe_malloc( ( void** ) &signal, sizeof( FLOAT64 ) * size );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
       for( USIZE i = 0; i < size; i++ )
       {
@@ -153,7 +162,7 @@ python_filter_signal  (
         {
           CPC_ERROR( "Entry 0x%x is not an integer.", i );
 
-          return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
         }
       }
 
@@ -165,12 +174,9 @@ python_filter_signal  (
         8
                       );
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      if( CPC_ERROR_CODE_NO_ERROR == return_code )
       {
-        USIZE filtered_signal_length  = 0;
-        FLOAT64* filtered_signal      = NULL;
-    
-        return_value =
+        return_code =
           csignal_filter_signal (
             in_filter,
             size,
@@ -179,7 +185,7 @@ python_filter_signal  (
             &filtered_signal
                                 );
 
-        if( CPC_ERROR_CODE_NO_ERROR == return_value )
+        if( CPC_ERROR_CODE_NO_ERROR == return_code )
         {
           CPC_LOG_BUFFER_FLOAT64  (
             CPC_LOG_LEVEL_TRACE,
@@ -194,8 +200,6 @@ python_filter_signal  (
           if( NULL == filtered_list )
           {
             cpc_safe_free( ( void** ) &filtered_signal );
-
-            Py_RETURN_NONE;
           }
           else
           {
@@ -214,17 +218,13 @@ python_filter_signal  (
               }
             }
 
-            cpc_safe_free( ( void** ) &filtered_signal );
-
             if( PyList_Check( filtered_list ) )
             {
-              return( filtered_list );
+              return_value = filtered_list;
             }
             else
             {
               CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-  
-              Py_RETURN_NONE;
             }
           }   
         }
@@ -236,8 +236,24 @@ python_filter_signal  (
     }
   }
 
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
 
-  Py_RETURN_NONE;
+  if( NULL != filtered_signal )
+  {
+    cpc_safe_free( ( void** ) &filtered_signal );
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
 }
 
 /*! \fn     fir_passband_filter* python_initialize_kaiser_filter (
@@ -316,16 +332,18 @@ python_get_gold_code  (
                         size_t      in_number_of_bits
                       )
 {
+  PyObject* return_value = NULL;
+
+  USIZE size  = 0;
+  UCHAR* code = NULL;
+
   if( NULL == in_gold_code )
   {
-    Py_RETURN_NONE;
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Gold code was null." );
   }
   else
   {
-    USIZE size  = 0;
-    UCHAR* code = NULL;
-
-    csignal_error_code return_value =
+    csignal_error_code return_code =
       csignal_get_gold_code (
         in_gold_code,
         in_number_of_bits,
@@ -333,19 +351,26 @@ python_get_gold_code  (
         &code
                             );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
       PyObject* code_list = PyList_New( size );
 
       if( NULL == code_list )
       {
-        Py_RETURN_NONE;
+        CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Created a null list." );
       }
       else
       {
-        for( UINT32 i = 0; i < size; i++ )
+        for( USIZE i = 0; i < size; i++ )
         {
-          if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
+          if  (
+                0
+                != PyList_SetItem (
+                    code_list,
+                    i,
+                    Py_BuildValue( "B", code[ i ] )
+                                  )
+              )
           {
             PyErr_Print();
           }
@@ -353,22 +378,32 @@ python_get_gold_code  (
 
         if( PyList_Check( code_list ) )
         {
-          return( code_list );
+          return_value = code_list;
         }
         else
         {
           CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-
-          Py_RETURN_NONE;
         }
       }
     }
     else
     {
       CPC_ERROR( "Could not get code: 0x%x.", return_value );
-
-      Py_RETURN_NONE;
     }
+  }
+
+  if( NULL != code )
+  {
+    cpc_safe_free( ( void** ) &code );
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
   }
 }
 
@@ -459,16 +494,18 @@ python_get_spreading_code (
                             size_t          in_number_of_bits
                           )
 {
+  PyObject* return_value = NULL;
+
+  USIZE size  = 0;
+  UCHAR* code = NULL;
+
   if( NULL == in_spreading_code )
   {
-     Py_RETURN_NONE;
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Spreading code is null." );
   }
   else
   {
-    USIZE size  = 0;
-    UCHAR* code = NULL;
-
-    csignal_error_code return_value =
+    csignal_error_code return_code =
       csignal_get_spreading_code  (
       in_spreading_code,
       in_number_of_bits,
@@ -476,19 +513,26 @@ python_get_spreading_code (
       &code
                                   );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
       PyObject* code_list = PyList_New( size );
 
       if( NULL == code_list )
       {
-        Py_RETURN_NONE;
+        CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Created a null list." );
       }
       else
       {
-        for( UINT32 i = 0; i < size; i++ )
+        for( USIZE i = 0; i < size; i++ )
         {
-          if( 0 != PyList_SetItem( code_list, i, Py_BuildValue( "B", code[ i ] ) ) )
+          if  (
+                0
+                != PyList_SetItem (
+                    code_list,
+                    i,
+                    Py_BuildValue( "B", code[ i ] )
+                                  )
+              )
           {
             PyErr_Print();
           }
@@ -496,22 +540,32 @@ python_get_spreading_code (
 
         if( PyList_Check( code_list ) )
         {
-          return( code_list );
+          return_value = code_list;
         }
         else
         {
           CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-
-          Py_RETURN_NONE;
         }
       }
     }
     else
     {
       CPC_ERROR( "Could not get code: 0x%x.", return_value );
-
-      Py_RETURN_NONE;
     }
+  }
+  
+  if( NULL != code )
+  {
+    cpc_safe_free( ( void** ) &code );
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
   }
 }
 
@@ -585,11 +639,14 @@ python_spread_signal  (
                         PyObject*   in_signal
                       )
 {
+  PyObject* return_value = NULL;
+
+  USIZE size      = 0; 
+  FLOAT64* signal = NULL;
+
   if( NULL == io_gold_code )
   {
     CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Gold code is null." );
-
-    Py_RETURN_NONE;
   }
   else if( 0 >= in_chip_duration )
   {
@@ -597,8 +654,6 @@ python_spread_signal  (
       "Chip duration (0x%x) must be strictly be positive.",
       in_chip_duration
               ); 
-
-    Py_RETURN_NONE;
   }
   else if( ! PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
   {
@@ -606,18 +661,16 @@ python_spread_signal  (
       CPC_LOG_LEVEL_ERROR,
       "Signal must be a list with elements."
                     );
-
-    Py_RETURN_NONE;
   }
   else
   {
-    USIZE size      = PyList_Size( in_signal ); 
-    FLOAT64* signal = NULL;
+    size    = PyList_Size( in_signal ); 
+    signal  = NULL;
 
-    csignal_error_code return_value =
+    csignal_error_code return_code =
       cpc_safe_malloc( ( void** ) &signal, sizeof( FLOAT64 ) * size );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
       for( USIZE i = 0; i < size; i++ )
       {
@@ -629,7 +682,7 @@ python_spread_signal  (
         {
           CPC_ERROR( "Entry 0x%x is not an integer.", i );
 
-          return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
         }
       }
 
@@ -646,7 +699,7 @@ python_spread_signal  (
       CPC_ERROR( "Could not malloc signal: 0x%x.", return_value );
     }
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
       return_value =
         csignal_spread_signal (
@@ -656,7 +709,7 @@ python_spread_signal  (
           signal
                               );
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      if( CPC_ERROR_CODE_NO_ERROR == return_code )
       {
         PyObject* new_signal = PyList_New( size );
 
@@ -680,13 +733,13 @@ python_spread_signal  (
           {
             PyErr_Print();
 
-            return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+            return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
           }
         }
 
-        if( CPC_ERROR_CODE_NO_ERROR == return_value )
+        if( CPC_ERROR_CODE_NO_ERROR == return_code )
         {
-          return( new_signal );
+          return_value = new_signal;
         }
       }
       else
@@ -696,7 +749,19 @@ python_spread_signal  (
     }
   }
 
-  Py_RETURN_NONE;
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
 }
 
 /*! \fn     int python_write_FLOAT_wav (
@@ -904,6 +969,10 @@ python_modulate_symbol  (
                           float   in_carrier_frequency
                         )
 {
+  PyObject* return_value = NULL;
+
+  FLOAT64* signal = NULL;
+
   if  (
         0 > in_symbol
         || 0 >= in_constellation_size
@@ -920,22 +989,18 @@ python_modulate_symbol  (
                 in_baseband_pulse_amplitude,
                 in_carrier_frequency
               );
-
-    Py_RETURN_NONE;
   }
   else
   {
-    FLOAT64* signal = NULL;
-
-    csignal_error_code return_value =
+    csignal_error_code return_code =
       cpc_safe_malloc (
         ( void** ) &signal,
         sizeof( FLOAT64 ) * in_symbol_duration
                       );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
-      return_value =
+      return_code =
         csignal_modulate_symbol (
                                   in_symbol,
                                   in_constellation_size,
@@ -946,7 +1011,7 @@ python_modulate_symbol  (
                                   signal
                                 );
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      if( CPC_ERROR_CODE_NO_ERROR == return_code )
       {
         PyObject* list = PyList_New( in_symbol_duration );
 
@@ -962,35 +1027,41 @@ python_modulate_symbol  (
 
           if( PyList_Check( list ) )
           {
-            return( list );
+            return_value = list;
           }
           else
           {
             CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-
-            Py_RETURN_NONE;
           }
         }
         else
         {
           CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create list." );
-
-          Py_RETURN_NONE;
         }
       }
       else
       {
         CPC_ERROR( "Could not modulate symbol: 0x%x.", return_value );
-
-        Py_RETURN_NONE;
       }
     }
     else
     {
       CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not malloc signal array." );
-
-      Py_RETURN_NONE;
     }
+  }
+
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
   }
 }
 
@@ -1014,38 +1085,45 @@ python_get_symbol (
                     size_t                  in_number_of_bits
                   )
 {
+  PyObject* return_value = NULL;
+
   UINT32 symbol = 0;
 
   if( 0 >= in_number_of_bits )
   {
     CPC_ERROR( "Invalid input for number of bits: %d.", in_number_of_bits );
-
-    Py_RETURN_NONE;
   }
   else
   {
-    UINT32 number_of_bits = in_number_of_bits;
+    USIZE number_of_bits = in_number_of_bits;
 
-    csignal_error_code return_value = csignal_get_symbol  (
+    csignal_error_code return_code = csignal_get_symbol  (
       in_symbol_tracker,
       number_of_bits,
       &symbol
                                                           );
 
-    if( CPC_ERROR_CODE_NO_ERROR != return_value )
+    if( CPC_ERROR_CODE_NO_ERROR != return_code )
     {
-      CPC_ERROR( "Could not get symbol: 0x%x.", return_value );
-
-      Py_RETURN_NONE;
+      CPC_ERROR( "Could not get symbol: 0x%x.", return_code );
     }
     else
     {
-      return( Py_BuildValue( "I", symbol ) );
+      return_value = Py_BuildValue( "I", symbol );
     }
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
   }
 }
 
-/*! \fn     csignal_symbol_tracker* python_intialize_symbol_tracker (
+/*! \fn     csignal_symbol_tracker* python_initialize_symbol_tracker (
               PyObject* in_data
             ) 
     \brief  Creates a new symbol tracker object that points to the data in
@@ -1056,7 +1134,7 @@ python_get_symbol (
             NULL otherwise.
   */
 csignal_symbol_tracker*
-python_intialize_symbol_tracker (
+python_initialize_symbol_tracker (
                                   PyObject* in_data
                                 )
 {

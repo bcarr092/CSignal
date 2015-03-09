@@ -211,7 +211,7 @@ csignal_get_spreading_code  (
     return_value =
       cpc_safe_malloc (
                        ( void** ) out_code,
-                       sizeof( UCHAR ) **out_size
+                       sizeof( UCHAR ) * *out_size
                       );
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
