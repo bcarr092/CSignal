@@ -53,13 +53,6 @@ class TestsCSignal( unittest.TestCase ):
 
     normalized_signal = map( lambda x: x / signal_max, signal )
 
-    file_handle = open( 'signal.dat', 'w' )
-
-    for sample in signal:
-      file_handle.write( "%e\n" %( sample ) )
-
-    file_handle.close()
-
     fft = csignal_tests.python_calculate_FFT( signal )
 
     self.assertNotEquals( fft, None )

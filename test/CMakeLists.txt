@@ -88,7 +88,7 @@ install(  FILES ${WRAPPERS} DESTINATION
 
 enable_testing()
 
-add_test( ${PROJECT_NAME} "${PROJECT_BINARY_DIR}/test_driver.py" )
+add_test( ${PROJECT_NAME} "/usr/local/bin/python" "${PROJECT_BINARY_DIR}/test_driver.py" )
 
 if( ${PLATFORM} STREQUAL "Generic" AND ${TARGET} MATCHES "^android" )
   find_library  (

@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import csignal_tests                                                              
 import unittest                                                                 
                                                                                 
