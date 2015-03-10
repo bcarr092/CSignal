@@ -701,7 +701,7 @@ python_spread_signal  (
 
     if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
-      return_value =
+      return_code =
         csignal_spread_signal (
           io_gold_code,
           in_chip_duration,
