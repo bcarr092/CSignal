@@ -197,7 +197,8 @@ csignal_modulate_symbol (
                          USIZE    in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
-                         FLOAT64* out_signal
+                         FLOAT64* out_signal_inphase,
+                         FLOAT64* out_signal_quadrature
                          )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -213,9 +214,13 @@ csignal_modulate_symbol (
            in_carrier_frequency
            );
   
-  if( NULL == out_signal )
+  if( NULL == out_signal_inphase || NULL == out_signal_quadrature )
   {
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal array is null." );
+    CPC_ERROR (
+               "Inphase signal (0x%x) or quadrature signal (0x%x) are null.",
+               out_signal_inphase,
+               out_signal_quadrature
+               );
     
     return_value = CPC_ERROR_CODE_NULL_POINTER;
   }
@@ -264,17 +269,27 @@ csignal_modulate_symbol (
     
     for( UINT32 i = 0; i < in_symbol_duration; i++ )
     {
-      out_signal[ i ] =
+      out_signal_inphase[ i ] =
         ( in_baseband_pulse_amplitude * 1.0 ) * inphase_component
-        * cos( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) )
-        - ( in_baseband_pulse_amplitude * 1.0 ) * quadrature_component
+        * cos( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) );
+      
+      out_signal_quadrature[ i ] =
+        ( in_baseband_pulse_amplitude * 1.0 ) * quadrature_component
         * sin( 2 * M_PI * in_carrier_frequency * i / ( in_sample_rate * 1.0 ) );
     }
     
     CPC_LOG_BUFFER_FLOAT64  (
                              CPC_LOG_LEVEL_TRACE,
-                             "Signal:",
-                             out_signal,
+                             "Signal (inphase):",
+                             out_signal_inphase,
+                             in_symbol_duration,
+                             8
+                             );
+    
+    CPC_LOG_BUFFER_FLOAT64  (
+                             CPC_LOG_LEVEL_TRACE,
+                             "Signal (quadrature):",
+                             out_signal_quadrature,
                              in_symbol_duration,
                              8
                              );

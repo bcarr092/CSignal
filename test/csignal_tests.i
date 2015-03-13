@@ -957,7 +957,9 @@ python_write_FLOAT_wav (
             a complete description of each parameter and the function please
             see the documentation for csignal_modulate_symbol.
 
-    \return An arrary of integers if no error occurs or None
+    \return Two arrarys of floats if no error occurs or None. One array for the
+            inphase components of the signal (index 0) and the other for the
+            quadrature components of the signal (index 1).
   */
 static PyObject*
 python_modulate_symbol  (
@@ -971,7 +973,8 @@ python_modulate_symbol  (
 {
   PyObject* return_value = NULL;
 
-  FLOAT64* signal = NULL;
+  FLOAT64* inphase    = NULL;
+  FLOAT64* quadrature = NULL;
 
   if  (
         0 > in_symbol
@@ -994,65 +997,115 @@ python_modulate_symbol  (
   {
     csignal_error_code return_code =
       cpc_safe_malloc (
-        ( void** ) &signal,
+        ( void** ) &inphase,
         sizeof( FLOAT64 ) * in_symbol_duration
                       );
 
     if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
       return_code =
-        csignal_modulate_symbol (
-                                  in_symbol,
-                                  in_constellation_size,
-                                  in_sample_rate,
-                                  in_symbol_duration,
-                                  in_baseband_pulse_amplitude,
-                                  in_carrier_frequency,
-                                  signal
-                                );
+        cpc_safe_malloc (
+          ( void** ) &quadrature,
+          sizeof( FLOAT64 ) * in_symbol_duration
+                        );
 
       if( CPC_ERROR_CODE_NO_ERROR == return_code )
       {
-        PyObject* list = PyList_New( in_symbol_duration );
+        return_code =
+          csignal_modulate_symbol (
+                                    in_symbol,
+                                    in_constellation_size,
+                                    in_sample_rate,
+                                    in_symbol_duration,
+                                    in_baseband_pulse_amplitude,
+                                    in_carrier_frequency,
+                                    inphase,
+                                    quadrature
+                                  );
 
-        if( NULL != list )
+        if( CPC_ERROR_CODE_NO_ERROR == return_code )
         {
-          for( USIZE i = 0; i < in_symbol_duration; i++ )
-          {
-            if( 0 != PyList_SetItem( list, i, Py_BuildValue( "d", signal[ i ] ) ) )
-            {
-              PyErr_Print();
-            }
-          }
+          PyObject* list = PyList_New( 2 );
 
-          if( PyList_Check( list ) )
+          if( NULL != list )
           {
-            return_value = list;
+            PyObject* inphase_list    = PyList_New( in_symbol_duration );
+            PyObject* quadrature_list = PyList_New( in_symbol_duration );
+  
+            if( NULL != inphase_list && NULL != quadrature_list )
+            {
+              PyList_SetItem( list, 0, inphase_list );
+              PyList_SetItem( list, 1, quadrature_list );
+
+              for( USIZE i = 0; i < in_symbol_duration; i++ )
+              {
+                if  (
+                  0 != PyList_SetItem (
+                        inphase_list,
+                        i,
+                        Py_BuildValue( "d", inphase[ i ] )
+                                      )
+                  || 0 != PyList_SetItem  (
+                            quadrature_list,
+                            i,
+                            Py_BuildValue( "d", quadrature[ i ] )
+                                          )
+                    )
+                {
+                  PyErr_Print();
+                }
+              }
+    
+              if( PyList_Check( list ) )
+              {
+                return_value = list;
+              }
+              else
+              {
+                CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+              }
+            }
+            else
+            {
+              CPC_ERROR (
+                "Could not create inphase (0x%x) or quadrature list (0x%x).",
+                inphase_list,
+                quadrature_list
+                        );
+            }
           }
           else
           {
-            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create list." );
           }
         }
         else
         {
-          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create list." );
+          CPC_ERROR( "Could not modulate symbol: 0x%x.", return_value );
         }
       }
       else
       {
-        CPC_ERROR( "Could not modulate symbol: 0x%x.", return_value );
+        CPC_LOG_STRING  (
+          CPC_LOG_LEVEL_ERROR,
+          "Could not malloc quadrature array."
+                        );
       }
     }
     else
     {
-      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not malloc signal array." );
+      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not malloc inphase array." );
     }
   }
 
-  if( NULL != signal )
+  if( NULL != inphase )
   {
-    cpc_safe_free( ( void** ) &signal );
+    cpc_safe_free( ( void** ) &inphase );
+  }
+
+  if( NULL != quadrature )
+  {
+    cpc_safe_free( ( void** ) &quadrature );
   }
 
   if( NULL != return_value )

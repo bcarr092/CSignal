@@ -121,7 +121,9 @@ class TestsCSignal( unittest.TestCase ):
     passband_attenuation = 0.1
     stopband_attenuation = 80
 
-    gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x12345678, 0x12345678 )
+    inphase_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x12345678, 0x12345678 )
+    quadrature_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x12345678, 0x12345678 )
+
     filter    = csignal_tests.python_initialize_kaiser_filter( first_stopband, first_passband, second_passband, second_stopband, passband_attenuation, stopband_attenuation, sample_rate )
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
@@ -137,7 +139,7 @@ class TestsCSignal( unittest.TestCase ):
     signal = []
 
     while( symbol != None ):
-      part = csignal_tests.python_modulate_symbol (
+      signal_components = csignal_tests.python_modulate_symbol (
           symbol,
           constellation_size,
           sample_rate,
@@ -146,15 +148,34 @@ class TestsCSignal( unittest.TestCase ):
           carrier_frequency
                                                             )
 
-      self.assertNotEquals( part, None )
-      self.assertEquals( len( part ), symbol_duration )
+      self.assertNotEquals( signal_components, None )
+      self.assertEquals( len( signal_components ), 2 )
+      self.assertNotEquals( signal_components[ 0 ], None )
+      self.assertNotEquals( signal_components[ 1 ], None )
+      self.assertEquals( len( signal_components[ 0 ] ), symbol_duration )
+      self.assertEquals( len( signal_components[ 1 ] ), symbol_duration )
 
-      part = csignal_tests.python_spread_signal (
-          gold_code,
+      inphase_part = csignal_tests.python_spread_signal (
+          inphase_gold_code,
           chip_duration,
-          part
-                                                )
-    
+          signal_components[ 0 ]
+                                                        )
+
+      self.assertNotEquals( inphase_part, None )
+
+      quadrature_part = csignal_tests.python_spread_signal  (
+          quadrature_gold_code,
+          chip_duration,
+          signal_components[ 1 ]
+                                                            )
+
+      self.assertNotEquals( quadrature_part, None )
+
+      part = []
+
+      for index in range( symbol_duration ):
+        part.append( inphase_part[ index ] - quadrature_part[ index ] )
+
       self.assertNotEquals( part, None )
       self.assertEquals( len( part ), symbol_duration )
 
@@ -222,7 +243,9 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
-    self.assertEquals( csignal_tests.csignal_destroy_gold_code( gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( quadrature_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_filter_signal( self ): 
     bits_per_symbol     = 8
@@ -259,31 +282,54 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertNotEquals( symbol, None )
 
-    gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+    inphase_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+    quadrature_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
 
-    self.assertNotEquals( gold_code, None )
+    self.assertNotEquals( inphase_gold_code, None )
+    self.assertNotEquals( quadrature_gold_code, None )
 
     signal = []
 
     while( symbol != None ):
-      part = csignal_tests.python_modulate_symbol (
+      signal_components = csignal_tests.python_modulate_symbol (
           symbol,
           constellation_size,
           sample_rate,
           symbol_duration,
           baseband_amplitude,
           carrier_frequency
-                                                  )
+                                                                )
   
-      self.assertNotEquals( part, None )
+      self.assertNotEquals( signal_components, None )
+      self.assertEquals( len( signal_components ), 2 )
+      self.assertNotEquals( signal_components[ 0 ], None )
+      self.assertNotEquals( signal_components[ 1 ], None )
+      self.assertEquals( len( signal_components[ 0 ] ), symbol_duration )
+      self.assertEquals( len( signal_components[ 1 ] ), symbol_duration )
 
-      part = csignal_tests.python_spread_signal (
-          gold_code,
+      inphase_part = csignal_tests.python_spread_signal (
+          inphase_gold_code,
           chip_duration,
-          part
-                                                )
+          signal_components[ 0 ]
+                                                        )
+
+      self.assertNotEquals( inphase_part, None )
+
+      quadrature_part = csignal_tests.python_spread_signal  (
+          quadrature_gold_code,
+          chip_duration,
+          signal_components[ 1 ]
+                                                            )
+
+      self.assertNotEquals( quadrature_part, None )
+
+      part = []
+
+      for index in range( symbol_duration ):
+        part.append( inphase_part[ index ] - quadrature_part[ index ] )
 
       self.assertNotEquals( part, None )
+      self.assertEquals( len( part ), symbol_duration )
 
       signal = signal + part
 
@@ -322,7 +368,9 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
-    self.assertEquals( csignal_tests.csignal_destroy_gold_code( gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( quadrature_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
     if( os.path.exists( file_name ) ):
       os.unlink( file_name )
@@ -350,31 +398,53 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertNotEquals( symbol, None )
 
-    gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+    inphase_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+    quadrature_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
 
-    self.assertNotEquals( gold_code, None )
+    self.assertNotEquals( inphase_gold_code, None )
+    self.assertNotEquals( quadrature_gold_code, None )
 
     signal = []
 
     while( symbol != None ):
-      part = csignal_tests.python_modulate_symbol (
+      signal_components = csignal_tests.python_modulate_symbol (
           symbol,
           constellation_size,
           sample_rate,
           symbol_duration,
           baseband_amplitude,
           carrier_frequency
-                                                  )
+                                                              )
   
-      self.assertNotEquals( part, None )
+      self.assertNotEquals( signal_components, None )
+      self.assertEquals( len( signal_components ), 2 )
+      self.assertNotEquals( signal_components[ 0 ], None )
+      self.assertNotEquals( signal_components[ 1 ], None )
+      self.assertEquals( len( signal_components[ 0 ] ), symbol_duration )
+      self.assertEquals( len( signal_components[ 1 ] ), symbol_duration )
 
-      part = csignal_tests.python_spread_signal (
-          gold_code,
+      inphase_part = csignal_tests.python_spread_signal (
+          inphase_gold_code,
           chip_duration,
-          part
-                                                )
+          signal_components[ 0 ]
+                                                        )
 
-      self.assertNotEquals( part, None )
+      self.assertNotEquals( inphase_part, None )
+
+      quadrature_part = csignal_tests.python_spread_signal  (
+          quadrature_gold_code,
+          chip_duration,
+          signal_components[ 1 ]
+                                                            )
+
+      self.assertNotEquals( quadrature_part, None )
+
+      part = []
+
+      for index in range( symbol_duration ):
+        part.append( inphase_part[ index ] - quadrature_part[ index ] )
+
+      self.assertEquals( len( part ), symbol_duration )
 
       signal = signal + part
 
@@ -401,7 +471,9 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
-    self.assertEquals( csignal_tests.csignal_destroy_gold_code( gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( quadrature_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_initialize_kaiser_filter( self ):
     filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 6000, 5000, 0.1, 80, 0 )
@@ -707,7 +779,7 @@ class TestsCSignal( unittest.TestCase ):
 
     file_handle.close()
 
-    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 20 ) )
     
     symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
 
@@ -720,16 +792,26 @@ class TestsCSignal( unittest.TestCase ):
     signal = []
 
     while( symbol != None ):
-      part = csignal_tests.python_modulate_symbol (
+      signal_components = csignal_tests.python_modulate_symbol (
           symbol,
           constellation_size,
           sample_rate,
           sample_rate,
           baseband_amplitude,
           carrier_frequency
-                                                  )
+                                                              )
   
-      self.assertNotEquals( part, None )
+      self.assertNotEquals( signal_components, None )
+      self.assertEquals( len( signal_components ), 2 )
+      self.assertNotEquals( signal_components[ 0 ], None )
+      self.assertNotEquals( signal_components[ 1 ], None )
+      self.assertEquals( len( signal_components[ 0 ] ), sample_rate )
+      self.assertEquals( len( signal_components[ 1 ] ), sample_rate )
+
+      part = []
+
+      for index in range( sample_rate ):
+        part.append( signal_components[ 0 ][ index ] - signal_components[ 1 ][ index ] )
 
       signal = signal + part
 
@@ -766,16 +848,26 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertNotEquals( symbol, None )
 
-    signal = csignal_tests.python_modulate_symbol (
+    signal_components = csignal_tests.python_modulate_symbol (
         symbol,
         constellation_size,
         sample_rate,
         sample_rate,
         baseband_amplitude,
         carrier_frequency
-                                                  )
+                                                              )
 
-    self.assertNotEquals( signal, None )
+    self.assertNotEquals( signal_components, None )
+    self.assertEquals( len( signal_components ), 2 )
+    self.assertNotEquals( signal_components[ 0 ], None )
+    self.assertNotEquals( signal_components[ 1 ], None )
+    self.assertEquals( len( signal_components[ 0 ] ), sample_rate )
+    self.assertEquals( len( signal_components[ 1 ] ), sample_rate )
+
+    signal = []
+
+    for index in range( sample_rate ):
+      signal.append( signal_components[ 0 ][ index ] - signal_components[ 1 ][ index ] )
 
     samples = [ signal, signal ]
 
@@ -826,16 +918,26 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertNotEquals( symbol, None )
 
-    signal = csignal_tests.python_modulate_symbol (
+    signal_components = csignal_tests.python_modulate_symbol (
         symbol,
         constellation_size,
         sample_rate,
         sample_rate,
         baseband_amplitude,
         carrier_frequency
-                                                  )
+                                                              )
 
-    self.assertNotEquals( signal, None )
+    self.assertNotEquals( signal_components, None )
+    self.assertEquals( len( signal_components ), 2 )
+    self.assertNotEquals( signal_components[ 0 ], None )
+    self.assertNotEquals( signal_components[ 1 ], None )
+    self.assertEquals( len( signal_components[ 0 ] ), sample_rate )
+    self.assertEquals( len( signal_components[ 1 ] ), sample_rate )
+
+    signal = []
+
+    for index in range( sample_rate ):
+      signal.append( signal_components[ 0 ][ index ] - signal_components[ 1 ][ index ] )
 
     samples = [ signal, signal ]
 
@@ -876,6 +978,9 @@ class TestsCSignal( unittest.TestCase ):
                                                     )
 
       self.assertNotEquals( signal, None )
+      self.assertEquals( len( signal ), 2 )
+      self.assertNotEquals( signal[ 0 ], None )
+      self.assertNotEquals( signal[ 1 ], None )
 
       symbol = csignal_tests.python_get_symbol( symbol_tracker, 8 )
 
@@ -883,8 +988,7 @@ class TestsCSignal( unittest.TestCase ):
 
   def test_generate_signal( self ):
     self.assertEquals (
-      csignal_tests.python_modulate_symbol( -1, 8, 48000, 10, 16000, 22000 ),
-      None
+      csignal_tests.python_modulate_symbol( -1, 8, 48000, 10, 16000, 22000 ), None
                       )
 
     self.assertEquals (
@@ -949,6 +1053,9 @@ class TestsCSignal( unittest.TestCase ):
                                                     )
 
       self.assertNotEquals( signal, None )
+      self.assertEquals( len( signal ), 2 )
+      self.assertNotEquals( signal[ 0 ], None )
+      self.assertNotEquals( signal[ 1 ], None )
 
       symbol = csignal_tests.python_get_symbol( symbol_tracker, 4 ) 
 

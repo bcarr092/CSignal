@@ -145,16 +145,17 @@ csignal_get_symbol  (
               UINT32   in_symbol_duration,
               INT16    in_baseband_pulse_amplitude,
               FLOAT32  in_carrier_frequency,
-              INT16*   out_signal
+              FLOAT64* out_signal_inphase,
+              FLOAT64* out_signal_quadrature
             )
-    \brief  Modulates a symbol into a signal. Let the symbol value be m, the
-            constellation size be M, the sample rate be f_s, each time t_i be a
-            multiple of 1 / f_s, the carrier frequency be f_c, and the duration
-            of each symbol (in terms of points) be T. This function returns the
-            following:
+    \brief  Modulates a data symbol into inphase and quadrature components.
+            Let the data symbol value be m, the constellation size be M, the
+            sample rate be f_s, each time t_i be a multiple of 1 / f_s, the
+            carrier frequency be f_c, and the duration of each symbol (in terms
+            of points) be T. This function returns the following:
  
-            signal[ i ] = g( t ) * A_mc * cos( 2 * pi * f_c * t_i )
-                            - g( t ) * A_ms * sin( 2 * pi * f_c * t_i )
+            signal_inphase[ i ] = g( t ) * A_mc * cos( 2 * pi * f_c * t_i )
+            signal_outphase[ i ] = g( t ) * A_ms * sin( 2 * pi * f_c * t_i )
  
             where,
       
@@ -179,11 +180,14 @@ csignal_get_symbol  (
     \param  in_baseband_pulse_amplitude The shape of the pulse being modulated
     \param  in_carrier_frequency  The frequency of the carrier wave. Must be >
                                   0
-    \param  out_signal  The array of samples returned to the caller if no error
-                        is detected.
+    \param  out_signal_inphase  The array of inphase samples returned to the
+                                caller if no error is detected.
+    \param  out_signal_quadrature The array of quadrature samples returned to
+                                  the caller if no error is detected.
     \return Returns NO_ERROR upon succesful exection or one of these errors:
  
-            CPC_ERROR_CODE_NULL_POINTER If out_signal is null.
+            CPC_ERROR_CODE_NULL_POINTER If out_signal_inphase or
+                                        out_signal_quadrature are null.
             CPC_ERROR_CODE_INVALID_PARAMETER
               If in_symbol >= in_constellation_size
               If in_carrier_frequency < 0
@@ -197,7 +201,8 @@ csignal_modulate_symbol (
                          USIZE    in_symbol_duration,
                          INT16    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
-                         FLOAT64* out_signal
+                         FLOAT64* out_signal_inphase,
+                         FLOAT64* out_signal_quadrature
                          );
 
 /*! \fn     csignal_error_code csignal_spread_signal (
