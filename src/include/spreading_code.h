@@ -2,6 +2,8 @@
     \brief  This file contains all functions related to creating a spreading
             code (i.e. the c(t) function in spread spectrum modulation). Gold
             Codes are employed to allow for multiple access.
+ 
+    \author Brent Carrara
  */
 #ifndef __SPREADING_CODE_H__
 #define __SPREADING_CODE_H__

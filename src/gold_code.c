@@ -2,6 +2,8 @@
     \brief  The impementation of Gold Codes. The implementation simply uses two
             m-sequences of the same degree that meet the "preferred pair"
             criteria to generate Gold Code sequences.
+ 
+    \author Brent Carrara
  */
 #include "gold_code.h"
 

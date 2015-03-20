@@ -6,6 +6,8 @@
             signal being filtered, i.e. we assume that the signal being
             filtered requires preservation of the phase of the signal and the
             only tolerable modification is a delay.
+ 
+    \author Brent Carrara
  */
 #ifndef __FIR_FILTER_H__
 #define __FIR_FILTER_H__

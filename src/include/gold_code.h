@@ -2,6 +2,8 @@
     \brief  Contains the headers for generating gold codes. Gold codes are used
             in CDMA applications and provide each user with their own unique
             spreading code that is nearly uncorrelated with all other codes.
+ 
+    \author Brent Carrara
  */
 #ifndef __GOLD_CODE_H__
 #define __GOLD_CODE_H__

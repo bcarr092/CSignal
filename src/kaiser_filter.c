@@ -1,6 +1,8 @@
 /*! \file   fir_filter.c
     \brief  This is the implementation of the helper functions for the FIR
             filter struct.
+ 
+    \author Brent Carrara
  */
 
 #include "kaiser_filter.h"

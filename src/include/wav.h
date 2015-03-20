@@ -1,5 +1,7 @@
 /*! \file   wav.h
     \brief  This library contains methods to read and write WAV files
+ 
+    \author Brent Carrara
  */
 #ifndef __WAV_H__
 #define __WAV_H__

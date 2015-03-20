@@ -16,6 +16,8 @@
             coefficients derived) based on the design parameters of the filter.
             A Kaiser filter is used when more control over the parameters is
             required.
+ 
+    \author Brent Carrara
  */
 #ifndef __KAISER_FILTER_H__
 #define __KAISER_FILTER_H__

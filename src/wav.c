@@ -1,6 +1,8 @@
 /*! \file   cwav.c
     \brief  This file contains the implementation of the read/write methods for
             WAV files.
+ 
+    \author Brent Carrara
 */
 
 #include "wav.h"

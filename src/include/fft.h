@@ -6,6 +6,8 @@
             Numerical recipes in C: the art of scientific computing by Press, et
             al. (Chapter 6)
             http://www2.units.it/ipl/students_area/imm2/files/Numerical_Recipes.pdf
+ 
+    \author Brent Carrara
  */
 #ifndef __FFT_H__
 #define __FFT_H__

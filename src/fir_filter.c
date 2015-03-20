@@ -1,3 +1,9 @@
+/*! \file   fir_filter.c
+    \brief  The implementation of a passband FIR filter and filter (correlation)
+            algorithm.
+ 
+    \author Brent Carrara
+ */
 #include "fir_filter.h"
 
 csignal_error_code

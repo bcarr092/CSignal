@@ -2,6 +2,8 @@
     \brief  The error codes produced by the csignal library are defined here.
             These error codes are superset of error codes and extend the codes
             already defined in error_codes.h in the cpcommon library.
+ 
+    \author Brent Carrara
  */
 #ifndef __CSIGNAL_ERROR_CODES_H__
 #define __CSIGNAL_ERROR_CODES_H__

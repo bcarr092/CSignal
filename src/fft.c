@@ -1,5 +1,7 @@
 /*! \file   fft.c
     \brief  The implementation of the FFT algorithm.
+ 
+    \author Brent Carrara
  */
 #include "fft.h"
 

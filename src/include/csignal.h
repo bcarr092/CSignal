@@ -7,6 +7,8 @@
             as are all filter values as well as functions performed on signals
             (e.g. FFT). It is the responsibility of the caller to convert the
             signals into the format that they require.
+ 
+    \author Brent Carrara
  */
 #ifndef __CSIGNAL_H__
 #define __CSIGNAL_H__

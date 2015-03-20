@@ -2,6 +2,8 @@
     \breif  This file contains the implementation for generating data modulated
             audio signals. Currently, implementations for QPSK and DSSS are
             supported.
+ 
+    \author Brent Carrara
  */
 
 #include "csignal.h"

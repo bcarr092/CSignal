@@ -2,6 +2,8 @@
     \brief  This file contains all the implementation of generating both the
             spreading code and spreading signal (i.e. the c(t) function in SS
             modulation).
+ 
+    \author Brent Carrara
  */
 
 #include "spreading_code.h"
