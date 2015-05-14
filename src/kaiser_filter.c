@@ -298,10 +298,11 @@ csignal_set_kaiser_impulse_response  (
     }
     
     number_of_taps =
-      CPC_CEIL  (
-                 FLOAT64,
-                 ( transition_width * in_sampling_frequency ) / delta_f + 1
-                 );
+      ( UINT32 )
+        CPC_CEIL  (
+                   FLOAT64,
+                   ( transition_width * in_sampling_frequency ) / delta_f + 1
+                   );
     
     if( 0 == number_of_taps % 2 )
     {
@@ -386,11 +387,12 @@ csignal_set_kaiser_weights  (
              in_second_cutoff_frequency
              );
     
-    for( INT32 i = 0; i < io_filter->number_of_taps; i++ )
+    for( UINT32 i = 0; i < io_filter->number_of_taps; i++ )
     {
       FLOAT64 numerator =
-        ( in_alpha * CPC_SQRT( FLOAT32, i * ( 2 * middle_tap - i ) ) )
-        / middle_tap;
+        ( FLOAT64 )
+          ( in_alpha * CPC_SQRT( FLOAT32, ( FLOAT32 ) i * ( 2 * middle_tap - i ) ) )
+            / ( middle_tap * 1.0 );
       
       FLOAT64 window_coefficient =
         cpc_bessel_i0( numerator ) / cpc_bessel_i0( in_alpha );

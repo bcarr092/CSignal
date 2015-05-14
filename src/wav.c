@@ -193,7 +193,9 @@ csignal_write_FLOAT_wav  (
   }
   else
   {
-    FILE* file_pointer = fopen( in_file_name, "wb" );
+    FILE* file_pointer = NULL;
+      
+    CPC_FOPEN( file_pointer, in_file_name, "wb" );
     
     if( NULL != file_pointer )
     {
@@ -276,7 +278,9 @@ csignal_write_LPCM_wav  (
   }
   else
   {
-    FILE* file_pointer = fopen( in_file_name, "wb" );
+    FILE* file_pointer = NULL;
+      
+    CPC_FOPEN( file_pointer, in_file_name, "wb" );
     
     if( NULL != file_pointer )
     {
@@ -365,7 +369,7 @@ csignal_write_FLOAT_data (
       {
         for( UINT32 j = 0; j < in_number_of_channels; j++ )
         {
-          FLOAT32 sample = in_samples[ j ][ i ];
+          FLOAT32 sample = ( FLOAT32 ) in_samples[ j ][ i ];
           
           if( 1 != fwrite( &sample, sizeof( FLOAT32 ), 1, in_file_pointer ) )
           {

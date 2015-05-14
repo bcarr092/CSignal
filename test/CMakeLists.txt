@@ -30,20 +30,35 @@ include( ${SWIG_USE_FILE} )
 set( CSIGNAL_INCLUDE_DIRECTORY "${csignal_SOURCE_DIR}/src/include" )
 set( CPCOMMON_INCLUDE_DIRECTORY "${cpcommon_SOURCE_DIR}/src/include" )
 
-set (
-      PYTHON_INCLUDE_PATH
-      "/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/include"
-    )
-
 if( "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" )
+  set (
+        PYTHON_INCLUDE_PATH
+        "/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/include"
+      )
   set (
         PYTHON_LIBRARIES
 "/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/lib/libpython.dylib"
       )
 elseif( ${PLATFORM} STREQUAL "Generic" AND ${TARGET} MATCHES "^android" )
   set (
+        PYTHON_INCLUDE_PATH
+        "/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/include"
+      )
+  set (
         PYTHON_LIBRARIES
 "/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/lib/libpython.so"
+      )
+elseif( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
+  string( REPLACE "\\" "/" PYTHON_INCLUDE "$ENV{PYTHON_INCLUDE}" )
+  string( REPLACE "\\" "/" PYTHON_LIB "$ENV{PYTHON_LIB}" )
+
+  set (
+        PYTHON_INCLUDE_PATH
+        "${PYTHON_INCLUDE}"
+      )
+  set (
+        PYTHON_LIBRARIES
+        "${PYTHON_LIB}/python27.lib"
       )
 endif()
 
