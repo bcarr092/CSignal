@@ -25,50 +25,67 @@ set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER )
 set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
 set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
 
-include( ${SWIG_USE_FILE} )
-
 set( CSIGNAL_INCLUDE_DIRECTORY "${csignal_SOURCE_DIR}/src/include" )
 set( CPCOMMON_INCLUDE_DIRECTORY "${cpcommon_SOURCE_DIR}/src/include" )
 
+include( ${SWIG_USE_FILE} )
+
+if(
+    DEFINED ENV{PYTHON_INCLUDE}
+    AND DEFINED ENV{PYTHON_LIB}
+    AND DEFINED ENV{PYTHON_BIN}
+  )
+  set( PYTHON_INCLUDE $ENV{PYTHON_INCLUDE}  )
+  set( PYTHON_LIB     $ENV{PYTHON_LIB}      )
+  set( PYTHON_BIN     $ENV{PYTHON_BIN}      )
+else()
+  message (
+    FATAL_ERROR
+    "Environment variables PYTHON_INCLUDE, PYTHON_LIB, PYTHON_BIN must be set."
+          )
+endif()
+
 if( "${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" )
   set (
-        PYTHON_INCLUDE_PATH
-        "/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/include"
+        PYTHON_LIBRARIES
+        "${PYTHON_LIB}/libpython.dylib"
       )
   set (
-        PYTHON_LIBRARIES
-"/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/lib/libpython.dylib"
+        PYTHON_BINARY
+        "${PYTHON_BIN}/python"
       )
 elseif( ${PLATFORM} STREQUAL "Generic" AND ${TARGET} MATCHES "^android" )
   set (
-        PYTHON_INCLUDE_PATH
-        "/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/include"
+        PYTHON_LIBRARIES
+        "${PYTHON_LIB}/libpython.so"
       )
   set (
-        PYTHON_LIBRARIES
-"/Users/user/Developer/Python/${PLATFORM}-${ARCHITECTURE}/lib/libpython.so"
+        PYTHON_BINARY
+        "${PYTHON_BIN}/python"
       )
 elseif( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
-  string( REPLACE "\\" "/" PYTHON_INCLUDE "$ENV{PYTHON_INCLUDE}" )
-  string( REPLACE "\\" "/" PYTHON_LIB "$ENV{PYTHON_LIB}" )
+  string( REPLACE "\\" "/" PYTHON_INCLUDE ${PYTHON_INCLUDE} )
+  string( REPLACE "\\" "/" PYTHON_LIB ${PYTHON_LIB} )
+  string( REPLACE "\\" "/" PYTHON_BIN ${PYTHON_BIN} )
 
-  set (
-        PYTHON_INCLUDE_PATH
-        "${PYTHON_INCLUDE}"
-      )
   set (
         PYTHON_LIBRARIES
         "${PYTHON_LIB}/python27.lib"
+      )
+  set (
+        PYTHON_BINARY
+        "${PYTHON_BIN}/python.exe"
       )
 endif()
 
 include_directories( CSIGNAL_INCLUDE_DIRECTORY )
 include_directories( ${CPCOMMON_INCLUDE_DIRECTORY} )
-include_directories( ${PYTHON_INCLUDE_PATH} )
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
+include_directories( ${PYTHON_INCLUDE} )
 
+message( STATUS "Python includes: ${PYTHON_INCLUDE}" )
+message( STATUS "Python binary: ${PYTHON_BINARY}" )
 message( STATUS "Python library: ${PYTHON_LIBRARIES}" )
-message( STATUS "Python includes: ${PYTHON_INCLUDE_PATH}" )
 
 swig_add_module( ${PROJECT_NAME} python "${PROJECT_NAME}.i" )
 swig_link_libraries( ${PROJECT_NAME} ${PYTHON_LIBRARIES} cpcommon csignal )
@@ -77,8 +94,16 @@ set( SCRIPTS "${PROJECT_SOURCE_DIR}/test_driver.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_csignal.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_2_7_1.dat" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_7_89_20.dat" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_32_100200007_40000000.dat" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/GoldSequenceTestVector_7_89_8F_20_20.dat" )
+list  (
+  APPEND
+  SCRIPTS
+  "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_32_100200007_40000000.dat"
+      )
+list  (
+  APPEND
+  SCRIPTS
+  "${PROJECT_SOURCE_DIR}/GoldSequenceTestVector_7_89_8F_20_20.dat"
+      )
 
 set( WRAPPERS "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.py" )
 
@@ -103,7 +128,11 @@ install(  FILES ${WRAPPERS} DESTINATION
 
 enable_testing()
 
-add_test( ${PROJECT_NAME} "/usr/local/bin/python" "${PROJECT_BINARY_DIR}/test_driver.py" )
+add_test  (
+  ${PROJECT_NAME}
+  ${PYTHON_BINARY}
+  "${PROJECT_BINARY_DIR}/test_driver.py"
+          )
 
 if( ${PLATFORM} STREQUAL "Generic" AND ${TARGET} MATCHES "^android" )
   find_library  (
