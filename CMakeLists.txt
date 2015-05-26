@@ -65,17 +65,7 @@ elseif( ${PLATFORM} STREQUAL "Generic" AND ${TARGET} MATCHES "^android" )
 
   message( STATUS "Android libraries: ${EXTRA_LIBS}" )
 elseif( ${CMAKE_SYSTEM_NAME} STREQUAL "Windows" )
-  find_library  (
-                  WS2_32_LIB
-                  Ws2_32 
-                )
 
-  set (
-        EXTRA_LIBS
-        ${WS2_32_LIB}
-      )
-
-  message( STATUS "Windows libraries: ${EXTRA_LIBS}" )
 else()
   message( FATAL_ERROR "Unsupported platform: ${PLATFORM}" )
 endif()
