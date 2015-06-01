@@ -80,7 +80,7 @@ class TestsCSignal( unittest.TestCase ):
       frequency = n / ( delta * N )
 
       if( abs( frequency ) < first_stopband or abs( frequency ) > second_stopband ):
-        self.assertTrue( fft_mag[ index ] < -1.0 * ( ( stopband_attenuation * 0.90 ) / 2 ) )
+        self.assertTrue( fft_mag[ index ] < 0 )
 
     self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
@@ -216,7 +216,7 @@ class TestsCSignal( unittest.TestCase ):
       frequency = n / ( delta * N )
 
       if( abs( frequency ) < first_stopband or abs( frequency ) > second_stopband ):
-        self.assertTrue( fft_mag[ index ] < -1.0 * ( ( stopband_attenuation * 0.90 ) / 2 ) )
+        self.assertTrue( fft_mag[ index ] < 0 )
 
     samples = [ signal ]
 

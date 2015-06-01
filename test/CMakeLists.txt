@@ -25,10 +25,10 @@ set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER )
 set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
 set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
 
+include( ${SWIG_USE_FILE} )
+
 set( CSIGNAL_INCLUDE_DIRECTORY "${csignal_SOURCE_DIR}/src/include" )
 set( CPCOMMON_INCLUDE_DIRECTORY "${cpcommon_SOURCE_DIR}/src/include" )
-
-include( ${SWIG_USE_FILE} )
 
 if(
     DEFINED ENV{PYTHON_INCLUDE}
@@ -82,12 +82,27 @@ include_directories( CSIGNAL_INCLUDE_DIRECTORY )
 include_directories( ${CPCOMMON_INCLUDE_DIRECTORY} )
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 include_directories( ${PYTHON_INCLUDE} )
+include_directories( ${INCLUDE_DIR} )
 
 message( STATUS "Python includes: ${PYTHON_INCLUDE}" )
 message( STATUS "Python binary: ${PYTHON_BINARY}" )
 message( STATUS "Python library: ${PYTHON_LIBRARIES}" )
 
-swig_add_module( ${PROJECT_NAME} python "${PROJECT_NAME}.i" )
+set( SOURCES "${SOURCE_DIR}/csignal_wrapper.c" )
+
+set( HEADERS "${INCLUDE_DIR}/csignal_wrapper.h" )
+
+message( STATUS "C source files found: ${SOURCES}" )
+message( STATUS "C header files found: ${HEADERS}" )
+
+swig_add_module (
+  ${PROJECT_NAME}
+  python
+  "${PROJECT_NAME}.i"
+  ${SOURCES}
+  ${HEADERS}
+                )
+
 swig_link_libraries( ${PROJECT_NAME} ${PYTHON_LIBRARIES} cpcommon csignal )
 
 set( SCRIPTS "${PROJECT_SOURCE_DIR}/test_driver.py" )
