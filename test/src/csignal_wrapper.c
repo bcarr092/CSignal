@@ -361,7 +361,7 @@ python_get_gold_code(
 
 gold_code*
 python_initialize_gold_code(
-  int in_degree,
+  unsigned int in_degree,
   unsigned long in_generator_polynomial_1,
   unsigned long in_generator_polynomial_2,
   unsigned long in_initial_state_1,
@@ -370,45 +370,24 @@ python_initialize_gold_code(
 {
   gold_code* shift_registers = NULL;
 
-  if(
-    0 > in_generator_polynomial_1
-    || 0 > in_generator_polynomial_2
-    || 0 > in_initial_state_1
-    || 0 > in_initial_state_2
-    || 0 > in_degree
-    )
+  csignal_error_code return_value =
+    csignal_initialize_gold_code(
+    in_degree,
+    in_generator_polynomial_1,
+    in_generator_polynomial_2,
+    in_initial_state_1,
+    in_initial_state_2,
+    &shift_registers
+    );
+
+  if( CPC_ERROR_CODE_NO_ERROR != return_value )
   {
     CPC_ERROR(
-      "Generator polynomial 1 (0x%x), state 1 (0x%x), degree (0x%x)"
-      " generator polynomial 2 (0x%x), or state 2 (0x%x) are negative.",
-      in_generator_polynomial_1,
-      in_initial_state_1,
-      in_degree,
-      in_generator_polynomial_2,
-      in_initial_state_2
-      );
-  }
-  else
-  {
-    csignal_error_code return_value =
-      csignal_initialize_gold_code(
-      in_degree,
-      in_generator_polynomial_1,
-      in_generator_polynomial_2,
-      in_initial_state_1,
-      in_initial_state_2,
-      &shift_registers
+      "Could not create gold code struct: 0x%x.",
+      return_value
       );
 
-    if( CPC_ERROR_CODE_NO_ERROR != return_value )
-    {
-      CPC_ERROR(
-        "Could not create gold code struct: 0x%x.",
-        return_value
-        );
-
-      shift_registers = NULL;
-    }
+    shift_registers = NULL;
   }
 
   return( shift_registers );
@@ -497,41 +476,29 @@ python_get_spreading_code(
 
 spreading_code*
 python_initialize_spreading_code(
-  int in_degree,
+  unsigned int in_degree,
   unsigned long in_generator_polynomial,
   unsigned long in_initial_state
 )
 {
   spreading_code* shift_register = NULL;
 
-  if( 0 > in_generator_polynomial || 0 > in_initial_state || 0 > in_degree )
+  csignal_error_code return_value =
+    csignal_initialize_spreading_code(
+    in_degree,
+    in_generator_polynomial,
+    in_initial_state,
+    &shift_register
+    );
+
+  if( CPC_ERROR_CODE_NO_ERROR != return_value )
   {
     CPC_ERROR(
-      "Generator polynomial (0x%x), state 0x%x), or degree (0x%x)  are negative.",
-      in_generator_polynomial,
-      in_initial_state,
-      in_degree
-      );
-  }
-  else
-  {
-    csignal_error_code return_value =
-      csignal_initialize_spreading_code(
-      in_degree,
-      in_generator_polynomial,
-      in_initial_state,
-      &shift_register
+      "Could not create spreading code struct: 0x%x.",
+      return_value
       );
 
-    if( CPC_ERROR_CODE_NO_ERROR != return_value )
-    {
-      CPC_ERROR(
-        "Could not create spreading code struct: 0x%x.",
-        return_value
-        );
-
-      shift_register = NULL;
-    }
+    shift_register = NULL;
   }
 
   return( shift_register );

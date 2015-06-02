@@ -530,16 +530,20 @@ class TestsCSignal( unittest.TestCase ):
 
     index = 0
 
-    with open( 'GoldSequenceTestVector_7_89_8F_20_20.dat' ) as file_pointer:
-      for line in file_pointer:
-        expression = re.compile( '^(\d+)$' )
+    file = open( 'GoldSequenceTestVector_7_89_8F_20_20.dat' )
 
+    if( file ):
+      for line in file:
+        expression = re.compile( '^(\d+)$' )
+  
         result = re.match( expression, line )
 
         if( result ):
           self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
 
           index += 1
+
+      file.close() 
 
     result = csignal_tests.csignal_destroy_gold_code( gold_code )
 
@@ -635,8 +639,10 @@ class TestsCSignal( unittest.TestCase ):
 
     index = 0
 
-    with open( 'PNSequenceTestVector_32_100200007_40000000.dat' ) as file_pointer:
-      for line in file_pointer:
+    file = open( 'PNSequenceTestVector_32_100200007_40000000.dat' )
+
+    if( file ):
+      for line in file:
         expression = re.compile( '^(\d+)$' )
 
         result = re.match( expression, line )
@@ -645,6 +651,8 @@ class TestsCSignal( unittest.TestCase ):
           self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
 
           index += 1
+
+      file.close()
 
   def test_get_spreading_code_degree_7( self ):
     spreading_code = csignal_tests.python_initialize_spreading_code( 7, 0x12000000, 0x40000000 )
@@ -658,8 +666,10 @@ class TestsCSignal( unittest.TestCase ):
 
     index = 0
 
-    with open( 'PNSequenceTestVector_7_89_20.dat' ) as file_pointer:
-      for line in file_pointer:
+    file = open( 'PNSequenceTestVector_7_89_20.dat' )
+
+    if( file ):
+      for line in file:
         expression = re.compile( '^(\d+)$' )
 
         result = re.match( expression, line )
@@ -668,6 +678,8 @@ class TestsCSignal( unittest.TestCase ):
           self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
 
           index += 1
+
+      file.close()
 
   def test_get_spreading_code_degree_2( self ):
     spreading_code = csignal_tests.python_initialize_spreading_code( 2, 0xC0000000, 0x40000000 )
@@ -681,8 +693,10 @@ class TestsCSignal( unittest.TestCase ):
 
     index = 0
 
-    with open( 'PNSequenceTestVector_2_7_1.dat' ) as file_pointer:
-      for line in file_pointer:
+    file = open( 'PNSequenceTestVector_2_7_1.dat' )
+
+    if( file ):
+      for line in file:
         expression = re.compile( '^(\d+)$' )
 
         result = re.match( expression, line )
@@ -691,6 +705,8 @@ class TestsCSignal( unittest.TestCase ):
           self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
 
           index += 1
+
+      file.close()
 
   def test_initialize_spreading_code( self ):
     spreading_code = csignal_tests.python_initialize_spreading_code( 1, 0x10000000, 0x10000000 )

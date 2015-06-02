@@ -93,7 +93,7 @@ python_get_gold_code(
 */
 gold_code*
 python_initialize_gold_code(
-  int in_degree,
+  unsigned int in_degree,
   unsigned long in_generator_polynomial_1,
   unsigned long in_generator_polynomial_2,
   unsigned long in_initial_state_1,
@@ -131,7 +131,7 @@ python_get_spreading_code(
 */
 spreading_code*
 python_initialize_spreading_code(
-  int in_degree,
+  unsigned int in_degree,
   unsigned long in_generator_polynomial,
   unsigned long in_initial_state
 );
