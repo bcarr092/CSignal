@@ -504,6 +504,36 @@ python_initialize_spreading_code(
   return( shift_register );
 }
 
+
+PyObject*
+python_test (
+             gold_code*  io_gold_code,
+             size_t      in_chip_duration,
+             PyObject* in_signal
+             )
+{
+  if( NULL == io_gold_code )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Gold code is null." );
+  }
+  else if( 0 >= in_chip_duration )
+  {
+    CPC_ERROR(
+              "Chip duration (0x%x) must be strictly be positive.",
+              in_chip_duration
+              );
+  }
+  else if( !PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
+  {
+    CPC_LOG_STRING(
+                   CPC_LOG_LEVEL_ERROR,
+                   "Signal must be a list with elements."
+                   );
+  }
+  
+  Py_RETURN_NONE;
+}
+
 PyObject*
 python_spread_signal(
   gold_code*  io_gold_code,
@@ -552,7 +582,7 @@ python_spread_signal(
         }
         else
         {
-          CPC_ERROR( "Entry 0x%x is not an integer.", i );
+          CPC_ERROR( "Entry 0x%x is not a float.", i );
 
           return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
         }
@@ -575,10 +605,10 @@ python_spread_signal(
     {
       return_code =
         csignal_spread_signal(
-        io_gold_code,
-        in_chip_duration,
-        size,
-        signal
+          io_gold_code,
+          in_chip_duration,
+          size,
+          signal
         );
 
       if( CPC_ERROR_CODE_NO_ERROR == return_code )
@@ -597,10 +627,10 @@ python_spread_signal(
         {
           if(
             0 != PyList_SetItem(
-            new_signal,
-            i,
-            Py_BuildValue( "d", signal[i] )
-            )
+                    new_signal,
+                    i,
+                    Py_BuildValue( "d", signal[i] )
+                  )
             )
           {
             PyErr_Print( );
@@ -612,6 +642,10 @@ python_spread_signal(
         if( CPC_ERROR_CODE_NO_ERROR == return_code )
         {
           return_value = new_signal;
+        }
+        else
+        {
+          Py_XDECREF( new_signal );
         }
       }
       else
@@ -882,23 +916,25 @@ python_modulate_symbol(
               for( USIZE i = 0; i < in_symbol_duration; i++ )
               {
                 if(
-                  0 != PyList_SetItem(
-                  inphase_list,
-                  i,
-                  Py_BuildValue( "d", inphase[i] )
-                  )
-                  || 0 != PyList_SetItem(
-                  quadrature_list,
-                  i,
-                  Py_BuildValue( "d", quadrature[i] )
-                  )
+                  0 != PyList_SetItem (
+                        inphase_list,
+                        i,
+                        Py_BuildValue( "d", inphase[i] )
+                                       )
+                  || 0 != PyList_SetItem  (
+                            quadrature_list,
+                            i,
+                            Py_BuildValue( "d", quadrature[i] )
+                                           )
                   )
                 {
+                  CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Error adding values.");
+                  
                   PyErr_Print( );
                 }
               }
 
-              if( PyList_Check( list ) )
+              if( PyList_Check( list ) && PyList_Check( inphase_list ) && PyList_Check( quadrature_list ) )
               {
                 return_value = list;
               }

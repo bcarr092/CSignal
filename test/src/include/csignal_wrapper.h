@@ -5,7 +5,7 @@
 
 #include <csignal.h>
 
-/*! \fn     static PyObject* python_calculate_FFT  (
+/*! \fn     PyObject* python_calculate_FFT  (
               PyObject* in_signal
             )
     \brief  Calculates the FFT of in_signal and returns a list of complex
@@ -20,7 +20,7 @@ python_calculate_FFT(
   PyObject* in_signal
 );
 
-/*! \fn     static PyObject* python_filter_signal  (
+/*! \fn     PyObject* python_filter_signal  (
               fir_passband_filter*  in_filter,
               PyObject*             in_signal
             )
@@ -28,7 +28,7 @@ python_calculate_FFT(
             a Python list of filtered samples. See the documentation for
             csignal_filter_signal for more information regarding the behaviour
             of the filter function and the desired parameters.
-*/
+ */
 PyObject*
 python_filter_signal(
   fir_passband_filter*  in_filter,
@@ -59,7 +59,7 @@ python_initialize_kaiser_filter(
   int   in_sampling_frequency
 );
 
-/*! \fn     static PyObject* python_get_gold_code (
+/*! \fn     PyObject* python_get_gold_code (
               gold_code*  in_gold_code,
               size_t      in_number_of_bits
             )
@@ -71,7 +71,7 @@ python_initialize_kaiser_filter(
 
     \return Returns a python list of unsigned char values or None if an error
             occured.
-*/
+ */
 PyObject*
 python_get_gold_code(
   gold_code*  in_gold_code,
@@ -100,7 +100,7 @@ python_initialize_gold_code(
   unsigned long in_initial_state_2
 );
 
-/*! \fn     static PyObject* python_get_spreading_code  (
+/*! \fn     PyObject* python_get_spreading_code  (
               spreading_code* in_spreading_code,
               size_t          in_number_of_bits
             )
@@ -112,7 +112,7 @@ python_initialize_gold_code(
 
     \return Returns a python list of unsigned char values or None if an error
             occured.
-*/
+ */
 PyObject*
 python_get_spreading_code(
   spreading_code* in_spreading_code,
@@ -136,7 +136,7 @@ python_initialize_spreading_code(
   unsigned long in_initial_state
 );
 
-/*! \fn     static PyObject* python_spread_signal (
+/*! \fn     PyObject* python_spread_signal (
               gold_code*  io_gold_code,
               size_t      in_chip_duration,
               PyObject*   in_signal
@@ -146,13 +146,20 @@ python_initialize_spreading_code(
             related to the implementation and valid parameter values.
 
     \return A Python list of signed short values.
-*/
+ */
 PyObject*
 python_spread_signal(
   gold_code*  io_gold_code,
   size_t      in_chip_duration,
   PyObject*   in_signal
 );
+
+PyObject*
+python_test (
+             gold_code*  io_gold_code,
+             size_t      in_chip_duration,
+             PyObject* in_signal
+             );
 
 /*! \fn     int python_write_FLOAT_wav (
               PyObject* in_file_name,
@@ -177,7 +184,7 @@ python_write_FLOAT_wav(
   PyObject* in_samples
 );
 
-/*! \fn     static PyObject* python_modulate_symbol  (
+/*! \fn     PyObject* python_modulate_symbol  (
               int     in_symbol,
               int     in_constellation_size,
               int     in_sample_rate,
@@ -192,7 +199,7 @@ python_write_FLOAT_wav(
     \return Two arrarys of floats if no error occurs or None. One array for the
             inphase components of the signal (index 0) and the other for the
             quadrature components of the signal (index 1).
-*/
+ */
 PyObject*
 python_modulate_symbol(
   int     in_symbol,
@@ -203,7 +210,7 @@ python_modulate_symbol(
   float   in_carrier_frequency
 );
 
-/*! \fn     static PyObject* python_get_symbol (
+/*! \fn     PyObject* python_get_symbol (
               csignal_symbol_tracker* in_symbol_tracker,
               size_t                  in_number_of_bits
             )
@@ -216,7 +223,7 @@ python_modulate_symbol(
     \param  in_symbol_tracker The symbol tracker to read data symbols from
     \param  in_number_of_bits The number of bits in each symbol
     \return None if an error is found, or a symbol
-*/
+ */
 PyObject*
 python_get_symbol(
   csignal_symbol_tracker* in_symbol_tracker,

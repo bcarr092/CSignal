@@ -203,19 +203,29 @@ csignal_get_spreading_code  (
     *out_size = 0;
     *out_code = NULL;
     
+    CPC_LOG (
+             CPC_LOG_LEVEL_TRACE,
+             "Number of code bits is 0x%x.",
+             in_number_of_code_bits
+             );
+    
     *out_size = in_number_of_code_bits / ( sizeof( UCHAR ) * 8 );
     
-    if( 0 != in_number_of_code_bits % 2 )
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "Out size is: 0x%x.", *out_size );
+    
+    if( 0 != in_number_of_code_bits % ( sizeof( UCHAR ) * 8 ) )
     {
       *out_size = *out_size + 1;
     }
+    
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "Out size is: 0x%x.", *out_size );
     
     return_value =
       cpc_safe_malloc (
                        ( void** ) out_code,
                        sizeof( UCHAR ) * *out_size
                       );
-    
+
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
       for( UINT32 i = 0; i < in_number_of_code_bits; i++ )
@@ -229,10 +239,12 @@ csignal_get_spreading_code  (
         {
           CPC_LOG (
                    CPC_LOG_LEVEL_TRACE,
-                   "Inserting bit 0x%x at bit index 0x%x of byte 0x%x.",
+                   "Inserting bit 0x%x at bit index 0x%x"
+                   " of byte 0x%x (max 0x%x).",
                    bit,
                    bit_index,
-                   byte_index
+                   byte_index,
+                   *out_size
                    );
           
           CPC_LOG (

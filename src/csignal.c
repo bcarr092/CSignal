@@ -399,6 +399,11 @@ csignal_spread_signal (
         CPC_ERROR( "Could not malloc spreading signal: 0x%x.", return_value );
       }
     }
+    
+    if( NULL != code )
+    {
+      cpc_safe_free( ( void** ) &code );
+    }
   }
   
   return( return_value );

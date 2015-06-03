@@ -137,7 +137,7 @@ csignal_get_gold_code  (
                                    &size_1,
                                    &code_1
                                    );
-    
+
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
       return_value =
@@ -180,7 +180,7 @@ csignal_get_gold_code  (
           
           return_value = CSIGNAL_ERROR_CODE_LENGTH_MISMATCH;
         }
-       
+    
         cpc_safe_free( ( void** ) &code_2 );
       }
       

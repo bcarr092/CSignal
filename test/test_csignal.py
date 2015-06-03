@@ -16,6 +16,106 @@ def touch_random_file():
   return( file_handle, file_name )
 
 class TestsCSignal( unittest.TestCase ):
+  def test_spread_signal( self ):
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32000
+    carrier_frequency   = 12000
+    symbol_duration     = 1000
+    chip_duration       = 10
+
+    ( file_handle, file_name ) = touch_random_file()
+
+    file_handle.close()
+
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    
+    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+
+    self.assertNotEquals( symbol_tracker, None )
+
+    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    self.assertNotEquals( symbol, None )
+
+    inphase_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+    quadrature_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
+
+    self.assertNotEquals( inphase_gold_code, None )
+    self.assertNotEquals( quadrature_gold_code, None )
+
+    signal = []
+
+    while( symbol != None ):
+      signal_components = csignal_tests.python_modulate_symbol (
+          symbol,
+          constellation_size,
+          sample_rate,
+          symbol_duration,
+          baseband_amplitude,
+          carrier_frequency
+                                                              )
+
+      self.assertNotEquals( signal_components, None )
+      self.assertEquals( len( signal_components ), 2 )
+      self.assertNotEquals( signal_components[ 0 ], None )
+      self.assertNotEquals( signal_components[ 1 ], None )
+      self.assertEquals( len( signal_components[ 0 ] ), symbol_duration )
+      self.assertEquals( len( signal_components[ 1 ] ), symbol_duration )
+
+      inphase_part = csignal_tests.python_spread_signal (
+          inphase_gold_code,
+          chip_duration,
+          signal_components[ 0 ]
+                                                        )
+
+      self.assertNotEquals( inphase_part, None )
+
+      quadrature_part = csignal_tests.python_spread_signal  (
+          quadrature_gold_code,
+          chip_duration,
+          signal_components[ 1 ]
+                                                            )
+
+      self.assertNotEquals( quadrature_part, None )
+
+      part = []
+
+      for index in range( symbol_duration ):
+        part.append( inphase_part[ index ] - quadrature_part[ index ] )
+
+      self.assertEquals( len( part ), symbol_duration )
+
+      signal = signal + part
+
+      self.assertNotEquals( signal, None )
+
+      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+
+    self.assertNotEquals( signal, None )
+
+    samples = [ signal, signal ]
+
+    error = csignal_tests.python_write_FLOAT_wav (
+      file_name,
+      len( samples ),
+      sample_rate,
+      len( signal ),
+      samples
+                                                )
+
+    self.assertEquals( error, csignal_tests.CPC_TRUE )
+
+    if( os.path.exists( file_name ) ): 
+      os.unlink( file_name )
+
+    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( quadrature_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
   def test_filter( self ):
     sample_rate     = 48000
 
@@ -374,106 +474,6 @@ class TestsCSignal( unittest.TestCase ):
 
     if( os.path.exists( file_name ) ):
       os.unlink( file_name )
-
-  def test_spread_signal( self ):
-    bits_per_symbol     = 8
-    constellation_size  = 2 ** bits_per_symbol
-    sample_rate         = 48000
-    baseband_amplitude  = 32000
-    carrier_frequency   = 12000
-    symbol_duration     = 1000
-    chip_duration       = 10
-
-    ( file_handle, file_name ) = touch_random_file()
-
-    file_handle.close()
-
-    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
-    
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
-
-    self.assertNotEquals( symbol_tracker, None )
-
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
-
-    self.assertNotEquals( symbol, None )
-
-    inphase_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
-    quadrature_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000 )
-
-    self.assertNotEquals( inphase_gold_code, None )
-    self.assertNotEquals( quadrature_gold_code, None )
-
-    signal = []
-
-    while( symbol != None ):
-      signal_components = csignal_tests.python_modulate_symbol (
-          symbol,
-          constellation_size,
-          sample_rate,
-          symbol_duration,
-          baseband_amplitude,
-          carrier_frequency
-                                                              )
-  
-      self.assertNotEquals( signal_components, None )
-      self.assertEquals( len( signal_components ), 2 )
-      self.assertNotEquals( signal_components[ 0 ], None )
-      self.assertNotEquals( signal_components[ 1 ], None )
-      self.assertEquals( len( signal_components[ 0 ] ), symbol_duration )
-      self.assertEquals( len( signal_components[ 1 ] ), symbol_duration )
-
-      inphase_part = csignal_tests.python_spread_signal (
-          inphase_gold_code,
-          chip_duration,
-          signal_components[ 0 ]
-                                                        )
-
-      self.assertNotEquals( inphase_part, None )
-
-      quadrature_part = csignal_tests.python_spread_signal  (
-          quadrature_gold_code,
-          chip_duration,
-          signal_components[ 1 ]
-                                                            )
-
-      self.assertNotEquals( quadrature_part, None )
-
-      part = []
-
-      for index in range( symbol_duration ):
-        part.append( inphase_part[ index ] - quadrature_part[ index ] )
-
-      self.assertEquals( len( part ), symbol_duration )
-
-      signal = signal + part
-
-      self.assertNotEquals( signal, None )
-
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
-
-    self.assertNotEquals( signal, None )
-
-    samples = [ signal, signal ]
-
-    error = csignal_tests.python_write_FLOAT_wav (
-      file_name,
-      len( samples ),
-      sample_rate,
-      len( signal ),
-      samples
-                                                )
-
-    self.assertEquals( error, csignal_tests.CPC_TRUE )
-
-    if( os.path.exists( file_name ) ): 
-      os.unlink( file_name )
-
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
-
-    self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
-
-    self.assertEquals( csignal_tests.csignal_destroy_gold_code( quadrature_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_initialize_kaiser_filter( self ):
     filter = csignal_tests.python_initialize_kaiser_filter( 3000, 4000, 6000, 5000, 0.1, 80, 0 )
@@ -1146,6 +1146,6 @@ class TestsCSignal( unittest.TestCase ):
       symbol = csignal_tests.python_get_symbol( symbol_tracker, 8 )
 
 if __name__ == '__main__':
-  csignal_tests.cpc_log_set_log_level( csignal_tests.CPC_LOG_LEVEL_TRACE )
+  csignal_tests.cpc_log_set_log_level( csignal_tests.CPC_LOG_LEVEL_ERROR )
 
   unittest.main()
