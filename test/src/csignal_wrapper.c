@@ -834,6 +834,19 @@ python_write_FLOAT_wav(
     }
   }
 
+  if( NULL != samples )
+  {
+    for( USIZE i = 0; i < in_number_of_channels; i++ )
+    {
+      if( NULL != samples[i] )
+      {
+        cpc_safe_free( ( void** )&( samples[i] ) );
+      }
+    }
+
+    cpc_safe_free( ( void** )&samples );
+  }
+
   return( return_value );
 }
 

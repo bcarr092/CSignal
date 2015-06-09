@@ -8,6 +8,24 @@
 
 #include "csignal.h"
 
+void
+csignal_initialize( void )
+{
+  if( !cpc_is_initialized() )
+  {
+    cpc_initialize();
+  }
+}
+
+void
+csignal_terminate( void )
+{
+  if( cpc_is_initialized() )
+  {
+    cpc_terminate();
+  }
+}
+
 /*! \fn     UINT32 csignal_gray_code_encode  (
               UINT32 in_input
             )

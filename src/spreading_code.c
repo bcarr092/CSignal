@@ -384,3 +384,24 @@ csignal_set_spreading_signal  (
   
   return( return_value );
 }
+
+csignal_error_code
+csignal_destroy_spreading_code(
+  spreading_code* io_spreading_code
+                              )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+
+  if( NULL == io_spreading_code )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Spreading code was null." );
+
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+  }
+  else
+  {
+    return_value = cpc_safe_free( ( void** )&io_spreading_code );
+  }
+
+  return( return_value );
+}

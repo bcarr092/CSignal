@@ -183,4 +183,20 @@ csignal_set_spreading_signal  (
                                FLOAT64* out_signal
                                );
 
+/*! \fn     csignal_error_code csignal_destroy_spreading_code (
+              spreading_code* io_spreading_code
+            )
+    \brief  Function to handle releasing the spreading code struct.
+
+    \param  io_spreading_code  The spreading code to free.
+    \return Returns NO_ERROR upon succesful execution or one of these errors
+            (see cpc_safe_free for other possible errors):
+
+            CPC_ERROR_CODE_NULL_POINTER If io_spreading_code is NULL
+*/
+csignal_error_code
+csignal_destroy_spreading_code(
+                                spreading_code* io_spreading_code
+                              );
+
 #endif  /*  __SPREADING_CODE_H__  */

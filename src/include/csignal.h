@@ -24,6 +24,9 @@
 
 #include "csignal_error_codes.h"
 
+void csignal_initialize( void );
+void csignal_terminate( void );
+
 /*! \var    csignal_symbol_tracker
     \brief  Struct definition for symbol tracker. A symbol tracker is used to
             iterate through the symbols in a buffer. Symbols of variable bit-

@@ -49,6 +49,16 @@ csignal_initialize_gold_code  (
                                        in_initial_state_2,
                                        &( ( *out_gold_code )->polynomials[ 1 ] )
                                            );
+
+        if( CPC_ERROR_CODE_NO_ERROR != return_value )
+        {
+          cpc_safe_free( ( void** )&( ( *out_gold_code )->polynomials[0] ) );
+          cpc_safe_free( ( void** )out_gold_code );
+        }
+      }
+      else
+      {
+        cpc_safe_free( ( void** )out_gold_code );
       }
     }
     else
@@ -89,6 +99,8 @@ csignal_destroy_gold_code (
       return_value =
         cpc_safe_free( ( void** ) &( io_gold_code->polynomials[ 1 ] ) );
     }
+
+    cpc_safe_free( ( void** )&io_gold_code );
   }
   
   return( return_value );
