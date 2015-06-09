@@ -24,8 +24,19 @@
 
 #include "csignal_error_codes.h"
 
-void csignal_initialize( void );
-void csignal_terminate( void );
+/*! \fn     csignal_intialize
+    \brief  Initializes the CSignal library
+
+ */
+void
+csignal_initialize( void );
+
+/*! \fn     csignal_terminate
+    \brief  Tears down the csignal library.
+
+ */
+void
+csignal_terminate( void );
 
 /*! \var    csignal_symbol_tracker
     \brief  Struct definition for symbol tracker. A symbol tracker is used to
