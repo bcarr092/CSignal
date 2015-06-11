@@ -8,6 +8,20 @@
 
 #include "csignal.h"
 
+/*! \fn     UINT32 csignal_gray_code_encode  (
+              UINT32 in_input
+            )
+    \brief  Converts the input value, in_input, to a Gray Code value. A Gray
+            Code changes only one bit in adjacent values, ex. 00 01 11 10 is a
+            2-bit Gray Code.
+ 
+    \param  in_input  The number to converted to Gray Code.
+    \return A Gray Code encoded value of in_input
+ */
+UINT32
+csignal_gray_code_encode  (
+                           UINT32 in_input
+                           );
 void
 csignal_initialize( void )
 {
@@ -26,196 +40,13 @@ csignal_terminate( void )
   }
 }
 
-/*! \fn     UINT32 csignal_gray_code_encode  (
-              UINT32 in_input
-            )
-    \brief  Converts the input value, in_input, to a Gray Code value. A Gray
-            Code changes only one bit in adjacent values, ex. 00 01 11 10 is a
-            2-bit Gray Code.
- 
-    \param  in_input  The number to converted to Gray Code.
-    \return A Gray Code encoded value of in_input
- */
-UINT32
-csignal_gray_code_encode  (
-                           UINT32 in_input
-                           );
-
-csignal_error_code
-csignal_initialize_symbol_tracker  (
-                                    UCHAR*                    in_data,
-                                    USIZE                     in_data_length,
-                                    csignal_symbol_tracker ** out_symbol_tracker
-                                    )
-{
-  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
-  
-  ( *out_symbol_tracker ) = NULL;
-  
-  if( NULL == in_data )
-  {
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Data buffer is null." );
-    
-    return_value = CPC_ERROR_CODE_NULL_POINTER;
-  }
-  else
-  {
-    return_value =  cpc_safe_malloc (
-                                     ( void ** ) out_symbol_tracker,
-                                     sizeof( csignal_symbol_tracker )
-                                     );
-    
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
-    {
-      ( *out_symbol_tracker )->data           = in_data;
-      ( *out_symbol_tracker )->data_length    = in_data_length;
-      ( *out_symbol_tracker )->byte_offset    = 0;
-      ( *out_symbol_tracker )->bit_offset     = 0;
-    }
-  }
-  
-  return( return_value );
-}
-
-csignal_error_code
-csignal_destroy_symbol_tracker  (
-                                 csignal_symbol_tracker* io_symbol_tracker
-                                 )
-{
-  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
-  
-  if( NULL == io_symbol_tracker )
-  {
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Symbol tracker is  null." );
-    
-    return_value = CPC_ERROR_CODE_NULL_POINTER;
-  }
-  else
-  {
-    return_value = cpc_safe_free( ( void** ) &io_symbol_tracker );
-  }
-  
-  return( return_value );
-}
-
-csignal_error_code
-csignal_get_symbol  (
-                     csignal_symbol_tracker*  in_symbol_tracker,
-                     USIZE                    in_number_of_bits,
-                     UINT32*                  out_symbol
-                     )
-{
-  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
-  
-  CPC_LOG (
-           CPC_LOG_LEVEL_TRACE,
-           "ist=0x%x, inob=0x%x, os=0x%x",
-           in_symbol_tracker,
-           in_number_of_bits,
-           out_symbol
-           );
-  
-  if( NULL == in_symbol_tracker || NULL == out_symbol )
-  {
-    CPC_ERROR (
-               "Received a null pointer: tracker=0x%x, symbol=0x%x.",
-               in_symbol_tracker,
-               out_symbol
-               );
-    
-    return_value = CPC_ERROR_CODE_NULL_POINTER;
-  }
-  else
-  {
-    CPC_LOG_BUFFER  (
-                     CPC_LOG_LEVEL_TRACE,
-                     "Tracker data:",
-                     in_symbol_tracker->data,
-                     in_symbol_tracker->data_length,
-                     8
-                     );
-    
-    if( in_symbol_tracker->byte_offset == in_symbol_tracker->data_length )
-    {
-      return_value = CSIGNAL_ERROR_CODE_NO_DATA;
-    }
-    else
-    {
-      
-      USIZE mask        = 0;
-      USIZE new_offset  = 0;
-      USIZE num_bytes   = CPC_MIN  (
-                                    USIZE,
-                                    in_symbol_tracker->data_length
-                                    - in_symbol_tracker->byte_offset,
-                                    sizeof( USIZE )
-                                    );
-      
-      *out_symbol = 0;
-      
-      CPC_LOG( CPC_LOG_LEVEL_TRACE, "Number of bytes: 0x%x.", num_bytes );
-      CPC_LOG (
-               CPC_LOG_LEVEL_TRACE,
-               "Byte offset: 0x%x.",
-               in_symbol_tracker->byte_offset
-               );
-      
-      cpc_memcpy  (
-                   out_symbol,
-                   in_symbol_tracker->data
-                    + ( in_symbol_tracker->byte_offset * sizeof( UCHAR ) ),
-                   num_bytes
-                   );
-      
-      *out_symbol = CPC_HTONL( *out_symbol );
-      
-      CPC_LOG( CPC_LOG_LEVEL_TRACE, "Symbol contains: 0x%x.", *out_symbol );
-      
-      *out_symbol >>= ( sizeof( UINT32 ) * 8 )
-        - ( in_symbol_tracker->bit_offset + in_number_of_bits );
-      
-      for( USIZE i = 0; i < in_number_of_bits; i++ )
-      {
-        mask <<= 1;
-        
-        mask |= 0x1;
-      }
-      
-      *out_symbol &= mask;
-      
-      CPC_LOG( CPC_LOG_LEVEL_TRACE, "Symbol contains: 0x%x.", *out_symbol );
-      
-      new_offset = in_symbol_tracker->bit_offset + in_number_of_bits;
-      
-      CPC_LOG( CPC_LOG_LEVEL_TRACE, "Offset is: 0x%x.", new_offset );
-      
-      in_symbol_tracker->byte_offset  +=  new_offset / ( sizeof( UCHAR ) * 8 );
-      in_symbol_tracker->bit_offset   =   new_offset % ( sizeof( UCHAR )  * 8 );
-      
-      CPC_LOG (
-               CPC_LOG_LEVEL_TRACE,
-               "Byte offset: 0x%x,",
-               in_symbol_tracker->byte_offset
-               );
-      
-      CPC_LOG (
-               CPC_LOG_LEVEL_TRACE,
-               "Bit offset: 0x%x,",
-               in_symbol_tracker->bit_offset
-               );
-    }
-  }
-  
-  return( return_value );
-}
-
 csignal_error_code
 csignal_modulate_symbol (
                          UINT32   in_symbol,
                          UINT32   in_constellation_size,
                          UINT32   in_sample_rate,
                          USIZE    in_symbol_duration,
-                         INT16    in_baseband_pulse_amplitude,
+                         INT32    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
                          FLOAT64* out_signal_inphase,
                          FLOAT64* out_signal_quadrature
@@ -286,6 +117,8 @@ csignal_modulate_symbol (
              inphase_component,
              quadrature_component
              );
+    
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "A=%d.", in_baseband_pulse_amplitude );
     
     for( UINT32 i = 0; i < in_symbol_duration; i++ )
     {

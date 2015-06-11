@@ -21,134 +21,31 @@
 #include "fir_filter.h"
 #include "kaiser_filter.h"
 #include "fft.h"
+#include "bit_packer.h"
+#include "bit_stream.h"
 
 #include "csignal_error_codes.h"
 
-void csignal_initialize( void );
-void csignal_terminate( void );
-
-/*! \var    csignal_symbol_tracker
-    \brief  Struct definition for symbol tracker. A symbol tracker is used to
-            iterate through the symbols in a buffer. Symbols of variable bit-
-            length are read from index 0 to data_length.
+/*! \fn     void csignal_initialize( void )
+    \brief  Initializes the csignal library.
+ 
  */
-typedef struct csignal_symbol_tracker_t
-{
-  /*! \var    data
-      \brief  The data buffer that contains the data bits
-   */
-  UCHAR* data;
-  
-  /*! \var    data_length
-      \brief  The size of the data buffer
-   */
-  USIZE data_length;
-  
-  /*! \var    byte_offset
-      \brief  A pointer to the buffer that will be read from in the next
-              invocation of csignal_read_symbol
-   */
-  USIZE byte_offset;
-  
-  /*! \var    bit_offset
-      \brief  A pointer to the bit in current_byte that will be read from in
-              the next invocation of csignal_read_symbol
-   */
-  UCHAR bit_offset;
-  
-} csignal_symbol_tracker;
+void
+csignal_initialize( void );
 
-/*! \fn     cpc_error_code csignal_initialize_symbol_tracker  (
-              UCHAR*                    in_data,
-              USIZE                     in_data_length,
-              csignal_symbol_tracker ** out_symbol_tracker
-            )
-    \brief  Initializes the symbol_tracker struct with a data buffer and sets
-            both bit and byte offsets to 0.
+/*! \fn     void csignal_terminate( void )
+    \brief  Terminates the csignal library.
  
-    \note   in_data must not be freed until the destroy_symbol_tracker function
-            is called. For efficiency purposes, i.e. not mallocing a new buffer
-            and copying the contents of in_data into it, in_data is simply
-            pointed to and not copied.
- 
-    \param  in_data The data buffer that contains the bits to read as symbols.
-    \param  in_data_length  The length of in_data
-    \param  out_symbol_tracker  If this function successfully completes this
-                                parameter will point to a newly created
-                                csignal_symbol_tracker. It will be NULL
-                                otherwise.
-    \return Returns NO_ERROR upon succesful execution or one of these errors
-            (see cpc_safe_malloc for other possible errors):
- 
-            CPC_ERROR_CODE_NULL_POINTER If in_data is null
  */
-csignal_error_code
-csignal_initialize_symbol_tracker  (
-                                    UCHAR*                    in_data,
-                                    USIZE                     in_data_length,
-                                    csignal_symbol_tracker ** out_symbol_tracker
-                                    );
-
-/*! \fn     cpc_error_code csignal_destroy_symbol_tracker  (
-              csignal_symbol_tracker* io_symbol_tracker
-            )
-    \brief  Frees io_symbol_tracker
- 
-    \note   The buffer pointed to by the data member is not freed. It is the
-            responsibility of the creator of data to destroy the buffer.
- 
-    \return Returns NO_ERROR upon succesful execution or one of these errors
-            (see cpc_safe_free for other possible errors):
- 
-            CPC_ERROR_CODE_NULL_POINTER if io_symbol_tracker is null
- */
-csignal_error_code
-csignal_destroy_symbol_tracker  (
-                                 csignal_symbol_tracker* io_symbol_tracker
-                                 );
-
-/*! \fn     csignal_error_code csignal_get_symbol  (
-              csignal_symbol_tracker*  in_symbol_tracker,
-              USIZE                    in_number_of_bits,
-              UINT32*                  out_symbol
-            )
-    \brief  Returns a symbol from the symbol tracker of lenght in_number_of_bits
-            . If k is the number of bytes than there are 2^k possible symbols
-            that can be returned.
- 
-    \note   The in_number_of_bits should be consistent across all calls to this
-            function. That is for every call to get_symbol in_number_of_bits
-            should be static. The behaviour is undefined if in_number_of_bits
-            varies between calls to get_symbol for the same symbol_tracker.
- 
-    \param  in_symbol_tracker The data structure to read symbols from. After a
-                              a call to this function the byte and bit offsets
-                              will be offset if a symbol is returned.
-    \param  in_number_of_bits The number of bits to read for each symbol. Note
-                              that this parameter should be static between calls
-                              to this function for the same tracker.
-    \param  out_symbol  The symbol read from the tracker that is returned to the
-                        caller. If an error is returned by this function than
-                        out_symbol is null.
-    \return Returns NO_ERROR upon succesful execution or one of these errors:
- 
-            CPC_ERROR_CODE_NULL_POINTER If the tracker or symbol are null
-            CSIGNAL_ERROR_CODE_NO_DATA  If the tracker is at the end of its data
-                                        buffer.
- */
-csignal_error_code
-csignal_get_symbol  (
-                     csignal_symbol_tracker*  in_symbol_tracker,
-                     USIZE                    in_number_of_bits,
-                     UINT32*                  out_symbol
-                     );
+void
+csignal_terminate( void );
 
 /*! \fn     csignal_error_code csignal_modulate_symbol (
               UINT32   in_symbol,
               UINT32   in_constellation_size,
               UINT32   in_sample_rate,
               UINT32   in_symbol_duration,
-              INT16    in_baseband_pulse_amplitude,
+              INT32    in_baseband_pulse_amplitude,
               FLOAT32  in_carrier_frequency,
               FLOAT64* out_signal_inphase,
               FLOAT64* out_signal_quadrature
@@ -204,7 +101,7 @@ csignal_modulate_symbol (
                          UINT32   in_constellation_size,
                          UINT32   in_sample_rate,
                          USIZE    in_symbol_duration,
-                         INT16    in_baseband_pulse_amplitude,
+                         INT32    in_baseband_pulse_amplitude,
                          FLOAT32  in_carrier_frequency,
                          FLOAT64* out_signal_inphase,
                          FLOAT64* out_signal_quadrature

@@ -24,6 +24,7 @@ enum csignal_error_codes
   CSIGNAL_ERROR_CODE_NO_DATA                  = -100,
   CSIGNAL_ERROR_CODE_WRITE_ERROR              = -101,
   CSIGNAL_ERROR_CODE_LENGTH_MISMATCH          = -102,
+  CSIGNAL_ERROR_CODE_INVALID_TYPE             = -103,
 };
 
 /*! \var    csignal_error_codes

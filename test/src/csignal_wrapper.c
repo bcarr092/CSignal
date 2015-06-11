@@ -852,12 +852,12 @@ python_write_FLOAT_wav(
 
 PyObject*
 python_modulate_symbol(
-  int     in_symbol,
-  int     in_constellation_size,
-  int     in_sample_rate,
-  size_t  in_symbol_duration,
-  int     in_baseband_pulse_amplitude,
-  float   in_carrier_frequency
+  unsigned int     in_symbol,
+  unsigned int     in_constellation_size,
+  unsigned int     in_sample_rate,
+  size_t           in_symbol_duration,
+  int              in_baseband_pulse_amplitude,
+  float            in_carrier_frequency
 )
 {
   PyObject* return_value = NULL;
@@ -865,22 +865,20 @@ python_modulate_symbol(
   FLOAT64* inphase = NULL;
   FLOAT64* quadrature = NULL;
 
-  if(
-    0 > in_symbol
-    || 0 >= in_constellation_size
-    || 0 >= in_sample_rate
-    || 0 >= in_carrier_frequency
-    )
+  if  (
+       0 >= in_carrier_frequency
+       || 0 == in_constellation_size
+       || 0 == in_sample_rate
+       || 0 >= in_symbol_duration
+       )
   {
     CPC_ERROR(
-      "Invalid input: m=0x%x, M=0x%x, sr=0x%x"
-      ", |g|=0x%x, f_c=%.2f",
-      in_symbol,
-      in_constellation_size,
-      in_sample_rate,
-      in_baseband_pulse_amplitude,
-      in_carrier_frequency
-      );
+              "Invalid inputs: f_c=%.2f, cs=0x%x, sr=0x%x, sd=0x%x",
+              in_carrier_frequency,
+              in_constellation_size,
+              in_sample_rate,
+              in_symbol_duration
+              );
   }
   else
   {
@@ -947,7 +945,11 @@ python_modulate_symbol(
                 }
               }
 
-              if( PyList_Check( list ) && PyList_Check( inphase_list ) && PyList_Check( quadrature_list ) )
+              if  (
+                   PyList_Check( list )
+                   && PyList_Check( inphase_list )
+                   && PyList_Check( quadrature_list )
+                   )
               {
                 return_value = list;
               }
@@ -1009,73 +1011,313 @@ python_modulate_symbol(
   }
 }
 
-PyObject*
-python_get_symbol(
-  csignal_symbol_tracker* in_symbol_tracker,
-  size_t                  in_number_of_bits
-)
+bit_stream*
+python_bit_stream_initialize_from_bit_packer (
+                                              bit_packer* in_bit_packer
+                                              )
 {
-  PyObject* return_value = NULL;
-
-  UINT32 symbol = 0;
-
-  if( 0 >= in_number_of_bits )
+  bit_stream* stream = NULL;
+  
+  if( NULL != in_bit_packer )
   {
-    CPC_ERROR( "Invalid input for number of bits: %d.", in_number_of_bits );
+    csignal_error_code result =
+      bit_stream_initialize_from_bit_packer( in_bit_packer, &stream );
+    
+    if( CPC_ERROR_CODE_NO_ERROR != result )
+    {
+      CPC_ERROR( "Could not create stream from packer: 0x%x.", result );
+      
+      stream = NULL;
+    }
   }
   else
   {
-    USIZE number_of_bits = in_number_of_bits;
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Packer is null." );
+  }
+  
+  return( stream );
+}
 
-    csignal_error_code return_code = csignal_get_symbol(
-      in_symbol_tracker,
-      number_of_bits,
-      &symbol
-      );
-
-    if( CPC_ERROR_CODE_NO_ERROR != return_code )
+bit_stream*
+python_bit_stream_initialize  (
+                               PyObject*  in_data
+                               )
+{
+  bit_stream* stream = NULL;
+  
+  if( NULL != in_data )
+  {
+    if( PyString_Check( in_data ) )
     {
-      CPC_ERROR( "Could not get symbol: 0x%x.", return_code );
+      Py_ssize_t length = PyString_Size( in_data );
+      char* buffer      = PyString_AsString( in_data );
+      
+      csignal_error_code result =
+        bit_stream_initialize  (
+                                ( UCHAR* ) buffer,
+                                length,
+                                &stream
+                                );
+      
+      if( CPC_ERROR_CODE_NO_ERROR != result )
+      {
+        CPC_ERROR( "Could not initialize stream: 0x%x.", result );
+        
+        stream = NULL;
+      }
     }
     else
     {
-      return_value = Py_BuildValue( "I", symbol );
+      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "data is not a string." );
     }
   }
-
-  if( NULL != return_value )
+  else
   {
-    return( return_value );
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Data is null." );
+  }
+  
+  return( stream );
+}
+
+bit_packer*
+python_bit_packer_initialize( void )
+{
+  bit_packer* packer = NULL;
+  
+  csignal_error_code result = bit_packer_initialize( &packer );
+  
+  if( CPC_ERROR_CODE_NO_ERROR != result )
+  {
+    CPC_ERROR( "Could not initialize bit packer: 0x%x.", result );
+    
+    packer = NULL;
+  }
+  
+  return( packer );
+}
+
+csignal_error_code
+python_bit_packer_add_bytes (
+                             PyObject*    in_data,
+                             bit_packer*  io_bit_packer
+                             )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL != io_bit_packer && NULL != in_data )
+  {
+    if( PyString_Check( in_data ) )
+    {
+      Py_ssize_t length = PyString_Size( in_data );
+      char* buffer      = PyString_AsString( in_data );
+      
+      return_value =
+        bit_packer_add_bytes  (
+                               ( UCHAR* ) buffer,
+                               length,
+                               io_bit_packer
+                               );
+      
+      if( CPC_ERROR_CODE_NO_ERROR != return_value )
+      {
+        CPC_ERROR( "Could not add bytes: 0x%x.", return_value );
+      }
+    }
+    else
+    {
+      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Data is not a string." );
+      
+      return_value = CSIGNAL_ERROR_CODE_INVALID_TYPE;
+    }
+  }
+  else
+  {
+    CPC_ERROR (
+               "Bit packer (0x%x) or data (0x%x) are null.",
+               io_bit_packer,
+               in_data
+               );
+    
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+  }
+  
+  return( return_value );
+}
+
+PyObject*
+python_bit_packer_get_bytes (
+                             bit_packer* in_bit_packer
+                             )
+{
+  if( NULL != in_bit_packer )
+  {
+    UCHAR* buffer     = NULL;
+    USIZE buffer_size = 0;
+    
+    csignal_error_code result =
+      bit_packer_get_bytes( in_bit_packer, &buffer, &buffer_size );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      CPC_LOG( CPC_LOG_LEVEL_TRACE, "Length is 0x%x.", buffer_size );
+      CPC_LOG_BUFFER( CPC_LOG_LEVEL_TRACE, "Buffer", buffer, buffer_size, 8 );
+      
+      PyObject* string =
+        PyString_FromStringAndSize( ( CHAR* ) buffer, buffer_size );
+      
+      CPC_LOG( CPC_LOG_LEVEL_TRACE, "String: 0x%x.", string );
+      
+      if( NULL != buffer )
+      {
+        cpc_safe_free( ( void** ) &buffer );
+      }
+      
+      if( NULL != string )
+      {
+        if( PyString_Check( string ) )
+        {
+          return( string );
+        }
+        else
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Created string failed check." );
+          
+          Py_DECREF( string );
+          
+          Py_RETURN_NONE;
+        }
+      }
+      else
+      {
+        CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create PyString." );
+        
+        Py_RETURN_NONE;
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not get packer's bytes: 0x%x.", result );
+      
+      Py_RETURN_NONE;
+    }
+  }
+  else
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Packer is null." );
+    
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_bit_stream_get_bits  (
+                             bit_stream*  io_bit_stream,
+                             USIZE        in_number_of_bits
+                             )
+{
+  if( NULL != io_bit_stream )
+  {
+    UCHAR* buffer           = NULL;
+    USIZE buffer_size       = 0;
+    USIZE num_bits_to_read  = in_number_of_bits;
+    
+    csignal_error_code result =
+      bit_stream_get_bits (
+                           io_bit_stream,
+                           &num_bits_to_read,
+                           &buffer,
+                           &buffer_size
+                           );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      CPC_LOG( CPC_LOG_LEVEL_TRACE, "Length is 0x%x.", buffer_size );
+      CPC_LOG_BUFFER( CPC_LOG_LEVEL_TRACE, "Buffer", buffer, buffer_size, 8 );
+      
+      PyObject* string =
+        PyString_FromStringAndSize( ( CHAR* ) buffer, buffer_size );
+      PyObject* number_of_bits = PyInt_FromSize_t( num_bits_to_read );
+      
+      CPC_LOG( CPC_LOG_LEVEL_TRACE, "String: 0x%x.", string );
+      
+      if( NULL != buffer )
+      {
+        cpc_safe_free( ( void** ) &buffer );
+      }
+      
+      if( NULL != string && NULL != number_of_bits )
+      {
+        if( PyString_Check( string ) && PyInt_Check( number_of_bits ) )
+        {
+          PyObject* return_value = PyTuple_New( 2 );
+          
+          if( NULL != return_value && PyTuple_Check( return_value ) )
+          {
+            if  (
+                 0 == PyTuple_SetItem( return_value, 0, number_of_bits )
+                 && 0 == PyTuple_SetItem( return_value, 1, string )
+                 )
+            {
+              return( return_value );
+            }
+            else
+            {
+              CPC_LOG_STRING  (
+                               CPC_LOG_LEVEL_ERROR,
+                               "Could not add items to tuple."
+                               );
+              
+              Py_DECREF( string );
+              Py_DECREF( number_of_bits );
+              
+              Py_RETURN_NONE;
+            }
+          }
+          else
+          {
+            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create tuple." );
+            
+            Py_DECREF( string );
+            Py_DECREF( number_of_bits );
+            
+            Py_RETURN_NONE;
+          }
+        }
+        else
+        {
+          CPC_ERROR (
+                     "PyString (0x%x) or PyInt (0x%x) failed check.",
+                     string,
+                     number_of_bits
+                     );
+          
+          Py_DECREF( string );
+          Py_DECREF( number_of_bits );
+          
+          Py_RETURN_NONE;
+        }
+      }
+      else
+      {
+        CPC_ERROR (
+                   "Could not create PyString (0x%x) or PyInt (0x%x).",
+                   string,
+                   number_of_bits
+                   );
+        
+        Py_XDECREF( string );
+        Py_XDECREF( number_of_bits );
+        
+        Py_RETURN_NONE;
+      }
+    }
+    else
+    {
+      Py_RETURN_NONE;
+    }
   }
   else
   {
     Py_RETURN_NONE;
   }
-}
-
-csignal_symbol_tracker*
-python_initialize_symbol_tracker(
-  PyObject* in_data
-)
-{
-  csignal_symbol_tracker* symbol_tracker = NULL;
-
-  Py_ssize_t length = PyString_Size( in_data );
-  char* buffer = PyString_AsString( in_data );
-
-  csignal_error_code return_value =
-    csignal_initialize_symbol_tracker(
-    ( UCHAR* )buffer,
-    length,
-    &symbol_tracker
-    );
-
-  if( CPC_ERROR_CODE_NO_ERROR != return_value )
-  {
-    CPC_ERROR( "Could not initialize symbol tracker: 0x%x.", return_value );
-
-    symbol_tracker = NULL;
-  }
-
-  return( symbol_tracker );
 }

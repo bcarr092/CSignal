@@ -185,12 +185,12 @@ python_write_FLOAT_wav(
 );
 
 /*! \fn     PyObject* python_modulate_symbol  (
-              int     in_symbol,
-              int     in_constellation_size,
-              int     in_sample_rate,
-              size_t  in_symbol_duration,
-              int     in_baseband_pulse_amplitude,
-              float   in_carrier_frequency
+               unsigned int     in_symbol,
+               unsigned int     in_constellation_size,
+               unsigned int     in_sample_rate,
+               size_t  in_symbol_duration,
+               int     in_baseband_pulse_amplitude,
+               unsigned float   in_carrier_frequency
             )
     \brief  Modulates in_symbol into a signal of length in_symbol_duration. For
             a complete description of each parameter and the function please
@@ -202,47 +202,102 @@ python_write_FLOAT_wav(
  */
 PyObject*
 python_modulate_symbol(
-  int     in_symbol,
-  int     in_constellation_size,
-  int     in_sample_rate,
-  size_t  in_symbol_duration,
-  int     in_baseband_pulse_amplitude,
-  float   in_carrier_frequency
-);
+                       unsigned int     in_symbol,
+                       unsigned int     in_constellation_size,
+                       unsigned int     in_sample_rate,
+                       size_t           in_symbol_duration,
+                       int              in_baseband_pulse_amplitude,
+                       float            in_carrier_frequency
+                       );
 
-/*! \fn     PyObject* python_get_symbol (
-              csignal_symbol_tracker* in_symbol_tracker,
-              size_t                  in_number_of_bits
+
+/*! \fn     bit_packer* python_bit_packer_initialize( void )
+    \brief  Initializes and returns a new bit packe struct.
+ 
+    \return A newly created bit_packer struct or Python's None.
+ */
+bit_packer*
+python_bit_packer_initialize( void );
+
+/*! \fn     bit_stream* python_bit_stream_initialize  (
+              PyObject*  in_data
             )
-    \brief  Wrapper around csignal_get_symbol that checks for errors returned
-            by the function and either returns 'None' or a symbol if an error
-            is found or not, respectively. See a more complete description of
-            the parameters and errors by reading the csignal_get_symbol
-            documentation.
+    \brief  Instatiates a new bit stream and returns it. The data in in_data
+            is copied into the new bit_stream struct.
+    
+    \param  in_data A PyString containing data to be buffered by the bit stream.
+    \return None if an error occurrs or a valid bit_stream object.
+ */
+bit_stream*
+python_bit_stream_initialize  (
+                               PyObject*  in_data
+                               );
 
-    \param  in_symbol_tracker The symbol tracker to read data symbols from
-    \param  in_number_of_bits The number of bits in each symbol
-    \return None if an error is found, or a symbol
+bit_stream*
+python_bit_stream_initialize_from_bit_packer (
+                                              bit_packer* in_bit_packer
+                                              );
+
+/*! \fn     csignal_error_code csignal_error_code (
+              PyObject*     in_data,
+              bit_packer*   io_bit_packer
+            )
+            )
+    \brief  Adds the data in in_data (PyString) to the bit packer.
+ 
+    \param  in_data The data buffer that contains the bits to store. This is a
+                    pointer to a buffer of unsigned chars. This must be a
+                    PyString.
+    \param  io_bit_packer  The bit packer struct to add the bits to.
+    \return Returns NO_ERROR upon succesful execution or one of these errors
+            (see cpc_safe_malloc and bit_packer_add_bits for other possible
+            errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If in_data or io_bit_packer is null
+            CSIGNAL_ERROR_CODE_INVALID_TYPE If in_data is not a PyString
+ */
+csignal_error_code
+python_bit_packer_add_bytes (
+                             PyObject*    in_data,
+                             bit_packer*  io_bit_packer
+                             );
+
+/*! \fn     PyObject* python_bit_packer_get_bytes (
+              bit_packer* in_bit_packer
+            )
+    \brief  Copies the bytes in the bit packer to a PyString and returns the
+            PyString.
+ 
+    \param  in_bit_packer The bit packer whose data buffer is to be copied to
+                          a newly created PyString.
+    \return A newly created PyString (not null terminated) that contains the
+            same data stored by the bit packer at the time of the call. None is
+            returned if an error occurs.
  */
 PyObject*
-python_get_symbol(
-  csignal_symbol_tracker* in_symbol_tracker,
-  size_t                  in_number_of_bits
-);
+python_bit_packer_get_bytes (
+                             bit_packer* in_bit_packer
+                             );
 
-/*! \fn     csignal_symbol_tracker* python_initialize_symbol_tracker (
-              PyObject* in_data
+/*! \fn     PyObject* python_bit_stream_get_bits  (
+              bit_stream*  io_bit_stream,
+              USIZE        in_number
             )
-    \brief  Creates a new symbol tracker object that points to the data in
-            in_data. Symbols of variable bit-length will be read from in_data.
-
-    \param  in_data The data buffer to read symbols from.
-    \return A newly created csignal_symbol_tracker if one could be created.
-            NULL otherwise.
-*/
-csignal_symbol_tracker*
-python_initialize_symbol_tracker(
-PyObject* in_data
-);
+    \brief  Extracts up to in_number of bits from io_bit_stream and returns
+            a PyString containing the bytes.
+ 
+    \note The PyString returned is not NULL-terminated.
+ 
+    \param  io_bit_stream The bit stream to extract bits from. The internal
+                          pointers in the bit stream are modified.
+    \param  in_number The number of bits to get from io_bit_stream.
+    \return A PyString containing a buffer of bytes containing the requested
+            bits. Note that the bits are stored in the MSBs of each byte.
+ */
+PyObject*
+python_bit_stream_get_bits  (
+                             bit_stream*  io_bit_stream,
+                             USIZE        in_number
+                             );
 
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

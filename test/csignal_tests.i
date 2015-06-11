@@ -23,6 +23,7 @@
 %apply unsigned long long { UINT64  }
 
 %apply size_t { SIZE  }
+%apply size_t { USIZE  }
 
 %apply char *       { CHAR *  }
 %apply char *       { INT8 *  }
@@ -42,6 +43,8 @@
 
 %apply size_t * { SIZE *  }
 
+%apply unsigned int { csignal_error_code }
+
 %include <csignal.h>
 %include <wav.h>
 %include <spreading_code.h>
@@ -49,6 +52,8 @@
 %include <csignal_error_codes.h>
 %include <fir_filter.h>
 %include <kaiser_filter.h>
+%include <bit_packer.h>
+%include <bit_stream.h>
 
 // These have to be included because we don't recursively parse headers
 %include <types.h>
@@ -58,5 +63,7 @@
 
 %include <cpointer.i>
 %pointer_functions( double, doubleP )
+
+%typemap(in) void* = char*;
 
 %include <csignal_wrapper.h>

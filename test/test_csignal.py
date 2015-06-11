@@ -7,6 +7,7 @@ import os
 import tempfile
 import re
 import math
+import struct
 
 def touch_random_file():
   file_handle = tempfile.NamedTemporaryFile()
@@ -30,12 +31,17 @@ class TestsCSignal( unittest.TestCase ):
     file_handle.close()
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
-    
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+   
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+    self.assertEquals( numberOfBits, bits_per_symbol )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
@@ -91,7 +97,12 @@ class TestsCSignal( unittest.TestCase ):
 
       self.assertNotEquals( signal, None )
 
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+      ( numberOfBits, buffer )= csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( signal, None )
 
@@ -110,7 +121,7 @@ class TestsCSignal( unittest.TestCase ):
     if( os.path.exists( file_name ) ): 
       os.unlink( file_name )
 
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
     self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
@@ -228,11 +239,16 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
     
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+    self.assertEquals( numberOfBits, bits_per_symbol )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
@@ -283,7 +299,12 @@ class TestsCSignal( unittest.TestCase ):
 
       self.assertNotEquals( signal, None )
 
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ]
 
     signal = csignal_tests.python_filter_signal( filter, signal )
 
@@ -337,9 +358,7 @@ class TestsCSignal( unittest.TestCase ):
     if( os.path.exists( file_name ) ):
       os.unlink( file_name )
 
-    error = csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker )
-
-    self.assertEquals( error, csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
     self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
@@ -374,11 +393,16 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
     
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEqual( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+    self.assertEquals( numberOfBits, bits_per_symbol )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
@@ -435,7 +459,12 @@ class TestsCSignal( unittest.TestCase ):
 
       self.assertNotEquals( signal, None )
 
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( signal, None )
 
@@ -466,7 +495,7 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
     self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
@@ -811,11 +840,16 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 20 ) )
     
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+    self.assertEquals( numberOfBits, bits_per_symbol )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
@@ -845,7 +879,12 @@ class TestsCSignal( unittest.TestCase ):
 
       signal = signal + part
 
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ]
 
     samples = [ signal, signal ]
 
@@ -859,7 +898,7 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( error, csignal_tests.CPC_TRUE )
 
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_write_wav_basic( self ):
     bits_per_symbol     = 8
@@ -870,11 +909,16 @@ class TestsCSignal( unittest.TestCase ):
 
     data = '\x12'
     
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+    self.assertEquals( numberOfBits, bits_per_symbol )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
@@ -925,7 +969,7 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertEquals( error, csignal_tests.CPC_FALSE )
 
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_write_wav( self ):
     bits_per_symbol     = 8
@@ -940,11 +984,16 @@ class TestsCSignal( unittest.TestCase ):
 
     data = '\x12'
     
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, bits_per_symbol ) 
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+    self.assertEquals( numberOfBits, bits_per_symbol )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
@@ -984,16 +1033,21 @@ class TestsCSignal( unittest.TestCase ):
     if( os.path.exists( file_name ) ):
       os.unlink( file_name )
 
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_generate_signal_random( self ):
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
 
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, 8 )
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 8 ) 
+
+    self.assertEquals( numberOfBits, 8 )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
@@ -1012,32 +1066,23 @@ class TestsCSignal( unittest.TestCase ):
       self.assertNotEquals( signal[ 0 ], None )
       self.assertNotEquals( signal[ 1 ], None )
 
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, 8 )
+      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 8 ) 
 
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ]
+
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_generate_signal( self ):
-    self.assertEquals (
-      csignal_tests.python_modulate_symbol( -1, 8, 48000, 10, 16000, 22000 ), None
-                      )
-
     self.assertEquals (
       csignal_tests.python_modulate_symbol( 1, 0, 48000, 10, 16000, 22000 ),
       None
                       )
 
     self.assertEquals (
-      csignal_tests.python_modulate_symbol( 1, -1, 48000, 10, 16000, 22000 ),
-      None
-                      )
-
-    self.assertEquals (
       csignal_tests.python_modulate_symbol( 1, 8, 0, 10, 16000, 22000 ),
-      None
-                      )
-
-    self.assertEquals (
-      csignal_tests.python_modulate_symbol( 1, 8, -1, 10, 16000, 22000 ),
       None
                       )
 
@@ -1064,13 +1109,20 @@ class TestsCSignal( unittest.TestCase ):
   def test_generate_signal_basic( self ):
     data = '\x12\x34'
     
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, 4 ) 
-  
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 4 ) 
+
+    self.assertEquals( numberOfBits, 4 )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
+
     self.assertNotEquals( symbol, None )
+
+    symbol >>= 4
 
     while( symbol != None ):
       signal = csignal_tests.python_modulate_symbol (
@@ -1087,81 +1139,14 @@ class TestsCSignal( unittest.TestCase ):
       self.assertNotEquals( signal[ 0 ], None )
       self.assertNotEquals( signal[ 1 ], None )
 
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, 4 ) 
+      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 4 ) 
 
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> 4
 
-  def test_csignal_initialize_destroy_symbol_tracker( self ):
-    data = "This is my data!"
-
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
-
-    self.assertNotEqual( symbol_tracker, None )
-
-    error = csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker )
-
-    self.assertEqual( error, csignal_tests.CPC_ERROR_CODE_NO_ERROR )
-
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( None )
-
-    self.assertEqual( symbol_tracker, None )
-
-    error = csignal_tests.csignal_destroy_symbol_tracker( None )
-
-    self.assertEqual( error, csignal_tests.CPC_ERROR_CODE_NULL_POINTER )
-
-  def test_get_symbol( self ):
-    self.assertEqual( csignal_tests.python_get_symbol( None, 4 ), None )
-
-    data = ''
-
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
-
-    self.assertEqual( csignal_tests.python_get_symbol( symbol_tracker, 4 ), None )
-
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
-
-  def test_reading_data( self ):
-    # Two bytes (in binary): 0001 0010 0011 0100
-    data = '\x12\x34'
-    
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
-
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, 4 )
-
-    self.assertEqual( symbol, 1 )
-
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, 4 )
-
-    self.assertEqual( symbol, 2 )
-
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, 4 )
-
-    self.assertEqual( symbol, 3 )
-
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, 4 )
-
-    self.assertEqual( symbol, 4 )
-
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
-
-  def test_reading_data_random( self ):
-    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
-
-    symbol_tracker = csignal_tests.python_initialize_symbol_tracker( data )
-
-    symbol = csignal_tests.python_get_symbol( symbol_tracker, 8 )
-
-    index = 0
-
-    while( symbol != None ):
-      self.assertEqual( symbol, ord( data[ index ] ) )
-
-      index += 1
-
-      symbol = csignal_tests.python_get_symbol( symbol_tracker, 8 )
-
-    self.assertEquals( csignal_tests.csignal_destroy_symbol_tracker( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
 if __name__ == '__main__':
   csignal_tests.cpc_log_set_log_level( csignal_tests.CPC_LOG_LEVEL_ERROR )
