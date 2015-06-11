@@ -216,6 +216,11 @@ class TestsBitStream( unittest.TestCase ):
       CPC_ERROR_CODE_NO_ERROR
                       )   
 
+    self.assertEquals (
+      bit_stream_destroy( bitStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )   
+
     bitPacker = python_bit_packer_initialize()
 
     self.assertNotEquals( bitPacker, None )
