@@ -64,6 +64,4 @@
 %include <cpointer.i>
 %pointer_functions( double, doubleP )
 
-%typemap(in) void* = char*;
-
 %include <csignal_wrapper.h>

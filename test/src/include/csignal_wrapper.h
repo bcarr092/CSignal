@@ -233,6 +233,20 @@ python_bit_stream_initialize  (
                                PyObject*  in_data
                                );
 
+/*! \fn     bit_stream* python_bit_stream_initialize_from_bit_packer (
+              bit_packer* in_bit_packer
+            )
+    \brief  Creates a new bit_strem with a ->data pointer that points to the
+            ->data pointer of in_bit_packer. Note that this creates a stream
+            that points to the data buffer of bit_packer and therefore has its
+            dirty_bit set. Please see the notes for the function
+            bit_stream_initialize_from_bit_packer.
+ 
+    \param  in_bit_packer The bit_packer whose data pointer and data_length
+                          will be copied to the newly created bit_stream.
+    \return A newly created bit_stream that points to the data pointer of
+            in_bit_packer.
+ */
 bit_stream*
 python_bit_stream_initialize_from_bit_packer (
                                               bit_packer* in_bit_packer
