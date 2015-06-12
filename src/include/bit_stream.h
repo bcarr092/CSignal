@@ -19,6 +19,20 @@
  */
 typedef struct bit_stream_t
 {
+  /*! \var    bit_offset
+      \brief  A pointer to the bit in current_byte that will be read from in
+              the next invocation of csignal_read_symbol
+   */
+  UCHAR bit_offset;
+  
+  /*! \var    dirty_bit
+      \brief  This bool is set to CPC_TRUE if the buffer pointed to by data is
+              owned by a different object (this is true when 
+              initialize_from_bit_packer is called). When this is true the
+              destroy function for the bit_stream does not free the buffer.
+   */
+  CPC_BOOL dirty_bit;
+  
   /*! \var    data
       \brief  The data buffer that contains the data bits
    */
@@ -34,12 +48,6 @@ typedef struct bit_stream_t
               invocation of csignal_read_symbol
    */
   USIZE byte_offset;
-  
-  /*! \var    bit_offset
-      \brief  A pointer to the bit in current_byte that will be read from in
-              the next invocation of csignal_read_symbol
-   */
-  UCHAR bit_offset;
   
 } bit_stream;
 
@@ -75,8 +83,29 @@ bit_stream_initialize  (
     \brief  Creates a new bit stream whose data buffer is a copy of the buffer
             stored by in_bit_packer.
  
-    \note The data buffer from the bit_packer will be copied to the newly
-          created bit stream object.
+    \note The data buffer from the bit_packer will not be copied to the newly
+          created bit stream object. The pointer to the data buffer in
+          bit_packer is copied. The bit_packer owns the data buffer and is
+          therefore responsible for freeing it. Furthermore, the length of
+          the data buffer is copied when this function is called and therefore
+          if the data buffer grows it will not be reflected in the stream.
+          Lastly, if the bit_packer grows (i.e., is realloc'd) then the pointer
+          that the stream points to (i.e., the data pointer) will be invalid.
+ 
+    \note This is a potentially hazardous function to call for a number of
+          reasons:
+ 
+          1)  If bit_packer->data is realloc'd the data pointer in out_bit_stream
+              will be invalid (i.e., either NULL or point to memory that is
+              freed).
+          2)  If the bit_packer->data has more data added to it after the call
+              to this function and bit_packer->data_length is updated
+              out_data_stream will not be aware there is new data.
+ 
+          This function should only be called when the caller knows definitely
+          that the bit_packer is not longer being modified. This function is
+          provided for efficiency reasons to save copying the buffer from the
+          packer to the stream on stream initialization.
  
     \param  in_bit_packer The packer whose data is to be copied.
     \param  out_bit_stream  A newly created bit stream or Null if an error
@@ -97,6 +126,9 @@ bit_stream_initialize_from_bit_packer (
               bit_stream* io_bit_stream
             )
     \brief  Frees io_bit_stream along with the data buffer pointed to.
+ 
+    \note If io_bit_stream->dirty_bit is CPC_TRUE then the data buffer pointed
+          to by this stream will NOT be freed.
  
     \return Returns NO_ERROR upon succesful execution or one of these errors
             (see cpc_safe_free for other possible errors):

@@ -47,6 +47,7 @@ bit_stream_initialize  (
     {
       ( *out_bit_stream )->bit_offset   = 0;
       ( *out_bit_stream )->byte_offset  = 0;
+      ( *out_bit_stream )->dirty_bit    = CPC_FALSE;
       
       return_value =
         cpc_safe_malloc (
@@ -93,13 +94,10 @@ bit_stream_initialize_from_bit_packer (
     {
       ( *out_bit_stream )->bit_offset   = 0;
       ( *out_bit_stream )->byte_offset  = 0;
+      ( *out_bit_stream )->dirty_bit    = CPC_TRUE;
       
-      return_value =
-        bit_packer_get_bytes  (
-                               in_bit_packer,
-                               &( ( *out_bit_stream )->data ),
-                               &( ( *out_bit_stream )->data_length )
-                               );
+      ( *out_bit_stream )->data         = in_bit_packer->data;
+      ( *out_bit_stream )->data_length  = in_bit_packer->data_length;
     }
   }
   
@@ -121,7 +119,7 @@ bit_stream_destroy  (
   }
   else
   {
-    if( NULL != io_bit_stream->data )
+    if( NULL != io_bit_stream->data && ! io_bit_stream->dirty_bit )
     {
       cpc_safe_free( ( void** ) &( io_bit_stream->data ) );
     }
