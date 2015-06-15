@@ -108,7 +108,7 @@ class TestsBitPacker( unittest.TestCase ):
 
     bitPacker = python_bit_packer_initialize()
 
-    data = struct.pack( "!I", socket.htonl( int( 1722 ) ) )
+    data = struct.pack( "I", 1722 )
 
     self.assertEquals (
       python_bit_packer_add_bytes (
@@ -137,8 +137,14 @@ class TestsBitPacker( unittest.TestCase ):
 
     for index in range( 100 ):
       value = 32767 * random.normalvariate( 0, 1 )
-      value = struct.unpack( "I", struct.pack( "i", int( value ) ))
-      data  = data + struct.pack( "!I", socket.htonl( value[ 0 ] ) )
+      value = socket.htonl( struct.unpack( "I", struct.pack( "i", int( value ) ) )[ 0 ] )
+
+      if( 0 > value ):
+        value = struct.pack( "i", value )
+        value = struct.unpack( "I", value )[ 0 ]
+
+      value = struct.pack( "I", value )
+      data  = data + value
 
     self.assertEquals (
       python_bit_packer_add_bytes (
@@ -228,7 +234,7 @@ class TestsBitPacker( unittest.TestCase ):
       CPC_ERROR_CODE_NO_ERROR
                     )
 
-    data = struct.pack( "!I", socket.htonl( int( 1722 ) ) )
+    data = struct.pack( "I", 1722 )
 
     self.assertEquals (
       python_bit_packer_add_bytes (
@@ -242,8 +248,8 @@ class TestsBitPacker( unittest.TestCase ):
 
     for index in range( 100 ):
       value = 32767 * random.normalvariate( 0, 1 )
-      value = struct.unpack( "I", struct.pack( "i", int( value ) ))
-      data  = data + struct.pack( "!I", socket.htonl( value[ 0 ] ) )
+      value = struct.pack( "i", int( value ) )
+      data  = data + value
 
     self.assertEquals (
       python_bit_packer_add_bytes (

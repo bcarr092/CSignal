@@ -257,7 +257,7 @@ class TestsBitStream( unittest.TestCase ):
     self.assertNotEquals( bitStream, None )
     self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
 
-    data = struct.pack( "I", socket.htonl( int( 1722 ) ) )
+    data = struct.pack( "I", 1722 )
 
     bitStream = python_bit_stream_initialize( data )
 
@@ -268,8 +268,8 @@ class TestsBitStream( unittest.TestCase ):
 
     for index in range( 100 ):
       value = 32767 * random.normalvariate( 0, 1 )
-      value = struct.unpack( "I", struct.pack( "i", int( value ) ))
-      data  = data + struct.pack( "I", socket.htonl( value[ 0 ] ) )
+      value = struct.pack( "i", int( value ) )
+      data  = data + value
 
     bitStream = python_bit_stream_initialize( data )
 
