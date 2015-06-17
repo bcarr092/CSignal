@@ -24,6 +24,12 @@ typedef struct bit_stream_t
               the next invocation of csignal_read_symbol
    */
   UCHAR bit_offset;
+
+  /*! \var    byte_offset
+  \brief  A pointer to the buffer that will be read from in the next
+  invocation of csignal_read_symbol
+  */
+  USIZE byte_offset;
   
   /*! \var    dirty_bit
       \brief  This bool is set to CPC_TRUE if the buffer pointed to by data is
@@ -32,24 +38,41 @@ typedef struct bit_stream_t
               destroy function for the bit_stream does not free the buffer.
    */
   CPC_BOOL dirty_bit;
-  
-  /*! \var    data
-      \brief  The data buffer that contains the data bits
+
+  /*! \var    packer
+      \brief  The packer followed by the stream to get bits.
    */
-  UCHAR* data;
-  
-  /*! \var    data_length
-      \brief  The size of the data buffer
-   */
-  USIZE data_length;
-  
-  /*! \var    byte_offset
-      \brief  A pointer to the buffer that will be read from in the next
-              invocation of csignal_read_symbol
-   */
-  USIZE byte_offset;
+  bit_packer* packer;
   
 } bit_stream;
+
+/*! \fn     USIZE bit_stream_get_number_of_remaining_bits (
+              bit_stream* in_bit_stream
+            )
+    \brief  Returns the number of bits left to read in in_bit_stream.
+
+    \param  in_bit_stream The bit stream to query for the number of remaining
+                          bits.
+    \return The number of remaining bits to read in bit_stream
+*/
+USIZE
+bit_stream_get_number_of_remaining_bits(
+  bit_stream* in_bit_stream
+                                        );
+
+/*! \fn     USIZE bit_stream_get_number_of_remaining_bits (
+              bit_stream* in_bit_stream
+            )
+    \brief  Returns the number of bits left to read in in_bit_stream.
+ 
+    \param  in_bit_stream The bit stream to query for the number of remaining
+                          bits.
+    \return The number of remaining bits to read in bit_stream
+ */
+USIZE
+bit_stream_get_number_of_remaining_bits (
+                                         bit_stream* in_bit_stream
+                                         );
 
 /*! \fn     cpc_error_code bit_stream_initialize  (
               UCHAR*        in_data,

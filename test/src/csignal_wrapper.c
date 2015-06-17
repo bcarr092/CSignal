@@ -860,10 +860,9 @@ python_modulate_symbol(
   float            in_carrier_frequency
 )
 {
-  PyObject* return_value = NULL;
-
-  FLOAT64* inphase = NULL;
-  FLOAT64* quadrature = NULL;
+  PyObject* return_value  = NULL;
+  FLOAT64* inphase        = NULL;
+  FLOAT64* quadrature     = NULL;
 
   if  (
        0 >= in_carrier_frequency
@@ -1219,7 +1218,7 @@ python_bit_stream_get_bits  (
   {
     UCHAR* buffer           = NULL;
     USIZE buffer_size       = 0;
-    USIZE num_bits_to_read  = in_number_of_bits;
+    USIZE num_bits_to_read = in_number_of_bits;
     
     csignal_error_code result =
       bit_stream_get_bits (

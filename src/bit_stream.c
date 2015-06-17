@@ -5,20 +5,6 @@
  */
 #include "bit_stream.h"
 
-/*! \fn     USIZE bit_stream_get_number_of_remaining_bits (
-              bit_stream* in_bit_stream
-            )
-    \brief  Returns the number of bits left to read in in_bit_stream.
- 
-    \param  in_bit_stream The bit stream to query for the number of remaining
-                          bits.
-    \return The number of remaining bits to read in bit_stream
- */
-USIZE
-bit_stream_get_number_of_remaining_bits (
-                                         bit_stream* in_bit_stream
-                                         );
-
 csignal_error_code
 bit_stream_initialize  (
                         UCHAR*        in_data,
@@ -27,9 +13,9 @@ bit_stream_initialize  (
                         )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
-  
   if( NULL == in_data || NULL == out_bit_stream )
   {
+  
     CPC_ERROR (
                "Data (0x%x) or bit stream (0x%x) are null.",
                in_data,
@@ -48,18 +34,22 @@ bit_stream_initialize  (
       ( *out_bit_stream )->bit_offset   = 0;
       ( *out_bit_stream )->byte_offset  = 0;
       ( *out_bit_stream )->dirty_bit    = CPC_FALSE;
-      
-      return_value =
-        cpc_safe_malloc (
-                         ( void** ) &( ( *out_bit_stream )->data ),
-                         sizeof( UCHAR ) * in_data_length
-                         );
-      
+      ( *out_bit_stream )->packer       = NULL;
+
+      return_value = bit_packer_initialize( &( ( *out_bit_stream )->packer ) );
+
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
-        CPC_MEMCPY( ( *out_bit_stream )->data, in_data, in_data_length );
-        
-        ( *out_bit_stream )->data_length = in_data_length;
+        bit_packer_add_bytes( in_data, in_data_length, ( *out_bit_stream )->packer );
+
+        if( CPC_ERROR_CODE_NO_ERROR != return_value )
+        {
+          CPC_ERROR( "Could not add bytes to packer: 0x%x.", return_value );
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not create bit_packer: 0x%x.", return_value );
       }
     }
   }
@@ -95,9 +85,7 @@ bit_stream_initialize_from_bit_packer (
       ( *out_bit_stream )->bit_offset   = 0;
       ( *out_bit_stream )->byte_offset  = 0;
       ( *out_bit_stream )->dirty_bit    = CPC_TRUE;
-      
-      ( *out_bit_stream )->data         = in_bit_packer->data;
-      ( *out_bit_stream )->data_length  = in_bit_packer->data_length;
+      ( *out_bit_stream )->packer       = in_bit_packer;
     }
   }
   
@@ -119,9 +107,9 @@ bit_stream_destroy  (
   }
   else
   {
-    if( NULL != io_bit_stream->data && ! io_bit_stream->dirty_bit )
+    if( NULL != io_bit_stream->packer && ! io_bit_stream->dirty_bit )
     {
-      cpc_safe_free( ( void** ) &( io_bit_stream->data ) );
+      bit_packer_destroy( io_bit_stream->packer );
     }
     
     cpc_safe_free( ( void** ) &io_bit_stream );
@@ -178,7 +166,7 @@ bit_stream_get_bits (
         USIZE num_bits_to_pack  =
           CPC_MIN( USIZE, *io_num_bits, bits_left_in_byte );
         UCHAR byte              =
-          io_bit_stream->data[ io_bit_stream->byte_offset ]
+          io_bit_stream->packer->data[ io_bit_stream->byte_offset ]
           >>
           (
             ( sizeof( UCHAR ) * 8 )
@@ -250,7 +238,8 @@ bit_stream_get_number_of_remaining_bits (
   if( NULL != in_bit_stream )
   {
     USIZE total_number_of_bits =
-      in_bit_stream->data_length * sizeof( UCHAR ) * 8;
+      ( in_bit_stream->packer->byte_offset * sizeof( UCHAR ) * 8 )
+      + in_bit_stream->packer->bit_offset;
     
     USIZE  current_position =
       ( in_bit_stream->byte_offset * sizeof( UCHAR ) * 8 )
