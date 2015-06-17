@@ -8,6 +8,55 @@ import string
 import sys
 
 class TestsBitStream( unittest.TestCase ):
+  def test_bit_stream_add_read( self ):
+    data = ''
+    
+    for index in range( 1000 ):
+      initialNumber = random.randint( 0, 2 ** 32 - 1 ) 
+
+      data = data + struct.pack( "I", int( initialNumber ) )
+
+    bitPacker = python_bit_packer_initialize()
+
+    self.assertNotEquals( bitPacker, None )
+
+    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+
+    self.assertNotEquals( bitStream, None )
+
+    for index in range( 0, len( data ), 4 ):
+      string  = data[ index : index + 4 ]
+      value   = struct.unpack( "I", string )[ 0 ]
+
+      self.assertEquals (
+        python_bit_packer_add_bytes( string, bitPacker ),
+        CPC_ERROR_CODE_NO_ERROR
+                        )
+
+      result = python_bit_stream_get_bits( bitStream, 32 )
+
+      self.assertNotEquals( result, None )
+
+      ( numberOfBits, buffer ) = result
+
+      self.assertEquals( numberOfBits, 32 )
+      self.assertEquals( len( buffer ), 4 )
+
+      retrievedValue = struct.unpack( "I", buffer )[ 0 ]
+
+      self.assertEquals( value, retrievedValue )
+
+
+    self.assertEquals (
+      bit_stream_destroy( bitStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    self.assertEquals (
+      bit_packer_destroy( bitPacker ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
   def test_bit_stream_get_bits_int_random( self ):
     for index in range( 100 ):
       initialNumber = random.randint( 0, 2 ** 32 - 1 ) 
