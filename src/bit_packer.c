@@ -276,6 +276,9 @@ bit_packer_get_bytes (
   else
   {
     *out_data_length = in_bit_packer->byte_offset;
+
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "Byte offset: 0x%x.", in_bit_packer->byte_offset );
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "Bit offset: 0x%x.", in_bit_packer->bit_offset );
     
     if( in_bit_packer->bit_offset != 0 )
     {
