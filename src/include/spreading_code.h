@@ -46,7 +46,7 @@
  
             g_{r-1} g_{r-2} g_{r-3} .... g_0 0 0 0 .... 0
  
-            where there 32 - degree trailing zeros in the LSB bit-positions. As
+            where there 32 - r degree trailing zeros in the LSB bit-positions. As
             an example a r = 2 LFSR with a generator that has all taps closed
             would be:
  
