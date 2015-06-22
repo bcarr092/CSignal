@@ -380,14 +380,14 @@ csignal_set_kaiser_weights  (
     CPC_LOG (
              CPC_LOG_LEVEL_TRACE,
              "Middle tap is at index %d of %d taps."
-             " First cutoff frequency is %.4f rad, second is %.4f rad.",
+             " First cutoff frequency is %.13e rad, second is %.13e rad.",
              middle_tap,
              io_filter->number_of_taps,
              in_first_cutoff_frequency,
              in_second_cutoff_frequency
              );
     
-    for( UINT32 i = 0; i < io_filter->number_of_taps; i++ )
+    for( INT32 i = 0; i < io_filter->number_of_taps; i++ )
     {
       FLOAT64 numerator =
         ( FLOAT64 )
@@ -417,7 +417,7 @@ csignal_set_kaiser_weights  (
       
       CPC_LOG (
                CPC_LOG_LEVEL_TRACE,
-               "%d: w=%e, d=%e, h=%e",
+               "%d: w=%.14e, d=%.14e, h=%.14e",
                i,
                window_coefficient,
                filter_coefficient,
@@ -426,14 +426,14 @@ csignal_set_kaiser_weights  (
       
       CPC_LOG (
                CPC_LOG_LEVEL_TRACE,
-               "w_a=%.20f, w_b=%.20f",
+               "w_a=%.14e, w_b=%.14e",
                in_first_cutoff_frequency,
                in_second_cutoff_frequency
                );
       
       CPC_LOG (
                CPC_LOG_LEVEL_TRACE,
-               "%.20f -> %.20f, %.20f -> %.20f, %.20f",
+               "%.14e -> %.14e, %.14e -> %.14e, %.14e",
                in_second_cutoff_frequency * ( ( i - middle_tap ) * 1.0 ),
                sin( in_second_cutoff_frequency * ( ( i - middle_tap ) * 1.0 ) ),
                in_first_cutoff_frequency * ( ( i - middle_tap ) * 1.0 ),

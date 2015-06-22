@@ -149,17 +149,17 @@ csignal_filter_signal (
       *out_filtered_signal_length =
         in_signal_length + in_filter->number_of_taps;
       
-      for( USIZE i = 0; i < *out_filtered_signal_length; i++ )
+      for( SSIZE i = 0; i < *out_filtered_signal_length; i++ )
       {
         FLOAT64 value = 0;
         
-        USIZE min =
+        SSIZE min =
           ( i >= in_filter->number_of_taps - 1 )
           ? i - ( in_filter->number_of_taps - 1 ) : 0;
         
-        USIZE max = ( i < in_signal_length - 1 ) ? i : in_signal_length - 1;
+        SSIZE max = ( i < in_signal_length - 1 ) ? i : in_signal_length - 1;
         
-        for( USIZE j = min; j <= max; j++ )
+        for( SSIZE j = min; j <= max; j++ )
         {
           value += in_signal[ j ] * in_filter->coefficients[ i - j ];
         }

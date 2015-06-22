@@ -16,7 +16,7 @@ def touch_random_file():
 
   return( file_handle, file_name )
 
-"""
+class TestsCSignal( unittest.TestCase ):
   def test_fft_of_spread_signal( self ):
     bits_per_symbol     = 8
     constellation_size  = 2 ** bits_per_symbol
@@ -236,8 +236,6 @@ def touch_random_file():
 
     self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
-"""
-class TestsCSignal( unittest.TestCase ):
   def test_filter_signal( self ): 
     bits_per_symbol     = 8
     constellation_size  = 2 ** bits_per_symbol
