@@ -32,16 +32,32 @@
  */
 #define CSIGNAL_WAVE_HEADER_CHUNK_FORMAT_ID    "fmt "
 
-/*! \def    CSIGNAL_WAVE_HEADER_CHUNK_FORMAT_SIZE
-    \brief  The size of the format header
+/*! \def    CSIGNAL_WAVE_HEADER_CHUNK_LPCM_FORMAT_SIZE
+    \brief  The size of the format header when the data samples are ints
  */
-#define CSIGNAL_WAVE_HEADER_CHUNK_FORMAT_SIZE  16
+#define CSIGNAL_WAVE_HEADER_CHUNK_LPCM_FORMAT_SIZE  16
+
+/*! \def    CSIGNAL_WAVE_HEADER_CHUNK_FLOAT_FORMAT_SIZE
+    \brief  The size of the format header when the data samples are floats
+*/
+#define CSIGNAL_WAVE_HEADER_CHUNK_FLOAT_FORMAT_SIZE  18
 
 /*! \def    CSIGNAL_WAVE_HEADER_CHUNK_DATA_ID
     \brief  Header string used to denote the start of the data header for the
             WAVE data
  */
 #define CSIGNAL_WAVE_HEADER_CHUNK_DATA_ID      "data"
+
+/*! \def    CSIGNAL_WAVE_HEADER_FACT_ID
+    \brief  Header string used to denote the start of the fact header used
+            by non-PCM formats.
+ */
+#define CSIGNAL_WAVE_HEADER_FACT_ID            "fact"
+
+/*!   \def    CSIGNAL_WAVE_HEADER_FACT_CHUNK_SIZE
+      \brief  The size of the fact chunk.
+ */
+#define CSIGNAL_WAVE_HEADER_FACT_CHUNK_SIZE    4
 
 /*! \def    CSIGNAL_WAVE_LPCM_FORMAT_CODE
     \brief  Code to indicate the WAV file is using LPCM encoding

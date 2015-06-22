@@ -37,7 +37,7 @@ python_calculate_FFT(
         }
         else
         {
-          CPC_ERROR( "Entry 0x%x is not an integer.", i );
+          CPC_ERROR( "Entry 0x%x is not a double.", i );
 
           return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
         }
@@ -504,36 +504,6 @@ python_initialize_spreading_code(
   return( shift_register );
 }
 
-
-PyObject*
-python_test (
-             gold_code*  io_gold_code,
-             size_t      in_chip_duration,
-             PyObject* in_signal
-             )
-{
-  if( NULL == io_gold_code )
-  {
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Gold code is null." );
-  }
-  else if( 0 >= in_chip_duration )
-  {
-    CPC_ERROR(
-              "Chip duration (0x%x) must be strictly be positive.",
-              in_chip_duration
-              );
-  }
-  else if( !PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
-  {
-    CPC_LOG_STRING(
-                   CPC_LOG_LEVEL_ERROR,
-                   "Signal must be a list with elements."
-                   );
-  }
-  
-  Py_RETURN_NONE;
-}
-
 PyObject*
 python_spread_signal(
   gold_code*  io_gold_code,
@@ -679,7 +649,7 @@ python_write_FLOAT_wav(
   PyObject* in_samples
 )
 {
-  FLOAT64** samples = NULL;
+  FLOAT64** samples     = NULL;
   CPC_BOOL return_value = CPC_TRUE;
 
   if(
@@ -732,7 +702,7 @@ python_write_FLOAT_wav(
                 if( !PyFloat_Check( number ) )
                 {
                   CPC_ERROR(
-                    "Item 0x%x, 0x%x is not an integer.",
+                    "Item 0x%x, 0x%x is not a float.",
                     i,
                     j
                     );
@@ -765,7 +735,7 @@ python_write_FLOAT_wav(
     }
     else
     {
-      CPC_ERROR( "File name is not a tring: 0x%x.", in_file_name );
+      CPC_ERROR( "File name is not a string: 0x%x.", in_file_name );
 
       return_value = CPC_FALSE;
     }

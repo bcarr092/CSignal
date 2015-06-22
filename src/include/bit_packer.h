@@ -159,8 +159,8 @@ bit_packer_add_bits (
 csignal_error_code
 bit_packer_get_bytes (
                       bit_packer* in_bit_packer,
-                      UCHAR** out_data,
-                      USIZE*   out_data_length
+                      UCHAR**     out_data,
+                      USIZE*      out_data_length
                       );
 
 #endif  /*  __BIT_PACKER_H__  */

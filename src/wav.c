@@ -7,6 +7,33 @@
 
 #include "wav.h"
 
+
+/*! \fn     csignal_error_code csignal_write_fact_header (
+              FILE* in_file_pointer,
+              UINT32 in_number_of_channels,
+              UINT32 in_number_of_samples
+                                                         )
+    \brief  Writes a fact header chunk to the file pointed to by
+            in_file_pointer. This is a required chunk for non-LPCM
+            data (e.g., FLOAT data).
+
+    \param  in_file_pointer A valid file pointer opened for write.
+    \param  in_number_of_channels The number of channels in the LPCM WAV file
+                                  being created.
+    \param  in_number_of_samples  The number of samples encoded in each channel.
+    \return Returns NO_ERROR upon succesful execution or one of these errors:
+
+            CPC_ERROR_CODE_NULL_POINTER If in_file_pointer is NULL.
+            CSIGNAL_ERROR_CODE_WRITE_ERROR  If data could not be written to
+                                            in_file_pointer.
+ */
+csignal_error_code
+csignal_write_fact_header (
+  FILE* in_file_pointer,
+  UINT32 in_number_of_channels,
+  UINT32 in_number_of_samples
+                          );
+
 /*! \fn     csignal_error_code
               csignal_write_RIFF_header (
               FILE*  in_file_pointer,
@@ -221,12 +248,22 @@ csignal_write_FLOAT_wav  (
         if( CPC_ERROR_CODE_NO_ERROR == return_value )
         {
           return_value =
-            csignal_write_FLOAT_data (
-                                      file_pointer,
-                                      in_number_of_channels,
-                                      in_number_of_samples,
-                                      in_samples
+            csignal_write_fact_header (
+              file_pointer, 
+              in_number_of_channels, 
+              in_number_of_samples
                                       );
+
+          if( CPC_ERROR_CODE_NO_ERROR == return_value )
+          {
+            return_value =
+              csignal_write_FLOAT_data(
+              file_pointer,
+              in_number_of_channels,
+              in_number_of_samples,
+              in_samples
+              );
+          }
         }
       }
       
@@ -496,10 +533,7 @@ csignal_write_WAVE_header (
   }
   else
   {
-    UINT32 chunk_size       =
-      csignal_convert_int_to_little_endian  (
-                                          CSIGNAL_WAVE_HEADER_CHUNK_FORMAT_SIZE
-                                             );
+    UINT32 chunk_size       = 0;
     UINT16 format_tag       =
       csignal_convert_short_to_little_endian( in_format_code );
     UINT16 number_of_channels =
@@ -520,6 +554,21 @@ csignal_write_WAVE_header (
     UINT16 bits_per_sample  =
       csignal_convert_short_to_little_endian( in_sample_size * 8 );
     
+    if( CSIGNAL_WAVE_LPCM_FORMAT_CODE == in_format_code )
+    {
+      chunk_size =
+        csignal_convert_int_to_little_endian(
+          CSIGNAL_WAVE_HEADER_CHUNK_LPCM_FORMAT_SIZE
+                                            );
+    }
+    else
+    {
+      chunk_size =
+        csignal_convert_int_to_little_endian(
+        CSIGNAL_WAVE_HEADER_CHUNK_FLOAT_FORMAT_SIZE
+                                            );
+    }
+
     if  (
          4 != fwrite( CSIGNAL_WAVE_HEADER_ID, 1, 4, in_file_pointer )
          || 4 != fwrite (
@@ -564,8 +613,70 @@ csignal_write_WAVE_header (
       
       return_value = CSIGNAL_ERROR_CODE_WRITE_ERROR;
     }
+    else
+    {
+      if( CSIGNAL_WAVE_LPCM_FORMAT_CODE != in_format_code )
+      {
+        UINT16 extension_size = 0x0;
+
+        if( 1 != fwrite( &extension_size, sizeof( UINT16 ), 1, in_file_pointer ) )
+        {
+          CPC_LOG_STRING  (
+            CPC_LOG_LEVEL_ERROR, 
+            "Error writing extension field size." 
+                          );
+
+          return_value = CSIGNAL_ERROR_CODE_WRITE_ERROR;
+        }
+      }
+    }
   }
   
+  return( return_value );
+}
+
+csignal_error_code
+csignal_write_fact_header (
+                            FILE* in_file_pointer,
+                            UINT32 in_number_of_channels,
+                            UINT32 in_number_of_samples
+                          )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+
+  if( NULL == in_file_pointer )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "File pointer is NULL" );
+
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+  }
+  else
+  {
+    UINT32 fact_chunk_size =
+      csignal_convert_int_to_little_endian(
+        CSIGNAL_WAVE_HEADER_FACT_CHUNK_SIZE
+                                          );
+
+    UINT32 num_samples =
+      csignal_convert_int_to_little_endian(
+        in_number_of_samples * in_number_of_channels
+                                          );
+
+    if(
+      4 != fwrite( CSIGNAL_WAVE_HEADER_FACT_ID, 1, 4, in_file_pointer )
+      || 1 != fwrite( &fact_chunk_size, sizeof( UINT32 ), 1, in_file_pointer )
+      || 1 != fwrite( &num_samples, sizeof( UINT32 ), 1, in_file_pointer )
+      )
+    {
+      CPC_LOG_STRING(
+        CPC_LOG_LEVEL_ERROR,
+        "Error writing fact header to file."
+        );
+
+      return_value = CSIGNAL_ERROR_CODE_WRITE_ERROR;
+    }
+  }
+
   return( return_value );
 }
 

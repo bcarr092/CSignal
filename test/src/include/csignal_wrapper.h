@@ -154,13 +154,6 @@ python_spread_signal(
   PyObject*   in_signal
 );
 
-PyObject*
-python_test (
-             gold_code*  io_gold_code,
-             size_t      in_chip_duration,
-             PyObject* in_signal
-             );
-
 /*! \fn     int python_write_FLOAT_wav (
               PyObject* in_file_name,
               size_t    in_number_of_channels,
