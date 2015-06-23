@@ -154,7 +154,7 @@ python_spread_signal(
   PyObject*   in_signal
 );
 
-/*! \fn     int python_write_FLOAT_wav (
+/*! \fn     CPC_BOOL python_write_FLOAT_wav (
               PyObject* in_file_name,
               size_t    in_number_of_channels,
               int       in_sample_rate,
@@ -168,7 +168,7 @@ python_spread_signal(
     \return CPC_TRUE if the WAV file was successfully created, CPC_FALSE
             otherwise.
 */
-int
+CPC_BOOL
 python_write_FLOAT_wav(
   PyObject* in_file_name,
   size_t    in_number_of_channels,
@@ -307,6 +307,18 @@ python_bit_stream_get_bits  (
                              USIZE        in_number
                              );
 
+/*! \fn     PyObject* python_convolve (
+              PyObject* in_signal_one,
+              PyObject* in_signal_two
+            )
+    \brief  Convolves both input signals and returns a new Python list. The list
+            is equal in length to the sum of lengths of the input params. This
+            function returns a new reference.
+ 
+    \param  in_signal_one The first of the two signals to be convolved.
+    \param  in_signal_two The second of the two signals to be convolved.
+    \return None on error. A new Python on list (new reference on success).
+ */
 PyObject*
 python_convolve (
                  PyObject* in_signal_one,

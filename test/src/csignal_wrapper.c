@@ -1,5 +1,27 @@
 #include "csignal_wrapper.h"
 
+/*! \fn     csignal_error_code python_convert_list_to_array  (
+              PyObject*  in_py_list,
+              USIZE*     out_array_length,
+              FLOAT64**  out_array
+            )
+    \brief  Converts a Python list to an array of FLOAT64 values. The created
+            array is of length out_array_length.
+ 
+    \param  in_py_list  The Python list of doubles to convert to an array of
+                        Floats.
+    \param  out_array_length  The length of the created array. 0 if an error
+                              occurrs. Must be freed by caller.
+    \param  out_array A newly malloc'd array populated with the FLOAT values
+                      from in_py_list. NULL if an error occurrs. Must be freed
+                      by the caller.
+    \return Returns NO_ERROR upon succesful execution or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the parameters are null.
+            CPC_ERROR_CODE_INVALID_PARAMETER  If any element of in_py_list is not
+                                              a float.
+ */
 csignal_error_code
 python_convert_list_to_array  (
                                PyObject*  in_py_list,
@@ -7,6 +29,25 @@ python_convert_list_to_array  (
                                FLOAT64**  out_array
                                );
 
+/*! \fn     csignal_error_code python_convert_array_to_list  (
+              USIZE      in_array_length,
+              FLOAT64*   in_array,
+              PyObject** out_list
+            )
+    \brief  Converst a C array to a python list of doubles.
+ 
+    \param  in_array_length The number of elements in in_array.
+    \param  in_array  The array of FLOAT64 values to be added to the python list
+    \param  out_list  A newly created Python list. The reference is stolen by
+                      the caller, i.e., this function creates a new reference.
+    \return Returns NO_ERROR upon succesful execution or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If in_array or out_list is null.
+            CPC_ERROR_CODE_INVALID_PARAMETER  If any element of in_array failed
+                                              to convert to a Python float.
+            CPC_ERROR_CODE_API_ERROR  If the Python list could not be created.
+ */
 csignal_error_code
 python_convert_array_to_list  (
                                USIZE      in_array_length,
@@ -16,16 +57,16 @@ python_convert_array_to_list  (
 
 PyObject*
 python_calculate_FFT(
-  PyObject* in_signal
-)
+                     PyObject* in_signal
+                     )
 {
   PyObject* return_value = NULL;
 
-  USIZE size = 0;
-  FLOAT64*  signal = NULL;
-
-  USIZE fft_length = 0;
-  FLOAT64* fft = NULL;
+  FLOAT64*  signal  = NULL;
+  FLOAT64* fft      = NULL;
+  
+  USIZE signal_length = 0;
+  USIZE fft_length    = 0;
 
   if( !PyList_Check( in_signal ) || PyList_Size( in_signal ) == 0 )
   {
@@ -36,54 +77,36 @@ python_calculate_FFT(
   }
   else
   {
-    size = PyList_Size( in_signal );
-
-    csignal_error_code return_code =
-      cpc_safe_malloc( ( void** )&signal, sizeof( FLOAT64 )* size );
-
-    if( CPC_ERROR_CODE_NO_ERROR == return_code )
+    csignal_error_code result =
+      python_convert_list_to_array( in_signal, &signal_length, &signal );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      for( USIZE i = 0; i < size; i++ )
+      result =
+        csignal_calculate_FFT( signal_length, signal, &fft_length, &fft );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
       {
-        if( PyFloat_Check( PyList_GetItem( in_signal, i ) ) )
+        PyObject* fft_list = PyList_New( fft_length / 2 );
+        
+        for( USIZE i = 0; i < fft_length; i += 2 )
         {
-          signal[i] = PyFloat_AsDouble( PyList_GetItem( in_signal, i ) );
+          PyObject* complex =
+            PyComplex_FromDoubles( fft[i], fft[i + 1] );
+          
+          if( 0 != PyList_SetItem( fft_list, ( i / 2 ), complex ) )
+          {
+            PyErr_Print( );
+          }
+        }
+        
+        if( PyList_Check( fft_list ) )
+        {
+          return_value = fft_list;
         }
         else
         {
-          CPC_ERROR( "Entry 0x%x is not a double.", i );
-
-          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
-        }
-      }
-
-      if( CPC_ERROR_CODE_NO_ERROR == return_code )
-      {
-        return_code = csignal_calculate_FFT( size, signal, &fft_length, &fft );
-
-        if( CPC_ERROR_CODE_NO_ERROR == return_code )
-        {
-          PyObject* fft_list = PyList_New( fft_length / 2 );
-
-          for( USIZE i = 0; i < fft_length; i += 2 )
-          {
-            PyObject* complex =
-              PyComplex_FromDoubles( fft[i], fft[i + 1] );
-
-            if( 0 != PyList_SetItem( fft_list, ( i / 2 ), complex ) )
-            {
-              PyErr_Print( );
-            }
-          }
-
-          if( PyList_Check( fft_list ) )
-          {
-            return_value = fft_list;
-          }
-          else
-          {
-            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-          }
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
         }
       }
     }
@@ -111,17 +134,17 @@ python_calculate_FFT(
 
 PyObject*
 python_filter_signal(
-  fir_passband_filter*  in_filter,
-  PyObject*             in_signal
-)
+                     fir_passband_filter*  in_filter,
+                     PyObject*             in_signal
+                     )
 {
-  PyObject* return_value = NULL;
+  PyObject* return_value  = NULL;
 
-  USIZE size = 0;
-  FLOAT64* signal = NULL;
-
-  USIZE filtered_signal_length = 0;
-  FLOAT64* filtered_signal = NULL;
+  FLOAT64* signal           = NULL;
+  FLOAT64* filtered_signal  = NULL;
+  
+  USIZE signal_length           = 0;
+  USIZE filtered_signal_length  = 0;
 
   if( NULL == in_filter )
   {
@@ -136,94 +159,29 @@ python_filter_signal(
   }
   else
   {
-    size = PyList_Size( in_signal );
-
-    csignal_error_code return_code =
-      cpc_safe_malloc( ( void** )&signal, sizeof( FLOAT64 )* size );
-
-    if( CPC_ERROR_CODE_NO_ERROR == return_code )
+    csignal_error_code result =
+    python_convert_list_to_array( in_signal, &signal_length, &signal );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      for( USIZE i = 0; i < size; i++ )
+      result =
+      csignal_filter_signal(
+                            in_filter,
+                            signal_length,
+                            signal,
+                            &filtered_signal_length,
+                            &filtered_signal
+                            );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
       {
-        if( PyFloat_Check( PyList_GetItem( in_signal, i ) ) )
-        {
-          signal[i] = PyFloat_AsDouble( PyList_GetItem( in_signal, i ) );
-        }
-        else
-        {
-          CPC_ERROR( "Entry 0x%x is not an integer.", i );
-
-          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
-        }
+        result =
+          python_convert_array_to_list  (
+                                         filtered_signal_length,
+                                         filtered_signal,
+                                         &return_value
+                                         );
       }
-
-      CPC_LOG_BUFFER_FLOAT64(
-        CPC_LOG_LEVEL_TRACE,
-        "Signal",
-        signal,
-        size,
-        8
-        );
-
-      if( CPC_ERROR_CODE_NO_ERROR == return_code )
-      {
-        return_code =
-          csignal_filter_signal(
-          in_filter,
-          size,
-          signal,
-          &filtered_signal_length,
-          &filtered_signal
-          );
-
-        if( CPC_ERROR_CODE_NO_ERROR == return_code )
-        {
-          CPC_LOG_BUFFER_FLOAT64(
-            CPC_LOG_LEVEL_TRACE,
-            "Filtered signal",
-            filtered_signal,
-            ( filtered_signal_length > 200 ? 200 : filtered_signal_length ),
-            8
-            );
-
-          PyObject* filtered_list = PyList_New( filtered_signal_length );
-
-          if( NULL == filtered_list )
-          {
-            cpc_safe_free( ( void** )&filtered_signal );
-          }
-          else
-          {
-            for( USIZE i = 0; i < filtered_signal_length; i++ )
-            {
-              if(
-                0
-                != PyList_SetItem(
-                filtered_list,
-                i,
-                Py_BuildValue( "d", filtered_signal[i] )
-                )
-                )
-              {
-                PyErr_Print( );
-              }
-            }
-
-            if( PyList_Check( filtered_list ) )
-            {
-              return_value = filtered_list;
-            }
-            else
-            {
-              CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-            }
-          }
-        }
-      }
-    }
-    else
-    {
-      CPC_ERROR( "Could not malloc signal: 0x%x.", return_value );
     }
   }
 
@@ -249,14 +207,14 @@ python_filter_signal(
 
 fir_passband_filter*
 python_initialize_kaiser_filter(
-  float in_first_stopband,
-  float in_first_passband,
-  float in_second_passband,
-  float in_second_stopband,
-  float in_passband_attenuation,
-  float in_stopband_attenuation,
-  int   in_sampling_frequency
-)
+                                float in_first_stopband,
+                                float in_first_passband,
+                                float in_second_passband,
+                                float in_second_stopband,
+                                float in_passband_attenuation,
+                                float in_stopband_attenuation,
+                                int   in_sampling_frequency
+                                )
 {
   fir_passband_filter* filter = NULL;
 
@@ -271,15 +229,15 @@ python_initialize_kaiser_filter(
   {
     csignal_error_code return_value =
       csignal_initialize_kaiser_filter(
-      in_first_stopband,
-      in_first_passband,
-      in_second_passband,
-      in_second_stopband,
-      in_passband_attenuation,
-      in_stopband_attenuation,
-      in_sampling_frequency,
-      &filter
-      );
+                                       in_first_stopband,
+                                       in_first_passband,
+                                       in_second_passband,
+                                       in_second_stopband,
+                                       in_passband_attenuation,
+                                       in_stopband_attenuation,
+                                       in_sampling_frequency,
+                                       &filter
+                                       );
 
     if( CPC_ERROR_CODE_NO_ERROR != return_value )
     {
@@ -294,13 +252,13 @@ python_initialize_kaiser_filter(
 
 PyObject*
 python_get_gold_code(
-  gold_code*  in_gold_code,
-  size_t      in_number_of_bits
-)
+                     gold_code*  in_gold_code,
+                     size_t      in_number_of_bits
+                     )
 {
   PyObject* return_value = NULL;
 
-  USIZE size = 0;
+  USIZE size  = 0;
   UCHAR* code = NULL;
 
   if( NULL == in_gold_code )
@@ -311,11 +269,11 @@ python_get_gold_code(
   {
     csignal_error_code return_code =
       csignal_get_gold_code(
-      in_gold_code,
-      in_number_of_bits,
-      &size,
-      &code
-      );
+                            in_gold_code,
+                            in_number_of_bits,
+                            &size,
+                            &code
+                            );
 
     if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
@@ -334,7 +292,7 @@ python_get_gold_code(
             != PyList_SetItem(
             code_list,
             i,
-            Py_BuildValue( "B", code[i] )
+            Py_BuildValue( "B", code[ i ] )
             )
             )
           {
@@ -375,24 +333,24 @@ python_get_gold_code(
 
 gold_code*
 python_initialize_gold_code(
-  unsigned int in_degree,
-  unsigned long in_generator_polynomial_1,
-  unsigned long in_generator_polynomial_2,
-  unsigned long in_initial_state_1,
-  unsigned long in_initial_state_2
-)
+                            unsigned int in_degree,
+                            unsigned long in_generator_polynomial_1,
+                            unsigned long in_generator_polynomial_2,
+                            unsigned long in_initial_state_1,
+                            unsigned long in_initial_state_2
+                            )
 {
   gold_code* shift_registers = NULL;
 
   csignal_error_code return_value =
     csignal_initialize_gold_code(
-    in_degree,
-    in_generator_polynomial_1,
-    in_generator_polynomial_2,
-    in_initial_state_1,
-    in_initial_state_2,
-    &shift_registers
-    );
+                                 in_degree,
+                                 in_generator_polynomial_1,
+                                 in_generator_polynomial_2,
+                                 in_initial_state_1,
+                                 in_initial_state_2,
+                                 &shift_registers
+                                 );
 
   if( CPC_ERROR_CODE_NO_ERROR != return_value )
   {
@@ -409,9 +367,9 @@ python_initialize_gold_code(
 
 PyObject*
 python_get_spreading_code(
-  spreading_code* in_spreading_code,
-  size_t          in_number_of_bits
-)
+                          spreading_code* in_spreading_code,
+                          size_t          in_number_of_bits
+                          )
 {
   PyObject* return_value = NULL;
 
@@ -426,11 +384,11 @@ python_get_spreading_code(
   {
     csignal_error_code return_code =
       csignal_get_spreading_code(
-      in_spreading_code,
-      in_number_of_bits,
-      &size,
-      &code
-      );
+                                 in_spreading_code,
+                                 in_number_of_bits,
+                                 &size,
+                                 &code
+                                 );
 
     if( CPC_ERROR_CODE_NO_ERROR == return_code )
     {
@@ -445,13 +403,13 @@ python_get_spreading_code(
         for( USIZE i = 0; i < size; i++ )
         {
           if(
-            0
-            != PyList_SetItem(
-            code_list,
-            i,
-            Py_BuildValue( "B", code[i] )
-            )
-            )
+             0
+             != PyList_SetItem(
+                               code_list,
+                               i,
+                               Py_BuildValue( "B", code[i] )
+                               )
+             )
           {
             PyErr_Print( );
           }
@@ -490,20 +448,20 @@ python_get_spreading_code(
 
 spreading_code*
 python_initialize_spreading_code(
-  unsigned int in_degree,
-  unsigned long in_generator_polynomial,
-  unsigned long in_initial_state
-)
+                                 unsigned int in_degree,
+                                 unsigned long in_generator_polynomial,
+                                 unsigned long in_initial_state
+                                 )
 {
   spreading_code* shift_register = NULL;
 
   csignal_error_code return_value =
     csignal_initialize_spreading_code(
-    in_degree,
-    in_generator_polynomial,
-    in_initial_state,
-    &shift_register
-    );
+                                      in_degree,
+                                      in_generator_polynomial,
+                                      in_initial_state,
+                                      &shift_register
+                                      );
 
   if( CPC_ERROR_CODE_NO_ERROR != return_value )
   {
@@ -520,16 +478,17 @@ python_initialize_spreading_code(
 
 PyObject*
 python_spread_signal(
-  gold_code*  io_gold_code,
-  size_t      in_chip_duration,
-  PyObject*   in_signal
-)
+                     gold_code*  io_gold_code,
+                     size_t      in_chip_duration,
+                     PyObject*   in_signal
+                     )
 {
-  PyObject* return_value = NULL;
+  PyObject* return_value  = NULL;
 
-  USIZE size = 0;
-  FLOAT64* signal = NULL;
-
+  FLOAT64* signal     = NULL;
+  
+  USIZE signal_length = 0;
+  
   if( NULL == io_gold_code )
   {
     CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Gold code is null." );
@@ -550,87 +509,23 @@ python_spread_signal(
   }
   else
   {
-    size = PyList_Size( in_signal );
-    signal = NULL;
+    csignal_error_code result =
+      python_convert_list_to_array( in_signal, &signal_length, &signal );
 
-    csignal_error_code return_code =
-      cpc_safe_malloc( ( void** )&signal, sizeof( FLOAT64 )* size );
-
-    if( CPC_ERROR_CODE_NO_ERROR == return_code )
+    if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      for( USIZE i = 0; i < size; i++ )
-      {
-        if( PyFloat_Check( PyList_GetItem( in_signal, i ) ) )
-        {
-          signal[i] = PyFloat_AsDouble( PyList_GetItem( in_signal, i ) );
-        }
-        else
-        {
-          CPC_ERROR( "Entry 0x%x is not a float.", i );
-
-          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
-        }
-      }
-
-      CPC_LOG_BUFFER_FLOAT64(
-        CPC_LOG_LEVEL_TRACE,
-        "Signal",
-        signal,
-        size,
-        8
-        );
-    }
-    else
-    {
-      CPC_ERROR( "Could not malloc signal: 0x%x.", return_value );
-    }
-
-    if( CPC_ERROR_CODE_NO_ERROR == return_code )
-    {
-      return_code =
+      result =
         csignal_spread_signal(
-          io_gold_code,
-          in_chip_duration,
-          size,
-          signal
-        );
+                              io_gold_code,
+                              in_chip_duration,
+                              signal_length,
+                              signal
+                              );
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_code )
+      if( CPC_ERROR_CODE_NO_ERROR == result )
       {
-        PyObject* new_signal = PyList_New( size );
-
-        CPC_LOG_BUFFER_FLOAT64(
-          CPC_LOG_LEVEL_TRACE,
-          "Spread signal",
-          signal,
-          size,
-          8
-          );
-
-        for( USIZE i = 0; i < size; i++ )
-        {
-          if(
-            0 != PyList_SetItem(
-                    new_signal,
-                    i,
-                    Py_BuildValue( "d", signal[i] )
-                  )
-            )
-          {
-            PyErr_Print( );
-
-            return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
-          }
-        }
-
-        if( CPC_ERROR_CODE_NO_ERROR == return_code )
-        {
-          return_value = new_signal;
-        }
-        else
-        {
-          Py_XDECREF( new_signal );
-        }
+        result =
+          python_convert_array_to_list( signal_length, signal, &return_value );
       }
       else
       {
@@ -654,7 +549,7 @@ python_spread_signal(
   }
 }
 
-int
+CPC_BOOL
 python_write_FLOAT_wav(
   PyObject* in_file_name,
   size_t    in_number_of_channels,
@@ -684,135 +579,59 @@ python_write_FLOAT_wav(
   }
   else
   {
-    if( PyString_Check( in_file_name ) )
-    {
-      if( PyList_Check( in_samples ) )
-      {
-        if( PyList_Size( in_samples ) == in_number_of_channels )
-        {
-          for( USIZE i = 0; i < in_number_of_channels && return_value; i++ )
-          {
-            if(
-              PyList_Size( PyList_GetItem( in_samples, i ) )
-              != in_number_of_samples
-              )
-            {
-              CPC_ERROR(
-                "Sample list 0x%x is not of correct size (0x%x), should be 0x%x.",
-                i,
-                PyList_Size( PyList_GetItem( in_samples, i ) ),
-                in_number_of_samples
-                );
-
-              return_value = CPC_FALSE;
-            }
-            else
-            {
-              for( USIZE j = 0; j < in_number_of_samples; j++ )
-              {
-                PyObject* number =
-                  PyList_GetItem( PyList_GetItem( in_samples, i ), j );
-
-                if( !PyFloat_Check( number ) )
-                {
-                  CPC_ERROR(
-                    "Item 0x%x, 0x%x is not a float.",
-                    i,
-                    j
-                    );
-
-                  return_value = CPC_FALSE;
-
-                  break;
-                }
-              }
-            }
-          }
-        }
-        else
-        {
-          CPC_ERROR(
-            "Samples list not of correct size (0x%x), should be 0x%x.",
-            PyList_Size( in_samples ),
-            in_number_of_channels
-            );
-
-          return_value = CPC_FALSE;
-        }
-      }
-      else
-      {
-        CPC_ERROR( "Samples are not a list: 0x%x.", in_samples );
-
-        return_value = CPC_FALSE;
-      }
-    }
-    else
-    {
-      CPC_ERROR( "File name is not a string: 0x%x.", in_file_name );
-
-      return_value = CPC_FALSE;
-    }
-  }
-
-  if( return_value )
-  {
-    cpc_error_code error =
+    cpc_error_code result =
       cpc_safe_malloc(
-      ( void** )&samples,
-      sizeof( FLOAT64* )* in_number_of_channels
-      );
-
-    if( CPC_ERROR_CODE_NO_ERROR == error )
+                      ( void** )&samples,
+                      sizeof( FLOAT64* )* in_number_of_channels
+                      );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
     {
       for( USIZE i = 0; i < in_number_of_channels; i++ )
       {
-        error =
-          cpc_safe_malloc(
-          ( void** )&( samples[i] ),
-          sizeof( FLOAT64 )* in_number_of_samples
-          );
-
-        if( CPC_ERROR_CODE_NO_ERROR == error )
+        USIZE samples_length = 0;
+        
+        samples[ i ]  = NULL;
+        
+        result =
+          python_convert_list_to_array  (
+                                         PyList_GetItem( in_samples, i ),
+                                         &samples_length,
+                                         &( samples[ i ] )
+                                         );
+        
+        if( CPC_ERROR_CODE_NO_ERROR != result )
         {
-          for( USIZE j = 0; j < in_number_of_samples; j++ )
-          {
-            PyObject* number =
-              PyList_GetItem( PyList_GetItem( in_samples, i ), j );
-
-            samples[i][j] = PyFloat_AsDouble( number );
-          }
-        }
-        else
-        {
-          CPC_ERROR( "Could not malloc sample array: 0x%x.", error );
-
+          CPC_ERROR( "Could not set samples list for channel %d.", i );
+          
           return_value = CPC_FALSE;
+          
+          break;
         }
       }
     }
     else
     {
-      CPC_ERROR( "Could not malloc samples array: 0x%x.", error );
-
+      CPC_ERROR( "Could not malloc samples array: 0x%x.", result );
+      
       return_value = CPC_FALSE;
     }
   }
 
   if( return_value )
   {
-    csignal_error_code error =
+    csignal_error_code result =
       csignal_write_FLOAT_wav(
-      PyString_AsString( in_file_name ),
-      in_number_of_channels,
-      in_sample_rate,
-      in_number_of_samples,
-      samples
-      );
+                              PyString_AsString( in_file_name ),
+                              in_number_of_channels,
+                              in_sample_rate,
+                              in_number_of_samples,
+                              samples
+                            );
 
-    if( error )
+    if( CPC_ERROR_CODE_NO_ERROR != result )
     {
-      CPC_ERROR( "Could not write FLOAT WAV file: 0x%x.", error );
+      CPC_ERROR( "Could not write FLOAT WAV file: 0x%x.", result );
 
       return_value = CPC_FALSE;
     }
@@ -836,17 +655,18 @@ python_write_FLOAT_wav(
 
 PyObject*
 python_modulate_symbol(
-  unsigned int     in_symbol,
-  unsigned int     in_constellation_size,
-  unsigned int     in_sample_rate,
-  size_t           in_symbol_duration,
-  int              in_baseband_pulse_amplitude,
-  float            in_carrier_frequency
-)
+                       unsigned int     in_symbol,
+                       unsigned int     in_constellation_size,
+                       unsigned int     in_sample_rate,
+                       size_t           in_symbol_duration,
+                       int              in_baseband_pulse_amplitude,
+                       float            in_carrier_frequency
+                       )
 {
   PyObject* return_value  = NULL;
-  FLOAT64* inphase        = NULL;
-  FLOAT64* quadrature     = NULL;
+  
+  FLOAT64* inphase    = NULL;
+  FLOAT64* quadrature = NULL;
 
   if  (
        0 >= in_carrier_frequency
@@ -865,115 +685,80 @@ python_modulate_symbol(
   }
   else
   {
-    csignal_error_code return_code =
+    csignal_error_code result =
       cpc_safe_malloc(
-      ( void** )&inphase,
-      sizeof( FLOAT64 )* in_symbol_duration
-      );
+                      ( void** )&inphase,
+                      sizeof( FLOAT64 )* in_symbol_duration
+                      );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_code )
+    if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      return_code =
+      result =
         cpc_safe_malloc(
-        ( void** )&quadrature,
-        sizeof( FLOAT64 )* in_symbol_duration
-        );
+                        ( void** )&quadrature,
+                        sizeof( FLOAT64 )* in_symbol_duration
+                        );
 
-      if( CPC_ERROR_CODE_NO_ERROR == return_code )
+      if( CPC_ERROR_CODE_NO_ERROR == result )
       {
-        return_code =
+        result =
           csignal_modulate_symbol(
-          in_symbol,
-          in_constellation_size,
-          in_sample_rate,
-          in_symbol_duration,
-          in_baseband_pulse_amplitude,
-          in_carrier_frequency,
-          inphase,
-          quadrature
-          );
+                                  in_symbol,
+                                  in_constellation_size,
+                                  in_sample_rate,
+                                  in_symbol_duration,
+                                  in_baseband_pulse_amplitude,
+                                  in_carrier_frequency,
+                                  inphase,
+                                  quadrature
+                                  );
 
-        if( CPC_ERROR_CODE_NO_ERROR == return_code )
+        if( CPC_ERROR_CODE_NO_ERROR == result )
         {
-          PyObject* list = PyList_New( 2 );
+          return_value = PyList_New( 2 );
 
-          if( NULL != list )
+          if( NULL != return_value )
           {
-            PyObject* inphase_list = PyList_New( in_symbol_duration );
-            PyObject* quadrature_list = PyList_New( in_symbol_duration );
-
-            if( NULL != inphase_list && NULL != quadrature_list )
+            PyObject* inphase_list    = NULL;
+            PyObject* quadrature_list = NULL;
+            
+            result =
+              python_convert_array_to_list  (
+                                             in_symbol_duration,
+                                             inphase,
+                                             &inphase_list
+                                             );
+            
+            if( CPC_ERROR_CODE_NO_ERROR == result )
             {
-              PyList_SetItem( list, 0, inphase_list );
-              PyList_SetItem( list, 1, quadrature_list );
-
-              for( USIZE i = 0; i < in_symbol_duration; i++ )
+              result =
+                python_convert_array_to_list  (
+                                               in_symbol_duration,
+                                               quadrature,
+                                               &quadrature_list
+                                               );
+              
+              if( CPC_ERROR_CODE_NO_ERROR == result )
               {
-                if(
-                  0 != PyList_SetItem (
-                        inphase_list,
-                        i,
-                        Py_BuildValue( "d", inphase[i] )
-                                       )
-                  || 0 != PyList_SetItem  (
-                            quadrature_list,
-                            i,
-                            Py_BuildValue( "d", quadrature[i] )
-                                           )
-                  )
-                {
-                  CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Error adding values.");
-                  
-                  PyErr_Print( );
-                }
-              }
-
-              if  (
-                   PyList_Check( list )
-                   && PyList_Check( inphase_list )
-                   && PyList_Check( quadrature_list )
-                   )
-              {
-                return_value = list;
+                PyList_SetItem( return_value, 0, inphase_list );
+                PyList_SetItem( return_value, 1, quadrature_list );
               }
               else
               {
-                CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+                Py_DECREF( inphase_list );
+                Py_DECREF( return_value );
               }
             }
             else
             {
-              CPC_ERROR(
-                "Could not create inphase (0x%x) or quadrature list (0x%x).",
-                inphase_list,
-                quadrature_list
-                );
+              Py_DECREF( return_value );
             }
           }
-          else
-          {
-            CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create list." );
-          }
-        }
-        else
-        {
-          CPC_ERROR( "Could not modulate symbol: 0x%x.", return_value );
         }
       }
-      else
-      {
-        CPC_LOG_STRING(
-          CPC_LOG_LEVEL_ERROR,
-          "Could not malloc quadrature array."
-          );
-      }
-    }
-    else
-    {
-      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not malloc inphase array." );
     }
   }
-
+  
   if( NULL != inphase )
   {
     cpc_safe_free( ( void** )&inphase );
@@ -1360,21 +1145,23 @@ python_convolve (
                                          convolved_signal,
                                          &list
                                          );
-
-        cpc_safe_free( ( void** ) &signal_one );
-        cpc_safe_free( ( void** ) &signal_two );
-        cpc_safe_free( ( void** ) &convolved_signal );
-      }
-      else
-      {
-        cpc_safe_free( ( void** ) &signal_one );
-        cpc_safe_free( ( void** ) &signal_two );
       }
     }
-    else
-    {
-      cpc_safe_free( ( void** ) &signal_one );
-    }
+  }
+  
+  if( NULL != signal_one )
+  {
+    cpc_safe_free( ( void** ) &signal_one );
+  }
+  
+  if( NULL != signal_two )
+  {
+    cpc_safe_free( ( void** ) &signal_two );
+  }
+  
+  if( NULL != convolved_signal )
+  {
+    cpc_safe_free( ( void** ) &convolved_signal );
   }
   
   if( CPC_ERROR_CODE_NO_ERROR == result )
@@ -1419,7 +1206,7 @@ python_convert_array_to_list  (
                              )
            )
         {
-          return_value = CPC_ERROR_CODE_API_ERROR;
+          return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
           
           CPC_ERROR( "Could not convert set item 0x%x.", i );
           
@@ -1460,6 +1247,7 @@ python_convert_list_to_array  (
                                )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+ 
   
   if( NULL == in_py_list || NULL == out_array || NULL == out_array_length )
   {
@@ -1475,6 +1263,7 @@ python_convert_list_to_array  (
   else
   {
     *out_array_length = PyList_Size( in_py_list );
+    *out_array        = NULL;
     
     csignal_error_code return_code =
       cpc_safe_malloc (
