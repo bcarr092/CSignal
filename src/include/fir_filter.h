@@ -14,6 +14,8 @@
 
 #include <cpcommon.h>
 
+#include "conv.h"
+
 #include "csignal_error_codes.h"
 
 /*! \var    firt_passband_filter

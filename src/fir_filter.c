@@ -138,42 +138,14 @@ csignal_filter_signal (
   else
   {
     return_value =
-      cpc_safe_malloc (
-                       ( void** ) out_filtered_signal,
-                       sizeof( FLOAT64 )
-                        * ( in_filter->number_of_taps + in_signal_length )
-                       );
-    
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
-    {
-      *out_filtered_signal_length =
-        in_signal_length + in_filter->number_of_taps;
-      
-      for( SSIZE i = 0; i < *out_filtered_signal_length; i++ )
-      {
-        FLOAT64 value = 0;
-        
-        SSIZE min =
-          ( i >= in_filter->number_of_taps - 1 )
-          ? i - ( in_filter->number_of_taps - 1 ) : 0;
-        
-        SSIZE max = ( i < in_signal_length - 1 ) ? i : in_signal_length - 1;
-        
-        for( SSIZE j = min; j <= max; j++ )
-        {
-          value += in_signal[ j ] * in_filter->coefficients[ i - j ];
-        }
-        
-        ( *out_filtered_signal )[ i ] = value;
-      }
-    }
-    else
-    {
-      CPC_ERROR( "Could not malloc filtered signal: 0x%x.", return_value );
-      
-      *out_filtered_signal_length = 0;
-      *out_filtered_signal        = NULL;
-    }
+      convolve  (
+                 in_signal_length,
+                 in_signal,
+                 in_filter->number_of_taps,
+                 in_filter->coefficients,
+                 out_filtered_signal_length,
+                 out_filtered_signal
+                 );
   }
   
   return( return_value );

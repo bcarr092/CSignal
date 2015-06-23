@@ -109,6 +109,7 @@ set( SCRIPTS "${PROJECT_SOURCE_DIR}/test_driver.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_csignal.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_bit_packer.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_bit_stream.py" )
+list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_conv.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_2_7_1.dat" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_7_89_20.dat" )
 list  (

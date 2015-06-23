@@ -1,5 +1,19 @@
 #include "csignal_wrapper.h"
 
+csignal_error_code
+python_convert_list_to_array  (
+                               PyObject*  in_py_list,
+                               USIZE*     out_array_length,
+                               FLOAT64**  out_array
+                               );
+
+csignal_error_code
+python_convert_array_to_list  (
+                               USIZE      in_array_length,
+                               FLOAT64*   in_array,
+                               PyObject** out_list
+                               );
+
 PyObject*
 python_calculate_FFT(
   PyObject* in_signal
@@ -1289,4 +1303,217 @@ python_bit_stream_get_bits  (
   {
     Py_RETURN_NONE;
   }
+}
+
+
+PyObject*
+python_convolve (
+                 PyObject* in_signal_one,
+                 PyObject* in_signal_two
+                 )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  
+  FLOAT64* signal_one       = NULL;
+  FLOAT64* signal_two       = NULL;
+  FLOAT64* convolved_signal = NULL;
+  
+  USIZE signal_one_length       = 0;
+  USIZE signal_two_length       = 0;
+  USIZE convolved_signal_length = 0;
+  
+  PyObject* list = NULL;
+  
+  result =
+    python_convert_list_to_array  (
+                                   in_signal_one,
+                                   &signal_one_length,
+                                   &signal_one
+                                   );
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    result =
+      python_convert_list_to_array  (
+                                     in_signal_two,
+                                     &signal_two_length,
+                                     &signal_two
+                                     );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      result =
+        convolve  (
+                   signal_one_length,
+                   signal_one,
+                   signal_two_length,
+                   signal_two,
+                   &convolved_signal_length,
+                   &convolved_signal
+                   );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        result =
+          python_convert_array_to_list  (
+                                         convolved_signal_length,
+                                         convolved_signal,
+                                         &list
+                                         );
+        
+        if( CPC_ERROR_CODE_NO_ERROR != NULL )
+        {
+          cpc_safe_free( ( void** ) &signal_one );
+          cpc_safe_free( ( void** ) &signal_two );
+          cpc_safe_free( ( void** ) &convolved_signal );
+        }
+      }
+      else
+      {
+        cpc_safe_free( ( void** ) &signal_one );
+        cpc_safe_free( ( void** ) &signal_two );
+      }
+    }
+    else
+    {
+      cpc_safe_free( ( void** ) &signal_one );
+    }
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( list );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+csignal_error_code
+python_convert_array_to_list  (
+                               USIZE      in_array_length,
+                               FLOAT64*   in_array,
+                               PyObject** out_list
+                               )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == out_list )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List is null." );
+  }
+  else
+  {
+    *out_list = PyList_New( in_array_length );
+    
+    if( NULL != *out_list )
+    {
+      for( USIZE i = 0; i < in_array_length; i++ )
+      {
+        if(
+           0
+           != PyList_SetItem(
+                             *out_list,
+                             i,
+                             Py_BuildValue( "d", in_array[ i ] )
+                             )
+           )
+        {
+          return_value = CPC_ERROR_CODE_API_ERROR;
+          
+          CPC_ERROR( "Could not convert set item 0x%x.", i );
+          
+          break;
+        }
+      }
+      
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        if( ! PyList_Check( *out_list ) )
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List check failed." );
+          
+          Py_DECREF( *out_list );
+        }
+      }
+      else
+      {
+        Py_DECREF( *out_list );
+      }
+    }
+    else
+    {
+      return_value = CPC_ERROR_CODE_API_ERROR;
+      
+      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create list." );
+    }
+  }
+  
+  return( return_value );
+}
+
+csignal_error_code
+python_convert_list_to_array  (
+                               PyObject*  in_py_list,
+                               USIZE*     out_array_length,
+                               FLOAT64**  out_array
+                               )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == in_py_list || NULL == out_array || NULL == out_array_length )
+  {
+    CPC_ERROR (
+               "Python list (0x%x), array (0x%x) or length (0x%x) are null.",
+               in_py_list,
+               out_array,
+               out_array_length
+               );
+    
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+  }
+  else
+  {
+    *out_array_length = PyList_Size( in_py_list );
+    
+    csignal_error_code return_code =
+      cpc_safe_malloc (
+                       ( void** ) out_array,
+                       sizeof( FLOAT64 ) * *out_array_length
+                       );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == return_code )
+    {
+      for( USIZE i = 0; i < *out_array_length; i++ )
+      {
+        if( PyFloat_Check( PyList_GetItem( in_py_list, i ) ) )
+        {
+          ( *out_array )[ i ] =
+            PyFloat_AsDouble( PyList_GetItem( in_py_list, i ) );
+        }
+        else
+        {
+          CPC_ERROR( "Entry 0x%x is not a float.", i );
+          
+          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
+          
+          *out_array_length = 0;
+          
+          cpc_safe_free( ( void** ) out_array );
+        }
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not malloc signal: 0x%x.", return_value );
+      
+      *out_array_length = 0;
+      *out_array        = NULL;
+    }
+  }
+  
+  return( return_value );
 }

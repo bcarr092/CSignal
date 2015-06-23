@@ -307,4 +307,10 @@ python_bit_stream_get_bits  (
                              USIZE        in_number
                              );
 
+PyObject*
+python_convolve (
+                 PyObject* in_signal_one,
+                 PyObject* in_signal_two
+                 );
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

@@ -54,6 +54,8 @@
 %include <kaiser_filter.h>
 %include <bit_packer.h>
 %include <bit_stream.h>
+%include <fft.h>
+%include <conv.h>
 
 // These have to be included because we don't recursively parse headers
 %include <types.h>
