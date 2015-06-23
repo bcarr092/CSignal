@@ -1360,13 +1360,10 @@ python_convolve (
                                          convolved_signal,
                                          &list
                                          );
-        
-        if( CPC_ERROR_CODE_NO_ERROR != NULL )
-        {
-          cpc_safe_free( ( void** ) &signal_one );
-          cpc_safe_free( ( void** ) &signal_two );
-          cpc_safe_free( ( void** ) &convolved_signal );
-        }
+
+        cpc_safe_free( ( void** ) &signal_one );
+        cpc_safe_free( ( void** ) &signal_two );
+        cpc_safe_free( ( void** ) &convolved_signal );
       }
       else
       {
