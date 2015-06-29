@@ -140,4 +140,66 @@ csignal_spread_signal (
                        FLOAT64*   io_signal
                        );
 
+/*! \def    csignal_error_code csignal_multipliy_signal  (
+              USIZE       in_signal_one_length,
+              FLOAT64*    in_signal_one,
+              USIZE       in_signal_two_length,
+              FLOAT64*    in_signal_two,
+              USIZE*      out_signal_length,
+              FLOAT64**   out_signal
+            )
+    \brief  Multipy two signals and put the result in a newly created array
+            out_signal. out_signal is malloc'd in this function and returned
+            to be freed by the caller.
+ 
+    \note   The caller must free out_signal if it is not null.
+ 
+    \param  in_signal_one_length  The number of elements in signal_one.
+    \param  in_signal_one The first of two signals to be multiplied.
+    \param  in_signal_two_length  The number of elements in signal two.
+    \param  in_signal_two The second of two signal to be multiplied.
+    \param  out_signal_length The number of elements in out_signal. Should be
+                              equal to in_signal_one_length, or zero.
+    \param  out_signal A newly created array containing the values of signal_one
+                        and signal_two multiplied, or NULL if an error occurrs.
+    \return Returns NO_ERROR upon succesful exection or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the input parameters are null.
+            CPC_ERROR_CODE_INVALID_PARAMETER If the length of signal one and two
+                                              are not equal.
+ */
+csignal_error_code
+csignal_multipliy_signal  (
+                           USIZE       in_signal_one_length,
+                           FLOAT64*    in_signal_one,
+                           USIZE       in_signal_two_length,
+                           FLOAT64*    in_signal_two,
+                           USIZE*      out_signal_length,
+                           FLOAT64**   out_signal
+                           );
+
+/*! \def    csignal_error_code csignal_calculate_energy  (
+              USIZE    in_signal_length,
+              FLOAT64* in_signal,
+              FLOAT64* out_energy
+            )
+    \brief  Calculates the signal's energy, E = sum( x[ i ]^2 ).
+ 
+    \param  in_signal_length  The number of elements in in_signal.
+    \param  in_signal The signal whose energy is to be calculated.
+    \param  out_energy  The energy in in_signal is equal to the sum of elements
+                        squared.
+    \return Returns NO_ERROR upon succesful exection or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the input parameters are null.
+ */
+csignal_error_code
+csignal_calculate_energy  (
+                           USIZE    in_signal_length,
+                           FLOAT64* in_signal,
+                           FLOAT64* out_energy
+                           );
+
 #endif  /*  __CSIGNAL_H__ */

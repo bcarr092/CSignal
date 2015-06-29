@@ -259,3 +259,106 @@ csignal_spread_signal (
   
   return( return_value );
 }
+
+csignal_error_code
+csignal_multipliy_signal  (
+                           USIZE       in_signal_one_length,
+                           FLOAT64*    in_signal_one,
+                           USIZE       in_signal_two_length,
+                           FLOAT64*    in_signal_two,
+                           USIZE*      out_signal_length,
+                           FLOAT64**   out_signal
+                           )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if  (
+       NULL == in_signal_one
+       || NULL == in_signal_two
+       || NULL == out_signal
+       )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal one (0x%x), two (0x%x), or out (0x%x) are null.",
+               in_signal_one,
+               in_signal_two,
+               out_signal
+               );
+  }
+  else if( in_signal_one_length != in_signal_two_length )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Signal one length (%d) is not equal to signal two length (%d).",
+               in_signal_one_length,
+               in_signal_two_length
+               );
+  }
+  else
+  {
+    cpc_safe_malloc (
+                     ( void** ) out_signal,
+                     sizeof( FLOAT64 )
+                     * in_signal_one_length
+                     );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      *out_signal_length = in_signal_one_length;
+      
+      for( SSIZE i = 0; i < *out_signal_length; i++ )
+      {
+        FLOAT64 value = in_signal_one[ i ] * in_signal_two[ i ];
+        
+        ( *out_signal )[ i ] = value;
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not malloc new signal: 0x%x.", return_value );
+      
+      *out_signal_length = 0;
+      *out_signal        = NULL;
+    }
+  }
+  
+  return( return_value );
+}
+
+csignal_error_code
+csignal_calculate_energy  (
+                           USIZE    in_signal_length,
+                           FLOAT64* in_signal,
+                           FLOAT64* out_energy
+                           )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if  (
+       NULL == in_signal
+       || NULL == out_energy
+       )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal one (0x%x) or energy (0x%x) are null.",
+               in_signal,
+               out_energy
+               );
+  }
+  else
+  {
+    *out_energy = 0.0;
+    
+    for( SSIZE i = 0; i < in_signal_length; i++ )
+    {
+      *out_energy += CPC_POW_FLOAT64( in_signal[ i ], 2 );
+    }
+  }
+  
+  return( return_value );
+}
