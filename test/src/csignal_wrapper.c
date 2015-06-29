@@ -1108,42 +1108,61 @@ python_csignal_multiply_signals (
   
   PyObject* list = NULL;
   
-  result =
-  python_convert_list_to_array  (
-                                 in_signal_one,
-                                 &signal_one_length,
-                                 &signal_one
-                                 );
-  
-  if( CPC_ERROR_CODE_NO_ERROR == result )
+  if  (
+       NULL == in_signal_one
+       || Py_None == in_signal_one
+       || NULL == in_signal_two
+       || Py_None == in_signal_two
+       )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal one (0x%x) or signal two (0x%x) are null",
+               " or Python None.",
+               in_signal_one,
+               in_signal_two
+               );
+  }
+  else
   {
     result =
     python_convert_list_to_array  (
-                                   in_signal_two,
-                                   &signal_two_length,
-                                   &signal_two
+                                   in_signal_one,
+                                   &signal_one_length,
+                                   &signal_one
                                    );
     
     if( CPC_ERROR_CODE_NO_ERROR == result )
     {
       result =
-        csignal_multiply_signal (
-                                 signal_one_length,
-                                 signal_one, 
-                                 signal_two_length,
-                                 signal_two,
-                                 &output_signal_length,
-                                 &output_signal
-                                 );
+      python_convert_list_to_array  (
+                                     in_signal_two,
+                                     &signal_two_length,
+                                     &signal_two
+                                     );
       
       if( CPC_ERROR_CODE_NO_ERROR == result )
       {
         result =
-        python_convert_array_to_list  (
-                                       output_signal_length,
-                                       output_signal,
-                                       &list
-                                       );
+          csignal_multiply_signal (
+                                   signal_one_length,
+                                   signal_one, 
+                                   signal_two_length,
+                                   signal_two,
+                                   &output_signal_length,
+                                   &output_signal
+                                   );
+        
+        if( CPC_ERROR_CODE_NO_ERROR == result )
+        {
+          result =
+          python_convert_array_to_list  (
+                                         output_signal_length,
+                                         output_signal,
+                                         &list
+                                         );
+        }
       }
     }
   }
@@ -1194,45 +1213,82 @@ python_csignal_calculate_thresholds (
   
   PyObject* list = NULL;
   
-  result =
-  python_convert_list_to_array  (
-                                 in_spreading_code,
-                                 &spreading_code_length,
-                                 &spreading_code
-                                 );
-  
-  if( CPC_ERROR_CODE_NO_ERROR == result )
+  if  (
+       NULL == in_spreading_code
+       || Py_None == in_spreading_code
+       || NULL == in_signal
+       || Py_None == in_signal
+       || NULL == in_wideband_filter
+       || NULL == in_narrowband_filter
+       )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Spreading code (0x%x), signal (0x%x), wideband (0x%x)"
+               " or narrowband (0x%x) are null or Python None.",
+               in_spreading_code,
+               in_signal,
+               in_wideband_filter,
+               in_narrowband_filter
+               );
+  }
+  else
   {
     result =
     python_convert_list_to_array  (
-                                   in_signal,
-                                   &signal_length,
-                                   &signal
+                                   in_spreading_code,
+                                   &spreading_code_length,
+                                   &spreading_code
                                    );
+    
+    CPC_LOG (
+             CPC_LOG_LEVEL_TRACE,
+             "Spreading code (0x%x) is %d long.",
+             spreading_code,
+             spreading_code_length
+             );
     
     if( CPC_ERROR_CODE_NO_ERROR == result )
     {
       result =
-        csignal_calculate_thresholds  (
-                                       spreading_code_length,
-                                       spreading_code,
-                                       in_wideband_filter,
-                                       in_narrowband_filter,
-                                       signal_length,
-                                       signal,
-                                       in_decimation,
-                                       &thresholds_length,
-                                       &thresholds
-                                       );
+      python_convert_list_to_array  (
+                                     in_signal,
+                                     &signal_length,
+                                     &signal
+                                     );
+      
+      CPC_LOG (
+               CPC_LOG_LEVEL_TRACE,
+               "Signal (0x%x) is %d long.",
+               signal,
+               signal_length
+               );
       
       if( CPC_ERROR_CODE_NO_ERROR == result )
       {
         result =
-        python_convert_array_to_list  (
-                                       thresholds_length,
-                                       thresholds,
-                                       &list
-                                       );
+          csignal_calculate_thresholds  (
+                                         spreading_code_length,
+                                         spreading_code,
+                                         in_wideband_filter,
+                                         in_narrowband_filter,
+                                         signal_length,
+                                         signal,
+                                         in_decimation,
+                                         &thresholds_length,
+                                         &thresholds
+                                         );
+        
+        if( CPC_ERROR_CODE_NO_ERROR == result )
+        {
+          result =
+          python_convert_array_to_list  (
+                                         thresholds_length,
+                                         thresholds,
+                                         &list
+                                         );
+        }
       }
     }
   }
@@ -1276,20 +1332,29 @@ python_csignal_calculate_energy (
   
   PyObject* py_energy = NULL;
   
-  result =
-  python_convert_list_to_array  (
-                                 in_signal,
-                                 &signal_length,
-                                 &signal
-                                 );
-  
-  if( CPC_ERROR_CODE_NO_ERROR == result )
+  if( NULL == in_signal || Py_None == in_signal )
   {
-    result = csignal_calculate_energy( signal_length, signal, &energy );
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null or Python None." );
+  }
+  else
+  {
+    result =
+    python_convert_list_to_array  (
+                                   in_signal,
+                                   &signal_length,
+                                   &signal
+                                   );
     
     if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      py_energy = PyFloat_FromDouble( energy );
+      result = csignal_calculate_energy( signal_length, signal, &energy );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        py_energy = PyFloat_FromDouble( energy );
+      }
     }
   }
   
@@ -1326,42 +1391,60 @@ python_convolve (
   
   PyObject* list = NULL;
   
-  result =
-    python_convert_list_to_array  (
-                                   in_signal_one,
-                                   &signal_one_length,
-                                   &signal_one
-                                   );
-  
-  if( CPC_ERROR_CODE_NO_ERROR == result )
+  if  (
+       NULL == in_signal_one
+       || Py_None == in_signal_one
+       || NULL == in_signal_two
+       || Py_None == in_signal_two
+       )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal one (0x%x) or two (0x%x) are null or Python None.",
+               in_signal_one,
+               in_signal_two
+               );
+  }
+  else
   {
     result =
       python_convert_list_to_array  (
-                                     in_signal_two,
-                                     &signal_two_length,
-                                     &signal_two
+                                     in_signal_one,
+                                     &signal_one_length,
+                                     &signal_one
                                      );
     
     if( CPC_ERROR_CODE_NO_ERROR == result )
     {
       result =
-        convolve  (
-                   signal_one_length,
-                   signal_one,
-                   signal_two_length,
-                   signal_two,
-                   &convolved_signal_length,
-                   &convolved_signal
-                   );
+        python_convert_list_to_array  (
+                                       in_signal_two,
+                                       &signal_two_length,
+                                       &signal_two
+                                       );
       
       if( CPC_ERROR_CODE_NO_ERROR == result )
       {
         result =
-          python_convert_array_to_list  (
-                                         convolved_signal_length,
-                                         convolved_signal,
-                                         &list
-                                         );
+          convolve  (
+                     signal_one_length,
+                     signal_one,
+                     signal_two_length,
+                     signal_two,
+                     &convolved_signal_length,
+                     &convolved_signal
+                     );
+        
+        if( CPC_ERROR_CODE_NO_ERROR == result )
+        {
+          result =
+            python_convert_array_to_list  (
+                                           convolved_signal_length,
+                                           convolved_signal,
+                                           &list
+                                           );
+        }
       }
     }
   }
@@ -1400,11 +1483,11 @@ python_convert_array_to_list  (
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
   
-  if( NULL == out_list )
+  if( NULL == out_list || Py_None == *out_list )
   {
     return_value = CPC_ERROR_CODE_NULL_POINTER;
     
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List is null." );
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List is null or Python None." );
   }
   else
   {
@@ -1466,10 +1549,16 @@ python_convert_list_to_array  (
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
  
   
-  if( NULL == in_py_list || NULL == out_array || NULL == out_array_length )
+  if  (
+       NULL == in_py_list
+       || Py_None == in_py_list
+       || NULL == out_array
+       || NULL == out_array_length
+       )
   {
     CPC_ERROR (
-               "Python list (0x%x), array (0x%x) or length (0x%x) are null.",
+               "Python list (0x%x), array (0x%x) or length (0x%x)"
+               " are null or Python None.",
                in_py_list,
                out_array,
                out_array_length

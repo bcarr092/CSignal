@@ -93,6 +93,15 @@ csignal_calculate_thresholds  (
         ( USIZE )
         CPC_CEIL_FLOAT64( ( num_tests * 1.0 ) / ( in_decimation * 1.0 ) );
       
+      CPC_LOG (
+               CPC_LOG_LEVEL_ERROR,
+               "Signal length is %d, filtered signal lenght is %d."
+               " Number of tests is %d.",
+               in_signal_length,
+               wideband_filtered_signal_length,
+               *out_thresholds_length
+               );
+      
       return_value =
         cpc_safe_malloc (
                          ( void** ) out_thresholds,

@@ -125,10 +125,12 @@ csignal_filter_signal (
   }
   else if( 0 == in_signal_length || 0 == in_filter->number_of_taps )
   {
-    CPC_LOG_STRING  (
-                     CPC_LOG_LEVEL_ERROR,
-                     "Signal length must be greater than 0."
-                     );
+    CPC_ERROR  (
+                "Signal length (%d) and filter length (%d)"
+                " must be greater than 0.",
+                in_signal_length,
+                in_filter->number_of_taps
+                );
     
     return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
     
