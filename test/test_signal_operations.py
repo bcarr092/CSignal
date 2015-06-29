@@ -294,7 +294,6 @@ class TestsSignalOperations( unittest.TestCase ):
     self.assertEquals( csignal_destroy_gold_code( inphaseCode ), CPC_ERROR_CODE_NO_ERROR )
     self.assertEquals( csignal_destroy_gold_code( quadratureCode ), CPC_ERROR_CODE_NO_ERROR )
 
-"""
   def test_energy( self ):
     test = [ 1.0 for i in range( 100 ) ]
 
@@ -357,7 +356,6 @@ class TestsSignalOperations( unittest.TestCase ):
       self.assertNotEquals( output, None )
       self.assertEquals( len( output ), len( test ) )
       self.assertEquals( len( output ), len( test2 ) )
-"""
 
 if __name__ == '__main__':
   cpc_log_set_log_level( CPC_LOG_LEVEL_ERROR )
