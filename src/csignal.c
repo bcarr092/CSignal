@@ -261,7 +261,7 @@ csignal_spread_signal (
 }
 
 csignal_error_code
-csignal_multipliy_signal  (
+csignal_multiply_signal  (
                            USIZE       in_signal_one_length,
                            FLOAT64*    in_signal_one,
                            USIZE       in_signal_two_length,

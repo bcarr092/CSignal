@@ -200,7 +200,7 @@ detect_despread_calculate_energy  (
     FLOAT64*  output_signal       = NULL;
       
     return_value =
-    csignal_multipliy_signal  (
+    csignal_multiply_signal  (
                                in_signal_lengths,
                                in_signal_one,
                                in_signal_lengths,

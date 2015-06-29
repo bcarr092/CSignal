@@ -325,4 +325,63 @@ python_convolve (
                  PyObject* in_signal_two
                  );
 
+/*! \fn     PyObject* python_csignal_multiply_signals (
+              PyObject* in_signal_one,
+              PyObject* in_signal_two
+            )
+    \brief  Multiplies signals one and two and returns a Python list containing
+            the result.
+ 
+    \param  in_signal_one The first signal to multiply.
+    \param  in_signal_two The second signal to multiply.
+    \return A Python list containing a component-wise multiplication of signals
+            one and two.
+ */
+PyObject*
+python_csignal_multiply_signals (
+                                 PyObject* in_signal_one,
+                                 PyObject* in_signal_two
+                                 );
+
+/*! \fn     PyObject* python_csignal_calculate_energy (
+              PyObject* in_signal_one
+            )
+    \brief  Calcualtes the energy in the signal. Energy is calculated as taking
+            the sum of the square of the components of in_signal.
+ 
+    \param  in_signal The signal whose energy is to be calculated.
+    \return A Python float containing the energy in signal.
+ */
+PyObject*
+python_csignal_calculate_energy (
+                                 PyObject* in_signal
+                                 );
+
+/*! \fn     PyObject* python_csignal_calculate_thresholds (
+              PyObject*            in_spreading_code,
+              fir_passband_filter* in_wideband_filter,
+              fir_passband_filter* in_narrowband_filter,
+              PyObject*            in_signal,
+              UINT32               in_decimation
+            )
+    \brief  See the description for cisignal_calcualte_thresholds in detect.h.
+ 
+    \param  in_spreading_code The input signal containing the spreading code.
+    \param  in_wideband_filter  The wideband filter to apply to the whole signal.
+    \param  in_narrowband_filter  The filter to apply after despreading.
+    \param  in_signal The signal to despread and calculate the energy of.
+    \return A Python List of floats containing the despread energy at the 
+            specified offset. Note that the offset of the returned list is
+            i / in_decimation.
+ */
+PyObject*
+python_csignal_calculate_thresholds (
+                                     PyObject*            in_spreading_code,
+                                     fir_passband_filter* in_wideband_filter,
+                                     fir_passband_filter* in_narrowband_filter,
+                                     PyObject*            in_signal,
+                                     UINT32               in_decimation
+                                     );
+
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

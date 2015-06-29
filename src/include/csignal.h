@@ -23,6 +23,8 @@
 #include "fft.h"
 #include "bit_packer.h"
 #include "bit_stream.h"
+#include "conv.h"
+#include "detect.h"
 
 #include "csignal_error_codes.h"
 
@@ -140,7 +142,7 @@ csignal_spread_signal (
                        FLOAT64*   io_signal
                        );
 
-/*! \def    csignal_error_code csignal_multipliy_signal  (
+/*! \def    csignal_error_code csignal_multiply_signal  (
               USIZE       in_signal_one_length,
               FLOAT64*    in_signal_one,
               USIZE       in_signal_two_length,
@@ -170,14 +172,14 @@ csignal_spread_signal (
                                               are not equal.
  */
 csignal_error_code
-csignal_multipliy_signal  (
-                           USIZE       in_signal_one_length,
-                           FLOAT64*    in_signal_one,
-                           USIZE       in_signal_two_length,
-                           FLOAT64*    in_signal_two,
-                           USIZE*      out_signal_length,
-                           FLOAT64**   out_signal
-                           );
+csignal_multiply_signal  (
+                          USIZE       in_signal_one_length,
+                          FLOAT64*    in_signal_one,
+                          USIZE       in_signal_two_length,
+                          FLOAT64*    in_signal_two,
+                          USIZE*      out_signal_length,
+                          FLOAT64**   out_signal
+                          );
 
 /*! \def    csignal_error_code csignal_calculate_energy  (
               USIZE    in_signal_length,

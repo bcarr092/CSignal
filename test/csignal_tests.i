@@ -56,6 +56,7 @@
 %include <bit_stream.h>
 %include <fft.h>
 %include <conv.h>
+%include <detect.h>
 
 // These have to be included because we don't recursively parse headers
 %include <types.h>

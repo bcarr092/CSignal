@@ -1090,6 +1090,223 @@ python_bit_stream_get_bits  (
   }
 }
 
+PyObject*
+python_csignal_multiply_signals (
+                                 PyObject* in_signal_one,
+                                 PyObject* in_signal_two
+                                 )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  
+  FLOAT64* signal_one     = NULL;
+  FLOAT64* signal_two     = NULL;
+  FLOAT64* output_signal  = NULL;
+  
+  USIZE signal_one_length     = 0;
+  USIZE signal_two_length     = 0;
+  USIZE output_signal_length  = 0;
+  
+  PyObject* list = NULL;
+  
+  result =
+  python_convert_list_to_array  (
+                                 in_signal_one,
+                                 &signal_one_length,
+                                 &signal_one
+                                 );
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    result =
+    python_convert_list_to_array  (
+                                   in_signal_two,
+                                   &signal_two_length,
+                                   &signal_two
+                                   );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      result =
+        csignal_multiply_signal (
+                                 signal_one_length,
+                                 signal_one, 
+                                 signal_two_length,
+                                 signal_two,
+                                 &output_signal_length,
+                                 &output_signal
+                                 );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        result =
+        python_convert_array_to_list  (
+                                       output_signal_length,
+                                       output_signal,
+                                       &list
+                                       );
+      }
+    }
+  }
+  
+  if( NULL != signal_one )
+  {
+    cpc_safe_free( ( void** ) &signal_one );
+  }
+  
+  if( NULL != signal_two )
+  {
+    cpc_safe_free( ( void** ) &signal_two );
+  }
+  
+  if( NULL != output_signal )
+  {
+    cpc_safe_free( ( void** ) &output_signal );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( list );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_csignal_calculate_thresholds (
+                                     PyObject*            in_spreading_code,
+                                     fir_passband_filter* in_wideband_filter,
+                                     fir_passband_filter* in_narrowband_filter,
+                                     PyObject*            in_signal,
+                                     UINT32               in_decimation
+                                     )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  
+  FLOAT64* spreading_code  = NULL;
+  FLOAT64* signal         = NULL;
+  FLOAT64* thresholds     = NULL;
+  
+  USIZE spreading_code_length = 0;
+  USIZE signal_length         = 0;
+  USIZE thresholds_length     = 0;
+  
+  PyObject* list = NULL;
+  
+  result =
+  python_convert_list_to_array  (
+                                 in_spreading_code,
+                                 &spreading_code_length,
+                                 &spreading_code
+                                 );
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    result =
+    python_convert_list_to_array  (
+                                   in_signal,
+                                   &signal_length,
+                                   &signal
+                                   );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      result =
+        csignal_calculate_thresholds  (
+                                       spreading_code_length,
+                                       spreading_code,
+                                       in_wideband_filter,
+                                       in_narrowband_filter,
+                                       signal_length,
+                                       signal,
+                                       in_decimation,
+                                       &thresholds_length,
+                                       &thresholds
+                                       );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        result =
+        python_convert_array_to_list  (
+                                       thresholds_length,
+                                       thresholds,
+                                       &list
+                                       );
+      }
+    }
+  }
+  
+  if( NULL != spreading_code )
+  {
+    cpc_safe_free( ( void** ) &spreading_code );
+  }
+  
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+  
+  if( NULL != thresholds )
+  {
+    cpc_safe_free( ( void** ) &thresholds );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( list );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_csignal_calculate_energy (
+                                 PyObject* in_signal
+                                 )
+{
+  
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  
+  FLOAT64* signal     = NULL;
+  USIZE signal_length = 0;
+  FLOAT64 energy      = 0.0;
+  
+  PyObject* py_energy = NULL;
+  
+  result =
+  python_convert_list_to_array  (
+                                 in_signal,
+                                 &signal_length,
+                                 &signal
+                                 );
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    result = csignal_calculate_energy( signal_length, signal, &energy );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      py_energy = PyFloat_FromDouble( energy );
+    }
+  }
+  
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( py_energy );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
 
 PyObject*
 python_convolve (
