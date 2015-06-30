@@ -186,6 +186,10 @@ csignal_initialize_kaiser_filter  (
           return_value = destroy_return_code;
         }
       }
+      else
+      {
+        ( *out_filter )->sampling_frequency = in_sampling_frequency;
+      }
     }
     else
     {

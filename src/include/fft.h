@@ -16,6 +16,20 @@
 
 #include "csignal_error_codes.h"
 
+/*! \fn     USIZE csignal_calculate_closest_power_of_two  (
+              USIZE in_number
+            )
+    \brief  Finds the next power of 2 larger than or equal to in_number.
+ 
+    \param  in_number The next power of 2 will be larger than or equal to this
+                      parameter.
+    \return A power of 2 larger than or equal to in_number.
+ */
+USIZE
+csignal_calculate_closest_power_of_two  (
+                                         USIZE in_number
+                                         );
+
 /*! \fn     csignal_error_code csignal_calculate_FFT (
               USIZE      in_signal_length,
               FLOAT64*   in_signal,
@@ -23,6 +37,10 @@
               FLOAT64**  out_fft
             )
     \brief  Calculates the FFT of the input signal, in_signal.
+ 
+    \note   If out_fft_length is non-zero and out_fft is non-Null, then no
+            buffer will be allocated by this function. Otherwise, the caller
+            needs to free out_fft.
  
     \param  in_signal_length  The number of elements in in_signal.
     \param  in_signal The signal whose FFT is to be calculated.

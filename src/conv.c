@@ -1,5 +1,5 @@
 /*! \file   conv.c
-    \brief  Impelementation of the convolution algorithm.
+    \brief  Implementation of the convolution algorithm.
  */
 #include "conv.h"
 
@@ -30,13 +30,44 @@ convolve  (
                out_signal
                );
   }
+  else if (
+           *out_signal_length != 0
+           && (
+               in_signal_one_length + in_signal_two_length
+               ) > *out_signal_length
+           )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Signal length (%d) must be greater or equal to the length of"
+               " signal one (%d) plus signal two (%d).",
+               *out_signal_length,
+               in_signal_one_length,
+               in_signal_two_length
+               );
+  }
+  else if( *out_signal_length != 0 && NULL == *out_signal )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Signal length (%d) is set, but signal (0x%x) is null.",
+               *out_signal_length,
+               *out_signal
+               );
+  }
   else
   {
-    cpc_safe_malloc (
-                     ( void** ) out_signal,
-                     sizeof( FLOAT64 )
-                     * ( in_signal_one_length + in_signal_two_length )
-                     );
+    if( NULL == *out_signal )
+    {
+      return_value =
+        cpc_safe_malloc (
+                         ( void** ) out_signal,
+                         sizeof( FLOAT64 )
+                         * ( in_signal_one_length + in_signal_two_length )
+                         );
+    }
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {

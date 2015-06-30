@@ -20,7 +20,8 @@
             in a newly created array, out_signal. Performs the operation
             out_signal = in_signal_one * in_signal_two (where * is convolution).
  
-    \note   out_signal is created by this function and returned. It must be
+    \note   If out_signal_length is non-zero and out_signal is non_Null then
+            out_signal is created by this function and returned. It must be
             freed by the caller.
  
     \param  in_signal_one_length  The number of elements in signal one.

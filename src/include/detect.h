@@ -5,9 +5,12 @@
 #ifndef __DETECT_H__
 #define __DETECT_H__
 
+#include <sys/time.h>
+
 #include <cpcommon.h>
 
 #include "csignal.h"
+#include "fft.h"
 #include "fir_filter.h"
 #include "gold_code.h"
 

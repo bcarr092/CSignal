@@ -154,7 +154,9 @@ csignal_spread_signal (
             out_signal. out_signal is malloc'd in this function and returned
             to be freed by the caller.
  
-    \note   The caller must free out_signal if it is not null.
+    \note   If out_signal_length is non-zero and out_signal is non-Null this
+            function will create a new buffer. The caller must free out_signal
+            if it is not null if not set beforehand.
  
     \param  in_signal_one_length  The number of elements in signal_one.
     \param  in_signal_one The first of two signals to be multiplied.

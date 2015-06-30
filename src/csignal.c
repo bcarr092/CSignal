@@ -297,13 +297,41 @@ csignal_multiply_signal  (
                in_signal_two_length
                );
   }
+  else if (
+           *out_signal_length != 0
+           && ( in_signal_one_length > *out_signal_length )
+           )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Out signal length (%d) must be greater or equal to"
+               " the length of signal one (%d).",
+               *out_signal_length,
+               in_signal_one_length
+               );
+  }
+  else if( *out_signal_length != 0 && NULL == *out_signal )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Out signal length (%d) is set, but out signal (0x%x) is null.",
+               *out_signal_length,
+               *out_signal
+               );
+  }
   else
   {
-    cpc_safe_malloc (
-                     ( void** ) out_signal,
-                     sizeof( FLOAT64 )
-                     * in_signal_one_length
-                     );
+    if( NULL == *out_signal )
+    {
+      return_value =
+        cpc_safe_malloc (
+                         ( void** ) out_signal,
+                         sizeof( FLOAT64 )
+                         * in_signal_one_length
+                         );
+    }
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {

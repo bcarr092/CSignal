@@ -23,20 +23,6 @@
  */
 #define SWAP( in_a, in_b ) tempr=(in_a); (in_a)=(in_b); (in_b)=tempr;
 
-/*! \fn     USIZE csignal_calculate_closest_power_of_two  (
-              USIZE in_number
-            )
-    \brief  Finds the next power of 2 larger than or equal to in_number.
- 
-    \param  in_number The next power of 2 will be larger than or equal to this
-                      parameter.
-    \return A power of 2 larger than or equal to in_number.
- */
-USIZE
-csignal_calculate_closest_power_of_two  (
-                                         USIZE in_number
-                                         );
-
 /*! \fn     csignal_error_code csignal_convert_real_array_to_complex_array (
               USIZE    in_real_signal_length,
               FLOAT64* in_real_signal,
@@ -118,24 +104,53 @@ csignal_calculate_FFT (
     
     return_value = CPC_ERROR_CODE_NULL_POINTER;
   }
+  else if (
+           *out_fft_length != 0
+           && (
+               csignal_calculate_closest_power_of_two( in_signal_length ) * 2
+               ) > *out_fft_length
+           )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Out fft length (%d) must be greater or equal to the length of"
+               " twice the next power of two larger than signal length (%d).",
+               *out_fft_length,
+               csignal_calculate_closest_power_of_two( in_signal_length )
+               );
+  }
+  else if( *out_fft_length != 0 && NULL == *out_fft )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Out fft length (%d) is set, but out fft (0x%x) is null.",
+               *out_fft_length,
+               *out_fft
+               );
+  }
   else
   {
     *out_fft_length =
       csignal_calculate_closest_power_of_two( in_signal_length ) * 2;
     
     CPC_LOG (
-             CPC_LOG_LEVEL_DEBUG,
+             CPC_LOG_LEVEL_TRACE,
              "Power of 2 is %d (%d), length is %d.",
              csignal_calculate_closest_power_of_two( in_signal_length ),
              in_signal_length,
              *out_fft_length
              );
     
-    return_value =
-      cpc_safe_malloc (
-                       ( void** ) out_fft,
-                       sizeof( FLOAT64 ) * *out_fft_length
-                       );
+    if( NULL == *out_fft )
+    {
+      return_value =
+        cpc_safe_malloc (
+                         ( void** ) out_fft,
+                         sizeof( FLOAT64 ) * *out_fft_length
+                         );
+    }
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
@@ -149,6 +164,16 @@ csignal_calculate_FFT (
       
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
+        CPC_LOG_BUFFER_FLOAT64  (
+                                 CPC_LOG_LEVEL_TRACE,
+                                 "Complex signal:",
+                                 *out_fft,
+                                 200,
+                                 8
+                                 );
+        
+        CPC_LOG( CPC_LOG_LEVEL_TRACE, "Length is %d.", *out_fft_length );
+        
         //  The -1 is required for the first parameter because of the way the
         //  fft algorithm was written in Numerical Recipes.
         csignal_fft( *out_fft - 1, *out_fft_length / 2, CALCULATE_FFT );
