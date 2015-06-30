@@ -127,6 +127,12 @@ class TestsSignalOperations( unittest.TestCase ):
         decimationFactor
                                           )
 
+    self.assertEquals( bit_stream_destroy( tracker ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_passband_filter( widebandFilter ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_passband_filter( narrowbandFilter ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_gold_code( inphaseCode ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_gold_code( quadratureCode ), CPC_ERROR_CODE_NO_ERROR )
+
   def test_calculate_thresholds( self ):
     bitsPerSymbol         = 8
     constellationSize     = 2 ** bitsPerSymbol
