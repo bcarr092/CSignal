@@ -209,7 +209,7 @@ csignal_calculate_energy  (
 /*  \fn     csignal_error_code csignal_demodulate_binary_PAM (
               USIZE    in_signal_length,
               FLOAT64* in_signal,
-              CHAR*    out_decision
+              INT32*   out_decision
               )
     \brief  Demodulates in_signal into the values [ -1, 1 ].
  
@@ -227,7 +227,7 @@ csignal_error_code
 csignal_demodulate_binary_PAM (
                                USIZE    in_signal_length,
                                FLOAT64* in_signal,
-                               CHAR*    out_decision
+                               INT32*   out_decision
                                );
 
 /*! \fn     csignal_error_code csignal_sum_signal(

@@ -1637,14 +1637,16 @@ python_csignal_demodulate_binary_PAM (
     
     if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      CHAR decision = 0.0;
+      INT32 decision = 0;
       
       result =
         csignal_demodulate_binary_PAM( signal_length, signal, &decision );
       
       if( CPC_ERROR_CODE_NO_ERROR == result )
       {
-        decision_value = PyInt_FromLong( decision * 1 );
+        CPC_LOG( CPC_LOG_LEVEL_ERROR, "Decision: %d.", decision );
+        
+        decision_value = PyInt_FromLong( decision );
         
         if( NULL == decision_value )
         {

@@ -395,7 +395,7 @@ csignal_error_code
 csignal_demodulate_binary_PAM (
                                USIZE    in_signal_length,
                                FLOAT64* in_signal,
-                               CHAR*    out_decision
+                               INT32*   out_decision
                                )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -421,7 +421,7 @@ csignal_demodulate_binary_PAM (
     FLOAT64 correlator_one        = 0.0;
     FLOAT64 correlator_minus_one  = 0.0;
     
-    *out_decision = 0.0;
+    *out_decision = 0;
     
     return_value =
       csignal_sum_signal  (
@@ -443,7 +443,16 @@ csignal_demodulate_binary_PAM (
       
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
-        *out_decision = ( correlator_one >= correlator_minus_one ? 1.0 : -1.0 );
+        CPC_LOG (
+                 CPC_LOG_LEVEL_ERROR,
+                 "1: %.04f\t-1: %.04f",
+                 correlator_one,
+                 correlator_minus_one
+                 );
+        
+        *out_decision = ( correlator_one >= correlator_minus_one ? 1 : -1 );
+        
+        CPC_LOG( CPC_LOG_LEVEL_ERROR, "Decision: %d", *out_decision );
       }
       else
       {
