@@ -254,3 +254,15 @@ bit_stream_get_number_of_remaining_bits (
   
   return( number_of_bits );
 }
+
+csignal_error_code
+bit_stream_peak (
+                 bit_stream*  in_bit_stream,
+                 UCHAR*       out_read_bit_offset,
+                 UCHAR*       out_write_bit_offset,
+                 USIZE*       out_buffer_length,
+                 UCHAR*       out_buffer
+                 )
+{
+  
+}

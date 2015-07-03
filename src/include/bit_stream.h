@@ -194,4 +194,13 @@ bit_stream_get_bits (
                      USIZE*       out_data_length
                      );
 
+csignal_error_code
+bit_stream_peak (
+                 bit_stream*  in_bit_stream,
+                 UCHAR*       out_read_bit_offset,
+                 UCHAR*       out_write_bit_offset,
+                 USIZE*       out_buffer_length,
+                 UCHAR*       out_buffer
+                 );
+
 #endif  /*  __BIT_STREAM_H__  */
