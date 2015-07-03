@@ -416,4 +416,21 @@ python_csignal_sum_signal (
                            FLOAT64    in_scalar
                            );
 
+/*! \fn     PyObject* python_bit_stream_peak  (
+              bit_stream* in_bit_stream
+            )
+    \brief  Provides visibility into the unread bits in in_bit_stream without
+            modifying the read/write pointers of the stream. See
+            bit_stream_peak for a complete description of this function.
+ 
+    \param  in_bit_stream The bit stream whose buffer is to be accessed.
+    \return None if an error occurrs, or a three-element tuple containing the
+            read bit offset (offset into returned buffer[ 0 ]), write bit offset
+            (offset into returned buffer[ len( buffer ] - 1 ], and a buffer.
+ */
+PyObject*
+python_bit_stream_peak  (
+                         bit_stream* in_bit_stream
+                         );
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

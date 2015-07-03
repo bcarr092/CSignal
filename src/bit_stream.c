@@ -261,8 +261,48 @@ bit_stream_peak (
                  UCHAR*       out_read_bit_offset,
                  UCHAR*       out_write_bit_offset,
                  USIZE*       out_buffer_length,
-                 UCHAR*       out_buffer
+                 UCHAR**      out_buffer
                  )
 {
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
   
+  if  (
+       NULL == in_bit_stream
+       || NULL == in_bit_stream->packer
+       || NULL == out_read_bit_offset
+       || NULL == out_write_bit_offset
+       || NULL == out_buffer_length
+       || NULL == out_buffer
+       )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Bit stream (0x%x), stream's packer (0x%x), read offset (0x%x),"
+               " write offset (0x%x), length (0x%x), or buffer (0x%x)"
+               " are null.",
+               in_bit_stream,
+               in_bit_stream->packer,
+               out_read_bit_offset,
+               out_write_bit_offset,
+               out_buffer_length,
+               out_buffer
+               );
+  }
+  else
+  {
+    *out_read_bit_offset  = in_bit_stream->bit_offset;
+    *out_write_bit_offset = in_bit_stream->packer->bit_offset;
+    *out_buffer           =
+      in_bit_stream->packer->data + in_bit_stream->byte_offset;
+    *out_buffer_length    =
+      in_bit_stream->packer->byte_offset - in_bit_stream->byte_offset;
+    
+    if( 0 != out_buffer_length )
+    {
+      ( *out_buffer_length )++;
+    }
+  }
+  
+  return( return_value );
 }

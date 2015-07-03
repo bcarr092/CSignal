@@ -194,13 +194,41 @@ bit_stream_get_bits (
                      USIZE*       out_data_length
                      );
 
+/*! \fn     csignal_error_code bit_stream_peak (
+              bit_stream*  in_bit_stream,
+              UCHAR*       out_read_bit_offset,
+              UCHAR*       out_write_bit_offset,
+              USIZE*       out_buffer_length,
+              UCHAR*       out_buffer
+            )
+    \brief  Provides visibility into the position of the bit stream without
+            modifying the read and write pointers.
+ 
+    \note   This function returns the current values of the bit stream, there
+            is absolutely no guarantee they will not change after or during
+            this function call, proper synchronization is required.
+ 
+    \param  in_bit_stream The bit stream to peak into (i.e., get access to the
+                          remaining unread data.
+    \param  out_read_bit_offset The current read offset (bit). This is the bit
+                                offset into out_data[ 0 ].
+    \param  out_write_bit_offset  The current write offset (bit). This is the
+                                  bit offset into out_data[ out_data_length - 1]
+    \param  out_buffer_length The number of UCHAR elements in out_buffer.
+    \param  out_buffer  Pointer to the start of the data buffer containing all
+                        the current unread bits in the stream.
+    \return Returns NO_ERROR upon succesful execution or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the inputs are null.
+ */
 csignal_error_code
 bit_stream_peak (
                  bit_stream*  in_bit_stream,
                  UCHAR*       out_read_bit_offset,
                  UCHAR*       out_write_bit_offset,
                  USIZE*       out_buffer_length,
-                 UCHAR*       out_buffer
+                 UCHAR**      out_buffer
                  );
 
 #endif  /*  __BIT_STREAM_H__  */

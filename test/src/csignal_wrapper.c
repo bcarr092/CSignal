@@ -1620,11 +1620,11 @@ python_csignal_demodulate_binary_PAM (
   USIZE signal_length       = 0;
   PyObject* decision_value  = NULL;
   
-  if( NULL == in_signal )
+  if( NULL == in_signal || Py_None == in_signal )
   {
     result = CPC_ERROR_CODE_NULL_POINTER;
     
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null." );
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null or Python None." );
   }
   else
   {
@@ -1688,11 +1688,11 @@ python_csignal_sum_signal (
   USIZE signal_length       = 0;
   PyObject* sum_value       = NULL;
   
-  if( NULL == in_signal )
+  if( NULL == in_signal || Py_None == in_signal )
   {
     result = CPC_ERROR_CODE_NULL_POINTER;
     
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null." );
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null or Python None." );
   }
   else
   {
@@ -1735,6 +1735,102 @@ python_csignal_sum_signal (
   if( CPC_ERROR_CODE_NO_ERROR == result )
   {
     return( sum_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_bit_stream_peak  (
+                         bit_stream* in_bit_stream
+                         )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  PyObject* return_value    = NULL;
+  
+  if( NULL == in_bit_stream )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Bit stream is null." );
+  }
+  else
+  {
+    UCHAR read_offset   = 0;
+    UCHAR write_offset  = 0;
+    USIZE buffer_length = 0;
+    UCHAR* buffer       = NULL;
+    
+    result =
+      bit_stream_peak (
+                       in_bit_stream,
+                       &read_offset,
+                       &write_offset,
+                       &buffer_length,
+                       &buffer
+                       );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      PyObject* string        =
+        PyString_FromStringAndSize( ( CHAR* ) buffer, buffer_length );
+      PyObject* read_pointer  = PyInt_FromLong( 1 * read_offset );
+      PyObject* write_pointer = PyInt_FromLong( 1 * write_offset );
+      
+      return_value  = PyTuple_New( 3 );
+      
+      if  (
+           NULL != return_value && PyTuple_Check( return_value )
+           && NULL != string && PyString_Check( string )
+           && NULL != read_pointer && PyInt_Check( read_pointer )
+           && NULL != write_pointer && PyInt_Check( write_pointer )
+           )
+      {
+        if  (
+             0 != PyTuple_SetItem( return_value, 0, read_pointer )
+             || 0 != PyTuple_SetItem( return_value, 1, write_pointer )
+             || 0 != PyTuple_SetItem( return_value, 2, string )
+             )
+        {
+          result = CPC_ERROR_CODE_API_ERROR;
+          
+          CPC_LOG_STRING  (
+                           CPC_LOG_LEVEL_ERROR,
+                           "Error adding values to tuple."
+                           );
+          
+          Py_XDECREF( return_value );
+          Py_XDECREF( string );
+          Py_XDECREF( read_pointer );
+          Py_XDECREF( write_pointer );
+        }
+      }
+      else
+      {
+        result = CPC_ERROR_CODE_API_ERROR;
+        
+        CPC_LOG_STRING  (
+                         CPC_LOG_LEVEL_ERROR,
+                         "Error creating Python return values."
+                         );
+        
+        Py_XDECREF( return_value );
+        Py_XDECREF( string );
+        Py_XDECREF( read_pointer );
+        Py_XDECREF( write_pointer );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not peak at bit stream: 0x%x.", result );
+    }
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( return_value );
   }
   else
   {
