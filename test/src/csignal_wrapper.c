@@ -987,7 +987,7 @@ python_bit_stream_get_bits  (
   {
     UCHAR* buffer           = NULL;
     USIZE buffer_size       = 0;
-    USIZE num_bits_to_read = in_number_of_bits;
+    USIZE num_bits_to_read  = in_number_of_bits;
     
     csignal_error_code result =
       bit_stream_get_bits (

@@ -8,6 +8,99 @@ import string
 import sys
 
 class TestsBitStream( unittest.TestCase ):
+  def test_bit_stream_peak( self ):
+    data = ''
+    
+    for index in range( 1000 ):
+      initialNumber = random.randint( 0, 2 ** 32 - 1 ) 
+
+      data = data + struct.pack( "I", int( initialNumber ) )
+
+    bitPacker = python_bit_packer_initialize()
+
+    self.assertNotEquals( bitPacker, None )
+
+    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+
+    self.assertNotEquals( bitStream, None )
+
+    for index in range( 0, len( data ), 4 ):
+      string  = data[ index : index + 4 ]
+
+      self.assertEquals (
+        python_bit_packer_add_bytes( string, bitPacker ),
+        CPC_ERROR_CODE_NO_ERROR
+                        )
+
+
+    ( readOffset, writeOffset, buffer ) = python_bit_stream_peak( bitStream )
+
+    self.assertEquals( 0, readOffset )
+    self.assertEquals( 0, writeOffset )
+    self.assertEquals( len( data ), len( buffer ) )
+
+    for index in range( len( data ) ):
+      byteOriginal  = data[ index ]
+      byteBitStream = buffer[ index ]
+
+      self.assertEquals( byteOriginal, byteBitStream )
+
+    ( readOffset, writeOffset, buffer ) = python_bit_stream_peak( bitStream )
+
+    self.assertEquals( 0, readOffset )
+    self.assertEquals( 0, writeOffset )
+    self.assertEquals( len( data ), len( buffer ) )
+
+    bitValue = 1
+
+    self.assertEquals( CPC_ERROR_CODE_NO_ERROR, bit_packer_add_bits( bitValue, 1, bitPacker ) )
+
+    self.assertNotEquals( None, python_bit_stream_get_bits( bitStream, 1 ) )
+
+    ( readOffset, writeOffset, buffer ) = python_bit_stream_peak( bitStream )
+
+    self.assertEquals( 1, readOffset )
+    self.assertEquals( 1, writeOffset )
+    self.assertEquals( len( data ) + 1, len( buffer ) )
+    self.assertEquals( 0x80, ord( buffer[ len( buffer ) - 1 ] ) )
+
+    self.assertEquals (
+      bit_stream_destroy( bitStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    self.assertEquals (
+      bit_packer_destroy( bitPacker ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+  def test_bit_stream_peak_negative( self ):
+    self.assertEquals( None, python_bit_stream_peak( None ) )
+
+    bitPacker = python_bit_packer_initialize()
+
+    self.assertNotEquals( None, bitPacker )
+
+    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+
+    self.assertNotEquals( None, bitStream )
+
+    ( read, write, buffer ) = python_bit_stream_peak( bitStream )
+
+    self.assertEquals( 0, read )
+    self.assertEquals( 0, write )
+    self.assertNotEquals( None, buffer )
+    self.assertEquals( 0, len( buffer ) )
+
+    self.assertEquals (
+      bit_stream_destroy( bitStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    self.assertEquals (
+      bit_packer_destroy( bitPacker ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
   def test_bit_stream_add_read( self ):
     data = ''
     

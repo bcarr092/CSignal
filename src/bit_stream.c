@@ -298,10 +298,14 @@ bit_stream_peak (
     *out_buffer_length    =
       in_bit_stream->packer->byte_offset - in_bit_stream->byte_offset;
     
-    if( 0 != out_buffer_length )
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "Length is: %d.", *out_buffer_length );
+    
+    if( 0 != *out_buffer_length && *out_write_bit_offset != 0 )
     {
       ( *out_buffer_length )++;
     }
+    
+    CPC_LOG( CPC_LOG_LEVEL_TRACE, "Length is: %d.", *out_buffer_length );
   }
   
   return( return_value );
