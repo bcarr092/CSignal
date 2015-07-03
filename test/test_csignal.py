@@ -17,6 +17,172 @@ def touch_random_file():
   return( file_handle, file_name )
 
 class TestsCSignal( unittest.TestCase ):
+  def test_fft_of_lowpass_filter( self ):
+    bits_per_symbol     = 8
+    constellation_size  = 2 ** bits_per_symbol
+    sample_rate         = 48000
+    baseband_amplitude  = 32767
+    carrier_frequency   = 21000
+    symbol_duration     = 24000
+    chip_duration       = 24 
+
+    passband = sample_rate / chip_duration
+    stopband = passband + 1000
+
+    passband_attenuation = 0.1
+    stopband_attenuation = 80
+
+    inphase_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x12345678, 0x12345678 )
+    quadrature_gold_code = csignal_tests.python_initialize_gold_code( 7, 0x12000000, 0x1E000000, 0x12345678, 0x12345678 )
+
+    filter = csignal_tests.python_initialize_kaiser_lowpass_filter( passband, stopband, passband_attenuation, stopband_attenuation, sample_rate )
+
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
+    
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+
+    self.assertNotEquals( symbol_tracker, None )
+
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+    self.assertEquals( numberOfBits, bits_per_symbol )
+    self.assertNotEquals( buffer, None )
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
+
+    self.assertNotEquals( symbol, None )
+
+    signal = []
+
+    while( symbol != None ):
+      signal_components = csignal_tests.python_modulate_symbol (
+          symbol,
+          constellation_size,
+          sample_rate,
+          symbol_duration,
+          baseband_amplitude,
+          carrier_frequency
+                                                            )
+
+      self.assertNotEquals( signal_components, None )
+      self.assertEquals( len( signal_components ), 2 )
+      self.assertNotEquals( signal_components[ 0 ], None )
+      self.assertNotEquals( signal_components[ 1 ], None )
+      self.assertEquals( len( signal_components[ 0 ] ), symbol_duration )
+      self.assertEquals( len( signal_components[ 1 ] ), symbol_duration )
+
+      inphase_part = csignal_tests.python_spread_signal (
+          inphase_gold_code,
+          chip_duration,
+          signal_components[ 0 ]
+                                                        )
+
+      self.assertNotEquals( inphase_part, None )
+
+      quadrature_part = csignal_tests.python_spread_signal  (
+          quadrature_gold_code,
+          chip_duration,
+          signal_components[ 1 ]
+                                                            )
+
+      self.assertNotEquals( quadrature_part, None )
+
+      part = []
+
+      for index in range( symbol_duration ):
+        part.append( inphase_part[ index ] - quadrature_part[ index ] )
+
+      self.assertNotEquals( part, None )
+      self.assertEquals( len( part ), symbol_duration )
+
+      signal = signal + part
+
+      self.assertNotEquals( signal, None )
+
+      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, bits_per_symbol ) 
+
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ]
+
+    carrierSignal = []
+
+    for i in range( len( signal ) ):
+      inphase     = math.cos( 2.0 * math.pi * carrier_frequency * ( ( i * 1.0 ) / ( sample_rate * 1.0 ) ) )
+      quadrature  = math.sin( 2.0 * math.pi * carrier_frequency * ( ( i * 1.0 ) / ( sample_rate * 1.0 ) ) )
+
+      carrierSignal.append( inphase + quadrature )
+
+    signal = csignal_tests.python_csignal_multiply_signals( signal, carrierSignal )
+    signal = csignal_tests.python_filter_signal( filter, signal )
+
+    self.assertNotEquals( signal, None )
+
+    fft = csignal_tests.python_calculate_FFT( signal )
+
+    self.assertNotEquals( fft, None )
+
+    fft_mag = map( lambda x: abs( x ), fft )
+
+    N = len( fft_mag )
+    delta = 1.0 / sample_rate
+
+    max_value = -1
+
+    for magnitude in fft_mag:
+      if( magnitude > max_value ):
+        max_value = magnitude
+    
+    fft_mag = map( lambda x: 10**-12 if x == 0 else x, fft_mag )
+    fft_mag = map( lambda x: 10 * math.log10( x / max_value ), fft_mag )
+
+    for index in range( len( fft_mag ) ):
+      if( index > ( N / 2 ) ):
+        n = index - N
+      else:
+        n = index
+
+      frequency = n / ( delta * N )
+
+      if( abs( frequency ) > stopband ):
+        self.assertTrue( fft_mag[ index ] < -1.0 * ( ( stopband_attenuation * 0.90 ) / 2 ) )
+
+    ( file_handle, file_name ) = touch_random_file()
+
+    file_handle.close()
+
+    maxValue = -1 
+
+    for sample in signal:
+      if( abs( sample ) > maxValue ):
+        maxValue = abs( sample )
+
+    signal = map( lambda x: x / maxValue, signal )
+
+    samples = [ signal ]
+
+    error = csignal_tests.python_write_FLOAT_wav (
+      file_name,
+      len( samples ), 
+      sample_rate,
+      len( signal ),
+      samples
+                                                )
+
+    self.assertEquals( error, csignal_tests.CPC_TRUE )
+
+    if( os.path.exists( file_name ) ):
+      os.unlink( file_name )
+
+    self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( inphase_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    self.assertEquals( csignal_tests.csignal_destroy_gold_code( quadrature_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
   def test_fft_of_spread_signal( self ):
     bits_per_symbol     = 8
     constellation_size  = 2 ** bits_per_symbol

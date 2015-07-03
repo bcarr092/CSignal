@@ -24,7 +24,7 @@ csignal_initialize_passband_filter (
     return_value = CPC_ERROR_CODE_NULL_POINTER;
   }
   else if (
-           0 >= in_first_passband
+           0 > in_first_passband
            || 0 >= in_second_passband
            || in_first_passband >= in_second_passband
            || 0 == in_sampling_frequency

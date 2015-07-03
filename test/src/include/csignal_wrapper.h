@@ -50,14 +50,34 @@ python_filter_signal(
 */
 fir_passband_filter*
 python_initialize_kaiser_filter(
-  float in_first_stopband,
-  float in_first_passband,
-  float in_second_passband,
-  float in_second_stopband,
-  float in_passband_attenuation,
-  float in_stopband_attenuation,
-  int   in_sampling_frequency
-);
+                                float in_first_stopband,
+                                float in_first_passband,
+                                float in_second_passband,
+                                float in_second_stopband,
+                                float in_passband_attenuation,
+                                float in_stopband_attenuation,
+                                int   in_sampling_frequency
+                                );
+
+/*! \fn     fir_passband_filter* python_initialize_kaiser_lowpass_filter (
+              float in_passband,
+              float in_stopband,
+              float in_passband_attenuation,
+              float in_stopband_attenuation,
+              int   in_sampling_frequency
+            )
+    \brief  This is the python wrapper to create a Kaiser low pass filter. 
+            Please see the documentation in kaiser_filter.h for a complete
+            description of the permitted values.
+*/
+fir_passband_filter*
+python_initialize_kaiser_lowpass_filter(
+                                        float in_passband,
+                                        float in_stopband,
+                                        float in_passband_attenuation,
+                                        float in_stopband_attenuation,
+                                        int   in_sampling_frequency
+                                        );
 
 /*! \fn     PyObject* python_get_gold_code (
               gold_code*  in_gold_code,

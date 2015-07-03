@@ -206,6 +206,47 @@ python_filter_signal(
 }
 
 fir_passband_filter*
+python_initialize_kaiser_lowpass_filter(
+                                        float in_passband,
+                                        float in_stopband,
+                                        float in_passband_attenuation,
+                                        float in_stopband_attenuation,
+                                        int   in_sampling_frequency
+                                        )
+{
+  fir_passband_filter* filter = NULL;
+  
+  if( 0 >= in_sampling_frequency )
+  {
+    CPC_ERROR(
+              "Sampling frequency (%d Hz) must be positive.",
+              in_sampling_frequency
+              );
+  }
+  else
+  {
+    csignal_error_code return_value =
+      csignal_inititalize_kaiser_lowpass_filter(
+                                                in_passband,
+                                                in_stopband,
+                                                in_passband_attenuation,
+                                                in_stopband_attenuation,
+                                                in_sampling_frequency,
+                                                &filter
+                                                );
+    
+    if( CPC_ERROR_CODE_NO_ERROR != return_value )
+    {
+      CPC_ERROR( "Could not initialize kaiser filter: 0x%x.", return_value );
+      
+      filter = NULL;
+    }
+  }
+  
+  return( filter );
+}
+
+fir_passband_filter*
 python_initialize_kaiser_filter(
                                 float in_first_stopband,
                                 float in_first_passband,
