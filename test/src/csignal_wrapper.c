@@ -1609,3 +1609,133 @@ python_convert_list_to_array  (
   
   return( return_value );
 }
+
+PyObject*
+python_csignal_demodulate_binary_PAM (
+                                      PyObject* in_signal
+                                      )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  FLOAT64* signal           = NULL;
+  USIZE signal_length       = 0;
+  PyObject* decision_value  = NULL;
+  
+  if( NULL == in_signal )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null." );
+  }
+  else
+  {
+    result =
+      python_convert_list_to_array  (
+                                     in_signal,
+                                     &signal_length,
+                                     &signal
+                                     );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      CHAR decision = 0.0;
+      
+      result =
+        csignal_demodulate_binary_PAM( signal_length, signal, &decision );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        decision_value = PyInt_FromLong( decision * 1 );
+        
+        if( NULL == decision_value )
+        {
+          result = CPC_ERROR_CODE_API_ERROR;
+          
+          CPC_ERROR( "Failure converting int value (%d).", decision );
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not demodulate signal: 0x%x.", result );
+      }
+    }
+  }
+  
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( decision_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_csignal_sum_signal (
+                           PyObject*  in_signal,
+                           FLOAT64    in_scalar
+                           )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  FLOAT64* signal           = NULL;
+  USIZE signal_length       = 0;
+  PyObject* sum_value       = NULL;
+  
+  if( NULL == in_signal )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Signal is null." );
+  }
+  else
+  {
+    result =
+      python_convert_list_to_array  (
+                                     in_signal,
+                                     &signal_length,
+                                     &signal
+                                     );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      FLOAT64 sum = 0.0;
+      
+      result = csignal_sum_signal( signal_length, signal, in_scalar, &sum );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        sum_value = PyFloat_FromDouble( sum );
+        
+        if( NULL == sum_value )
+        {
+          result = CPC_ERROR_CODE_API_ERROR;
+          
+          CPC_ERROR( "Failure converting float value (%e).", sum );
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not sum signal: 0x%x.", result );
+      }
+    }
+  }
+  
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( sum_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}

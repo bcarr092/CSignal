@@ -383,5 +383,37 @@ python_csignal_calculate_thresholds (
                                      UINT32               in_decimation
                                      );
 
+/*! \fn     PyObject* python_csignal_demodulate_binary_PAM (
+             PyObject* in_signal
+            )
+    \brief  Demodultes in_signal into the values [ -1, 1 ] using a correlator
+            demodulator. See csignal_demodulate_binary_PAM for a complete
+            description of the behaviour of the function.
+ 
+    \param  in_signal The signal to be demodulated.
+    \return None if an error occurs or a PyInt containing one of [ -1, 1 ].
+ */
+PyObject*
+python_csignal_demodulate_binary_PAM (
+                                      PyObject* in_signal
+                                      );
+
+/*! \fn     PyObject* python_csignal_sum_signal (
+              PyObject*  in_signal,
+              FLOAT64    in_scalar
+            )
+    \brief  Sums in_signal, scaling each element by in_scalar.
+ 
+    \param  in_signal The signal to be summed and scaled.
+    \param  in_scalar The multiplicative scalar factor to apply to all elements
+                      of in_signal.
+    \return None if an error occurrs, a PyFloat containing the scaled, summed
+            values of in_signal otherwise.
+ */
+PyObject*
+python_csignal_sum_signal (
+                           PyObject*  in_signal,
+                           FLOAT64    in_scalar
+                           );
 
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

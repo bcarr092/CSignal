@@ -1,11 +1,117 @@
 from csignal_tests import *
 
+import math
 import unittest
 import random
 import struct
 import copy
 
 class TestsSignalOperations( unittest.TestCase ):
+  def test_demodulate( self ):
+    decision = python_csignal_demodulate_binary_PAM( [ 1.0 for i in range( 10 ) ] )
+
+    self.assertNotEquals( None, decision )
+    self.assertEquals( 1, decision )
+
+    decision = python_csignal_demodulate_binary_PAM( [ -1.0 for i in range( 10 ) ] )
+
+    self.assertNotEquals( None, decision )
+    self.assertEquals( -1, decision )
+
+    numTests  = 1000
+    SNRTests  = [ -20, -10, 0, 10, 20 ]
+    Pe        = [ 0.50, 0.30, 0.10, 0.01, 0.01 ]
+
+    for index in range( len( SNRTests ) ):
+      power = 10 ** ( SNRTests[ index ] / 10 )
+
+      correct = 0
+
+      for i in range( numTests ):
+        signalPlusNoise = [ 1.0 + random.normalvariate( 0, 1 / math.sqrt( power / 2.0 ) ) for i in range( 10 ) ]
+
+        decision = python_csignal_demodulate_binary_PAM( signalPlusNoise )
+
+        self.assertNotEquals( None, decision )
+
+        if( 1 == decision ):
+          correct += 1
+
+      #print "%.04f correct (desired %.04f)" %( correct * 1.0 / ( numTests * 1.0 ), 1.0 - Pe[ index ]  ) 
+
+      self.assertTrue( ( ( correct * 1.0 ) / ( numTests * 1.0 ) ) >= ( 1.0 - Pe[ index ] ) )
+
+      correct = 0
+
+      for i in range( numTests ):
+        signalPlusNoise = [ -1.0 + random.normalvariate( 0, 1 / math.sqrt( power / 2.0 ) ) for i in range( 10 ) ]
+
+        decision = python_csignal_demodulate_binary_PAM( signalPlusNoise )
+
+        self.assertNotEquals( None, decision )
+
+        if( -1 == decision ):
+          correct += 1
+
+      #print "%.04f correct (desired %.04f)" %( correct * 1.0 / ( numTests * 1.0 ), 1.0 - Pe[ index ]  ) 
+
+      self.assertTrue( ( ( correct * 1.0 ) / ( numTests * 1.0 ) ) >= ( 1.0 - Pe[ index ] ) )
+
+  def test_demodulate_negative( self ):
+    decision = python_csignal_demodulate_binary_PAM( None )
+
+    self.assertEquals( None, decision )
+
+    decision = python_csignal_demodulate_binary_PAM( [] )
+
+    self.assertEquals( None, decision )
+
+  def test_signal_sum( self ):
+    cs_sum = python_csignal_sum_signal( [ 1.0 for i in range( 100 ) ], 1.0 )
+
+    self.assertNotEquals( None, cs_sum )
+    self.assertEquals( 100.0, cs_sum )
+
+    cs_sum = python_csignal_sum_signal( [ 1.0 for i in range( 100 ) ], -1.0 )
+
+    self.assertNotEquals( None, cs_sum )
+    self.assertEquals( -100.0, cs_sum )
+
+    cs_sum = python_csignal_sum_signal( [ 1.0 for i in range( 100 ) ], 2.0 )
+
+    self.assertNotEquals( None, cs_sum )
+    self.assertEquals( 200.0, cs_sum )
+
+    for i in range( 1000 ):
+      signal = [ random.normalvariate( 0, 1 ) for j in range( 100 ) ]
+
+      py_sum = sum( signal )
+
+      cs_sum = python_csignal_sum_signal( signal, 1.0 )
+
+      self.assertNotEquals( None, cs_sum )
+      self.assertEquals( py_sum, cs_sum )
+
+      cs_sum = python_csignal_sum_signal( signal, -1.0 )
+
+      self.assertNotEquals( None, cs_sum )
+      self.assertEquals( -1.0 * py_sum, cs_sum )
+
+      cs_sum = python_csignal_sum_signal( signal, 2.0 )
+
+      self.assertNotEquals( None, cs_sum )
+      self.assertEquals( 2.0 * py_sum, cs_sum )
+
+  def test_signal_sum_negative( self ):
+    cs_sum = python_csignal_sum_signal( None, 1.0 )
+
+    self.assertEquals( None, cs_sum )
+
+    cs_sum = python_csignal_sum_signal( [], 1.0 )
+
+    self.assertNotEquals( None, cs_sum )
+    self.assertEquals( 0.0, cs_sum )
+
   def test_threshold_speed( self ):
     bitsPerSymbol         = 8
     constellationSize     = 2 ** bitsPerSymbol

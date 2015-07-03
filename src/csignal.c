@@ -390,3 +390,100 @@ csignal_calculate_energy  (
   
   return( return_value );
 }
+
+csignal_error_code
+csignal_demodulate_binary_PAM (
+                               USIZE    in_signal_length,
+                               FLOAT64* in_signal,
+                               CHAR*    out_decision
+                               )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == in_signal || NULL == out_decision )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal (0x%x) or decision (0x%x) are null.",
+               in_signal,
+               out_decision
+               );
+  }
+  else if( 0 == in_signal_length )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_LOG_STRING( CPC_ERROR_CODE_NO_ERROR, "Length must be greater than 0." );
+  }
+  else
+  {
+    FLOAT64 correlator_one        = 0.0;
+    FLOAT64 correlator_minus_one  = 0.0;
+    
+    *out_decision = 0.0;
+    
+    return_value =
+      csignal_sum_signal  (
+                           in_signal_length,
+                           in_signal,
+                           1.0,
+                           &correlator_one
+                           );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      return_value =
+        csignal_sum_signal  (
+                             in_signal_length,
+                             in_signal,
+                             -1.0,
+                             &correlator_minus_one
+                             );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        *out_decision = ( correlator_one >= correlator_minus_one ? 1.0 : -1.0 );
+      }
+      else
+      {
+        CPC_ERROR( "Could not sum signal: 0x%x.", return_value );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not sum signal: 0x%x.", return_value );
+    }
+  }
+  
+  return( return_value );
+}
+
+csignal_error_code
+csignal_sum_signal(
+                   USIZE    in_signal_length,
+                   FLOAT64* in_signal,
+                   FLOAT64  in_scalar,
+                   FLOAT64* out_sum
+                   )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == in_signal || NULL == out_sum )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR( "Signal (0x%x) or sum (0x%x) are null.", in_signal, out_sum );
+  }
+  else
+  {
+    *out_sum = 0.0;
+    
+    for( UINT32 i = 0; i < in_signal_length; i++ )
+    {
+      *out_sum += in_scalar * in_signal[ i ];
+    }
+  }
+  
+  return( return_value );
+}

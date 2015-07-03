@@ -206,4 +206,61 @@ csignal_calculate_energy  (
                            FLOAT64* out_energy
                            );
 
+/*  \fn     csignal_error_code csignal_demodulate_binary_PAM (
+              USIZE    in_signal_length,
+              FLOAT64* in_signal,
+              CHAR*    out_decision
+              )
+    \brief  Demodulates in_signal into the values [ -1, 1 ].
+ 
+    \param  in_signal_length  The number of elements in in_signal.
+    \param  in_signal The signal to be demodulated.
+    \param  out_decision  [ -1, 1 ] if a decision is made, 0.0 if an error
+                          occurrs.
+    \return Returns NO_ERROR upon succesful exection or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the input parameters are null.
+            CPC_ERROR_CODE_INVALID_PARAMETER  If in_signal_length is 0.
+ */
+csignal_error_code
+csignal_demodulate_binary_PAM (
+                               USIZE    in_signal_length,
+                               FLOAT64* in_signal,
+                               CHAR*    out_decision
+                               );
+
+/*! \fn     csignal_error_code csignal_sum_signal(
+              USIZE    in_signal_length,
+              FLOAT64* in_signal,
+              FLOAT64  in_scalar,
+              FLOAT64* out_sum
+            )
+    \brief  Performs a scalar multiplication of all elements in in_signal by
+            the factor in_scalar and sums the scaled components of in_signal.
+ 
+    \note   This function uses a correlator demodulator to determine if the
+            signal corresponds to the symbols [ -1, 1 ]. The sufficient
+            statistics are calculated as r_i = sum( in_signal * i ), where i is
+            either -1 or 1. The largest r_i is chosen as the correct decision
+            and i is returned.
+ 
+    \param  in_signal_length  The number of elements in in_signal.
+    \param  in_signal The signal to be scaled and summed.
+    \param  in_scalar The multiplicative scalar factor to apply to all elements
+                      of in_signal.
+    \param  out_sum The scaled sum of in_signal.
+    \return Returns NO_ERROR upon succesful exection or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the input parameters are null.
+ */
+csignal_error_code
+csignal_sum_signal(
+                   USIZE    in_signal_length,
+                   FLOAT64* in_signal,
+                   FLOAT64  in_scalar,
+                   FLOAT64* out_sum
+                   );
+
 #endif  /*  __CSIGNAL_H__ */
