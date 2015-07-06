@@ -292,6 +292,7 @@ class TestsEqualizer( unittest.TestCase ):
     return( signal )
 
   def perturb_signal( self, signal, SNRdB ):
+    return( signal )
     signal = python_convolve( signal, self.channelImpulseResponse )
 
     self.assertNotEquals( None, signal )
@@ -332,6 +333,8 @@ class TestsEqualizer( unittest.TestCase ):
     thresholdsTime = time.time()
 
     print "Threshold time:\t\t%.04f" %( thresholdsTime - startTime )
+
+    self.outputSequence( "thresholds.dat", thresholds )
 
   def receiveSignal( self, signal ):
     startTime = time.time()
@@ -408,6 +411,15 @@ class TestsEqualizer( unittest.TestCase ):
                                     )
 
     self.assertEquals( error, CPC_TRUE )
+
+  def outputSequence( self, fileName, sequence ):
+    file = open( fileName, 'w' )
+
+    if( file ):
+      for i in range( len( sequence ) ):
+        file.write( "%.02f\t%.02f\n" %( i, sequence[ i ] ) )
+
+      file.close() 
 
 if __name__ == '__main__':
   cpc_log_set_log_level( CPC_LOG_LEVEL_ERROR )
