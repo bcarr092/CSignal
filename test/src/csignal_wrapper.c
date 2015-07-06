@@ -1922,6 +1922,11 @@ python_generate_carrier_signal  (
     CPC_ERROR( "Could not generate carrier: 0x%x.", result );
   }
   
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+  
   if( CPC_ERROR_CODE_NO_ERROR == result )
   {
     return( list );
