@@ -263,4 +263,46 @@ csignal_sum_signal(
                    FLOAT64* out_sum
                    );
 
+/*! \fn     csignal_error_code csignal_generate_carrier_signal (
+              UINT32   in_sample_rate,
+              FLOAT32  in_carrier_frequency,
+              USIZE*   out_signal_length,
+              FLOAT64** out_signal
+            )
+    \brief  Generates a sinusoidal signal with frequency in_carrier_frequency
+            sampled at in_sample_rate. The generated sinusoid follows the
+            function:
+          
+            s = cos( 2 * pi * f_c * t ) + sin( 2 * pi * f_c * t ),
+ 
+            where f_c is in_carrier_frequency and t is in units of 1 /
+            in_sample_rate. The output returned is the function s.
+ 
+    \note   This function will generate enough samples to ensure that the
+            function s is sampled such that repeating out_signal repeats s
+            perfectly.
+ 
+    \param  in_sample_rate  The rate to produce the signal rate at. Each sample
+                            is taken at an interval of 1 / in_sample_rate.
+                            Units are Hz.
+    \param  in_carrier_frequency  The oscillating frequency of the carrier
+                                  signal. Units are Hz.
+    \param  out_signal_length The number of elements in out_signal.
+    \param  out_signal  The sampled values of the function s above.
+    \return Returns NO_ERROR upon succesful exection or one of these errors
+            (see cpc_safe_malloc for other possible errors):
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the input parameters are null.
+            CPC_ERROR_CODE_INVALID_PARAMETER  If in_carrier_frequency <= 0 or if
+                                              too many samples are required to
+                                              recreate the function s.
+ */
+csignal_error_code
+csignal_generate_carrier_signal (
+                                 UINT32   in_sample_rate,
+                                 FLOAT32  in_carrier_frequency,
+                                 USIZE*   out_signal_length,
+                                 FLOAT64** out_signal
+                                 );
+
 #endif  /*  __CSIGNAL_H__ */

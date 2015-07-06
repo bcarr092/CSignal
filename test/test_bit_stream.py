@@ -20,7 +20,7 @@ class TestsBitStream( unittest.TestCase ):
 
     self.assertNotEquals( bitPacker, None )
 
-    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+    bitStream = python_bit_stream_initialize_from_bit_packer( False, bitPacker )
 
     self.assertNotEquals( bitStream, None )
 
@@ -81,7 +81,7 @@ class TestsBitStream( unittest.TestCase ):
 
     self.assertNotEquals( None, bitPacker )
 
-    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+    bitStream = python_bit_stream_initialize_from_bit_packer( False, bitPacker )
 
     self.assertNotEquals( None, bitStream )
 
@@ -101,6 +101,7 @@ class TestsBitStream( unittest.TestCase ):
       bit_packer_destroy( bitPacker ),
       CPC_ERROR_CODE_NO_ERROR
                       )
+
   def test_bit_stream_add_read( self ):
     data = ''
     
@@ -113,7 +114,7 @@ class TestsBitStream( unittest.TestCase ):
 
     self.assertNotEquals( bitPacker, None )
 
-    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+    bitStream = python_bit_stream_initialize_from_bit_packer( False, bitPacker )
 
     self.assertNotEquals( bitStream, None )
 
@@ -156,7 +157,7 @@ class TestsBitStream( unittest.TestCase ):
 
       data = struct.pack( "I", int( initialNumber ) )
 
-      bitStream = python_bit_stream_initialize( data )
+      bitStream = python_bit_stream_initialize( False, data )
 
       self.assertNotEquals( bitStream, None )
 
@@ -190,7 +191,7 @@ class TestsBitStream( unittest.TestCase ):
 
         data = data + struct.pack( "I", int( initialNumber ) )
 
-      bitStream = python_bit_stream_initialize( data )
+      bitStream = python_bit_stream_initialize( False, data )
 
       self.assertNotEquals( bitStream, None )
 
@@ -225,7 +226,7 @@ class TestsBitStream( unittest.TestCase ):
 
     data = struct.pack( "I", int( initialNumber ) )
 
-    bitStream = python_bit_stream_initialize( data )
+    bitStream = python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( bitStream, None )
 
@@ -254,7 +255,7 @@ class TestsBitStream( unittest.TestCase ):
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 1000 ) )
 
     for numBits in [ 1, 2, 4, 8 ]:
-      bitStream = python_bit_stream_initialize( data )
+      bitStream = python_bit_stream_initialize( False, data )
 
       self.assertNotEquals( bitStream, None )
 
@@ -288,11 +289,42 @@ class TestsBitStream( unittest.TestCase ):
         CPC_ERROR_CODE_NO_ERROR
                         )   
 
+  def test_circular_bit_stream_get_bits_basic( self ):
+    # Test is: 0 1 2 3 ( 0b00011011 )
+    data = "\x1B"
+
+    bitStream = python_bit_stream_initialize( True, data )
+
+    self.assertNotEquals( None, bitStream )
+
+    for i in range( 1000 ):
+      for j in range( 4 ):
+        result = python_bit_stream_get_bits( bitStream, 2 )
+
+        self.assertNotEquals( None, result )
+
+        ( numberOfBits, buffer ) = result
+
+        self.assertNotEquals( None, numberOfBits )
+        self.assertNotEquals( None, buffer )
+
+        self.assertEquals( numberOfBits, 2 )
+        self.assertEquals( len( buffer ), 1 )
+
+        byte = struct.unpack( "B", buffer )[ 0 ] >> 6
+
+        self.assertEquals( byte, j )
+
+    self.assertEquals (
+      bit_stream_destroy( bitStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
   def test_bit_stream_get_bits_basic( self ):
     data = "\x12"
 
     for numBits in [ 1, 2, 4, 8 ]:
-      bitStream = python_bit_stream_initialize( data )
+      bitStream = python_bit_stream_initialize( False, data )
 
       self.assertNotEquals( bitStream, None )
 
@@ -327,12 +359,74 @@ class TestsBitStream( unittest.TestCase ):
                         )   
 
   def test_bit_stream_negative( self ):
-    self.assertEquals( python_bit_stream_initialize( None ), None )
-    self.assertEquals( python_bit_stream_initialize( 1 ), None )
+    self.assertEquals( python_bit_stream_initialize( False, None ), None )
+    self.assertEquals( python_bit_stream_initialize( False, 1 ), None )
 
-    self.assertEquals( python_bit_stream_initialize_from_bit_packer( None ), None )
+    self.assertEquals( python_bit_stream_initialize_from_bit_packer( False, None ), None )
+
+    self.assertEquals( python_bit_stream_initialize( True, None ), None )
+    self.assertEquals( python_bit_stream_initialize( True, 1 ), None )
+
+    self.assertEquals( python_bit_stream_initialize_from_bit_packer( True, None ), None )
 
     self.assertNotEquals( bit_stream_destroy( None ), CPC_ERROR_CODE_NO_ERROR )
+
+  def test_circular_initialize_from_bit_packer( self ):
+    bitPacker = python_bit_packer_initialize()
+
+    self.assertNotEquals( bitPacker, None )
+
+    data = "Hello"
+
+    self.assertEquals (
+      python_bit_packer_add_bytes (
+        data,
+        bitPacker
+                                  ),
+      CPC_ERROR_CODE_NO_ERROR
+                    )
+
+    bitStream = python_bit_stream_initialize_from_bit_packer( True, bitPacker )
+
+    self.assertNotEquals( bitStream, None )
+
+    self.assertEquals (
+      bit_packer_destroy( bitPacker ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )   
+
+    self.assertEquals (
+      bit_stream_destroy( bitStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )   
+
+    bitPacker = python_bit_packer_initialize()
+
+    self.assertNotEquals( bitPacker, None )
+
+    data = ""
+
+    self.assertEquals (
+      python_bit_packer_add_bytes (
+        data,
+        bitPacker
+                                  ),
+      CPC_ERROR_CODE_NO_ERROR
+                    )
+
+    bitStream = python_bit_stream_initialize_from_bit_packer( True, bitPacker )
+
+    self.assertNotEquals( bitStream, None )
+
+    self.assertEquals (
+      bit_packer_destroy( bitPacker ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )   
+
+    self.assertEquals (
+      bit_stream_destroy( bitStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      ) 
 
   def test_initialize_from_bit_packer( self ):
     bitPacker = python_bit_packer_initialize()
@@ -349,7 +443,7 @@ class TestsBitStream( unittest.TestCase ):
       CPC_ERROR_CODE_NO_ERROR
                     )
 
-    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+    bitStream = python_bit_stream_initialize_from_bit_packer( False, bitPacker )
 
     self.assertNotEquals( bitStream, None )
 
@@ -377,7 +471,7 @@ class TestsBitStream( unittest.TestCase ):
       CPC_ERROR_CODE_NO_ERROR
                     )
 
-    bitStream = python_bit_stream_initialize_from_bit_packer( bitPacker )
+    bitStream = python_bit_stream_initialize_from_bit_packer( False, bitPacker )
 
     self.assertNotEquals( bitStream, None )
 
@@ -394,14 +488,14 @@ class TestsBitStream( unittest.TestCase ):
   def test_initialize( self ):
     data = "Hello"
 
-    bitStream = python_bit_stream_initialize( data )
+    bitStream = python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( bitStream, None )
     self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
 
     data = struct.pack( "I", 1722 )
 
-    bitStream = python_bit_stream_initialize( data )
+    bitStream = python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( bitStream, None )
     self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
@@ -413,7 +507,34 @@ class TestsBitStream( unittest.TestCase ):
       value = struct.pack( "i", int( value ) )
       data  = data + value
 
-    bitStream = python_bit_stream_initialize( data )
+    bitStream = python_bit_stream_initialize( False, data )
+
+    self.assertNotEquals( bitStream, None )
+    self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
+
+  def test_circular_initialize( self ):
+    data = "Hello"
+
+    bitStream = python_bit_stream_initialize( True, data )
+
+    self.assertNotEquals( bitStream, None )
+    self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
+
+    data = struct.pack( "I", 1722 )
+
+    bitStream = python_bit_stream_initialize( True, data )
+
+    self.assertNotEquals( bitStream, None )
+    self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
+
+    data = ""
+
+    for index in range( 100 ):
+      value = 32767 * random.normalvariate( 0, 1 )
+      value = struct.pack( "i", int( value ) )
+      data  = data + value
+
+    bitStream = python_bit_stream_initialize( True, data )
 
     self.assertNotEquals( bitStream, None )
     self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
@@ -421,7 +542,13 @@ class TestsBitStream( unittest.TestCase ):
   def test_initialize_destroy( self ):
     data = "1"
 
-    bitStream = python_bit_stream_initialize( data )
+    bitStream = python_bit_stream_initialize( False, data )
+
+    self.assertNotEquals( bitStream, None )
+
+    self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
+
+    bitStream = python_bit_stream_initialize( True, data )
 
     self.assertNotEquals( bitStream, None )
 

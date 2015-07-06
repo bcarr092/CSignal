@@ -31,6 +31,13 @@ typedef struct bit_stream_t
   */
   USIZE byte_offset;
   
+  /*! \var    circular
+      \brief  If true, the bit and byte offset will reset back to zero once they
+              reach the end of the packer's data. If true the function call to
+              bit_stream_get_number_of_remaining_bits will return MAX_USIZE.
+   */
+  CPC_BOOL circular;
+  
   /*! \var    dirty_bit
       \brief  This bool is set to CPC_TRUE if the buffer pointed to by data is
               owned by a different object (this is true when 
@@ -49,25 +56,13 @@ typedef struct bit_stream_t
 /*! \fn     USIZE bit_stream_get_number_of_remaining_bits (
               bit_stream* in_bit_stream
             )
-    \brief  Returns the number of bits left to read in in_bit_stream.
-
-    \param  in_bit_stream The bit stream to query for the number of remaining
-                          bits.
-    \return The number of remaining bits to read in bit_stream
-*/
-USIZE
-bit_stream_get_number_of_remaining_bits(
-  bit_stream* in_bit_stream
-                                        );
-
-/*! \fn     USIZE bit_stream_get_number_of_remaining_bits (
-              bit_stream* in_bit_stream
-            )
-    \brief  Returns the number of bits left to read in in_bit_stream.
+    \brief  Returns the number of bits left to read in in_bit_stream if circular
+            is not set to CPC_TRUE, otherwise MAX_USIZE is returned.
  
     \param  in_bit_stream The bit stream to query for the number of remaining
                           bits.
-    \return The number of remaining bits to read in bit_stream
+    \return The number of remaining bits to read in bit_stream (or MAX_USIZE if
+            circular is CPC_TRUE).
  */
 USIZE
 bit_stream_get_number_of_remaining_bits (
@@ -80,8 +75,13 @@ bit_stream_get_number_of_remaining_bits (
               bit_stream**  out_bit_stream
             )
     \brief  Initializes the bit_stream struct with a data buffer and sets
-            both bit and byte offsets to 0.
+            both bit and byte offsets to 0. If cicular is set to CPC_TRUE data is
+            read from the packer in circular fashion (i.e., the read pointers
+            reset to zero when they reach the end of the packer's data).
+
  
+    \param  in_circular If CPC_TRUE the read points reset to zero when they
+                        reach the end of the packer's data.
     \param  in_data The data buffer that contains the bits to read.
     \param  in_data_length  The length of in_data
     \param  out_symbol_tracker  If this function successfully completes this
@@ -94,17 +94,21 @@ bit_stream_get_number_of_remaining_bits (
  */
 csignal_error_code
 bit_stream_initialize  (
+                        CPC_BOOL      in_circular,
                         UCHAR*        in_data,
                         USIZE         in_data_length,
                         bit_stream**  out_bit_stream
                         );
 
 /*! \fn     csignal_error_code bit_stream_initialize_from_bit_packer (
-              bit_packer* in_bit_packer,
-              bit_stream** out_bit_stream
+              CPC_BOOL      in_circular,
+              bit_packer*   in_bit_packer,
+              bit_stream**  out_bit_stream
             )
     \brief  Creates a new bit stream whose data buffer is a copy of the buffer
-            stored by in_bit_packer.
+            stored by in_bit_packer. If cicular is set to CPC_TRUE data is
+            read from the packer in circular fashion (i.e., the read pointers
+            reset to zero when they reach the end of the packer's data).
  
     \note The data buffer from the bit_packer will not be copied to the newly
           created bit stream object. The pointer to the data buffer in
@@ -130,6 +134,8 @@ bit_stream_initialize  (
           provided for efficiency reasons to save copying the buffer from the
           packer to the stream on stream initialization.
  
+    \param  in_circular If CPC_TRUE the read points reset to zero when they
+                        reach the end of the packer's data.
     \param  in_bit_packer The packer whose data is to be copied.
     \param  out_bit_stream  A newly created bit stream or Null if an error
                             occurs.
@@ -141,6 +147,7 @@ bit_stream_initialize  (
  */
 csignal_error_code
 bit_stream_initialize_from_bit_packer (
+                                       CPC_BOOL     in_circular,
                                        bit_packer*  in_bit_packer,
                                        bit_stream** out_bit_stream
                                        );

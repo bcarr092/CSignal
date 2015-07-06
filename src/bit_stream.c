@@ -7,6 +7,7 @@
 
 csignal_error_code
 bit_stream_initialize  (
+                        CPC_BOOL      in_circular,
                         UCHAR*        in_data,
                         USIZE         in_data_length,
                         bit_stream**  out_bit_stream
@@ -34,6 +35,7 @@ bit_stream_initialize  (
       ( *out_bit_stream )->bit_offset   = 0;
       ( *out_bit_stream )->byte_offset  = 0;
       ( *out_bit_stream )->dirty_bit    = CPC_FALSE;
+      ( *out_bit_stream )->circular     = in_circular;
       ( *out_bit_stream )->packer       = NULL;
 
       return_value = bit_packer_initialize( &( ( *out_bit_stream )->packer ) );
@@ -59,6 +61,7 @@ bit_stream_initialize  (
 
 csignal_error_code
 bit_stream_initialize_from_bit_packer (
+                                       CPC_BOOL     in_circular,
                                        bit_packer*  in_bit_packer,
                                        bit_stream** out_bit_stream
                                        )
@@ -85,6 +88,7 @@ bit_stream_initialize_from_bit_packer (
       ( *out_bit_stream )->bit_offset   = 0;
       ( *out_bit_stream )->byte_offset  = 0;
       ( *out_bit_stream )->dirty_bit    = CPC_TRUE;
+      ( *out_bit_stream )->circular     = in_circular;
       ( *out_bit_stream )->packer       = in_bit_packer;
     }
   }
@@ -187,6 +191,16 @@ bit_stream_get_bits (
           io_bit_stream->byte_offset++;
         }
         
+        if  (
+             io_bit_stream->bit_offset == io_bit_stream->packer->bit_offset
+             && io_bit_stream->byte_offset == io_bit_stream->packer->byte_offset
+             && io_bit_stream->circular
+             )
+        {
+          io_bit_stream->bit_offset   = 0;
+          io_bit_stream->byte_offset  = 0;
+        }
+        
         CPC_LOG( CPC_LOG_LEVEL_TRACE, "Num bits left: 0x%x.", *io_num_bits );
         CPC_LOG (
                  CPC_LOG_LEVEL_TRACE,
@@ -237,15 +251,22 @@ bit_stream_get_number_of_remaining_bits (
   
   if( NULL != in_bit_stream )
   {
-    USIZE total_number_of_bits =
-      ( in_bit_stream->packer->byte_offset * sizeof( UCHAR ) * 8 )
-      + in_bit_stream->packer->bit_offset;
-    
-    USIZE  current_position =
-      ( in_bit_stream->byte_offset * sizeof( UCHAR ) * 8 )
-      + in_bit_stream->bit_offset;
-    
-    number_of_bits = total_number_of_bits - current_position;
+    if( CPC_TRUE == in_bit_stream->circular )
+    {
+      number_of_bits = MAX_USIZE;
+    }
+    else
+    {
+      USIZE total_number_of_bits =
+        ( in_bit_stream->packer->byte_offset * sizeof( UCHAR ) * 8 )
+        + in_bit_stream->packer->bit_offset;
+      
+      USIZE  current_position =
+        ( in_bit_stream->byte_offset * sizeof( UCHAR ) * 8 )
+        + in_bit_stream->bit_offset;
+      
+      number_of_bits = total_number_of_bits - current_position;
+    }
   }
   else
   {

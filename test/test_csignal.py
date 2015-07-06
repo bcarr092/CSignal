@@ -39,7 +39,7 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
     
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
@@ -207,7 +207,7 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
     
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
@@ -429,7 +429,7 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
     
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEqual( symbol_tracker, None )
 
@@ -551,7 +551,7 @@ class TestsCSignal( unittest.TestCase ):
 
     data = '\x12'
     
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
@@ -639,7 +639,7 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
    
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
@@ -1090,7 +1090,7 @@ class TestsCSignal( unittest.TestCase ):
 
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 20 ) )
     
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
@@ -1163,7 +1163,7 @@ class TestsCSignal( unittest.TestCase ):
 
     data = '\x12'
     
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
@@ -1217,7 +1217,7 @@ class TestsCSignal( unittest.TestCase ):
   def test_generate_signal_random( self ):
     data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
 
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
@@ -1288,7 +1288,7 @@ class TestsCSignal( unittest.TestCase ):
   def test_generate_signal_basic( self ):
     data = '\x12\x34'
     
-    symbol_tracker = csignal_tests.python_bit_stream_initialize( data )
+    symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 

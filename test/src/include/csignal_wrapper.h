@@ -243,6 +243,7 @@ python_bit_packer_initialize( void );
  */
 bit_stream*
 python_bit_stream_initialize  (
+                               PyObject*  in_circular,
                                PyObject*  in_data
                                );
 
@@ -262,6 +263,7 @@ python_bit_stream_initialize  (
  */
 bit_stream*
 python_bit_stream_initialize_from_bit_packer (
+                                              PyObject*   in_circular,
                                               bit_packer* in_bit_packer
                                               );
 
@@ -452,5 +454,26 @@ PyObject*
 python_bit_stream_peak  (
                          bit_stream* in_bit_stream
                          );
+
+/*! \fn     PyObject* python_generate_carrier_signal  (
+              UINT32   in_sample_rate,
+              FLOAT32  in_carrier_frequency
+            )
+    \brief  Generates samples for a sinusoid with osciallatign frequency
+            in_carrier_frequency. See csignal_generate_carrier_signal for more
+            details.
+ 
+    \param  in_sample_rate  The rate to sample points of the sinusoid with
+                            frequency in_carrier_frequency.
+    \param  in_carrier_frequency  The oscillating frequency of the sinusoid
+                                  generated.
+    \return A Python list containing double samples of a sinusoid oscillating at
+            frequency in_carrier_frequency sampled at in_sample_rate.
+ */
+PyObject*
+python_generate_carrier_signal  (
+                                 UINT32   in_sample_rate,
+                                 FLOAT32  in_carrier_frequency
+                                 );
 
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

@@ -8,6 +8,28 @@
 
 #include "csignal.h"
 
+/*! \fn     UINT32 csignal_greatest_common_divisor (
+              UINT32 in_u,
+              UINT32 in_v
+            )
+    \brief  Calcualtes the greatest common divisor (GCD) of in_u and in_v and
+            returns the result.
+ 
+    \note   The implementation is the Binary GCD Algorithm (or Stein's Algorithm)
+            and the source was copied from Wikipedia at the following URL:
+ 
+            https://en.wikipedia.org/wiki/Binary_GCD_algorithm
+ 
+    \param  in_u  First of two input factors to find the GCD of.
+    \param  in_v  Second of two input factors to find the GCD of.
+    \return GCD( in_u, in_v )
+ */
+UINT32
+csignal_greatest_common_divisor (
+                                 UINT32 in_u,
+                                 UINT32 in_v
+                                 );
+
 /*! \fn     UINT32 csignal_gray_code_encode  (
               UINT32 in_input
             )
@@ -444,7 +466,7 @@ csignal_demodulate_binary_PAM (
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
         CPC_LOG (
-                 CPC_LOG_LEVEL_ERROR,
+                 CPC_LOG_LEVEL_TRACE,
                  "1: %.04f\t-1: %.04f",
                  correlator_one,
                  correlator_minus_one
@@ -452,7 +474,7 @@ csignal_demodulate_binary_PAM (
         
         *out_decision = ( correlator_one >= correlator_minus_one ? 1 : -1 );
         
-        CPC_LOG( CPC_LOG_LEVEL_ERROR, "Decision: %d", *out_decision );
+        CPC_LOG( CPC_LOG_LEVEL_TRACE, "Decision: %d", *out_decision );
       }
       else
       {
@@ -495,4 +517,155 @@ csignal_sum_signal(
   }
   
   return( return_value );
+}
+
+csignal_error_code
+csignal_generate_carrier_signal (
+                                 UINT32     in_sample_rate,
+                                 FLOAT32    in_carrier_frequency,
+                                 USIZE*     out_signal_length,
+                                 FLOAT64**  out_signal
+                                 )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == out_signal_length || NULL == out_signal )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal (0x%x) or length (0x%x) are null.",
+               out_signal_length,
+               out_signal
+               );
+  }
+  else if( 0 >= in_carrier_frequency )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Carrier frequency (%.02f) must be strictly positive.",
+               in_carrier_frequency
+               );
+  }
+  else
+  {
+    UINT32 gcd =
+      csignal_greatest_common_divisor (
+                                       in_sample_rate,
+                                       ( UINT32 ) in_carrier_frequency
+                                       );
+    
+    UINT64 signal_length =
+      ( UINT64 )
+      ( 1.0 * in_sample_rate * in_carrier_frequency ) / ( 1.0 * gcd );
+    
+    if( ( UINT64 ) MAX_UINT32 < signal_length )
+    {
+      return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+      
+      CPC_ERROR (
+                 "Signal length is too large (%d,%d), %lld.",
+                 in_sample_rate,
+                 ( UINT32 ) in_carrier_frequency,
+                 signal_length
+                 );
+    }
+    else
+    {
+      *out_signal_length = ( UINT32 ) signal_length;
+      
+      CPC_LOG (
+               CPC_LOG_LEVEL_TRACE,
+               "GCD(%d,%d)=%d\tSignal length is %lld (%d).",
+               in_sample_rate,
+               ( UINT32 ) in_carrier_frequency,
+               gcd,
+               signal_length,
+               *out_signal_length
+               );
+      
+      return_value =
+        cpc_safe_malloc (
+                         ( void** ) out_signal,
+                         sizeof( FLOAT64 ) * *out_signal_length
+                         );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        for( UINT32 i = 0; i < *out_signal_length; i++ )
+        {
+          ( *out_signal )[ i ] =
+          cos (
+               2.0 * M_PI * in_carrier_frequency
+               * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+               )
+          + sin (
+                 2.0 * M_PI * in_carrier_frequency
+                 * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+                 );
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not create signal: 0x%x.", return_value );
+      }
+    }
+  }
+  
+  return( return_value );
+}
+
+UINT32
+csignal_greatest_common_divisor (
+                                 UINT32 in_u,
+                                 UINT32 in_v
+                                 )
+{
+  // simple cases (termination)
+  if( in_u == in_v )
+  {
+    return( in_u );
+  }
+  
+  if( 0 == in_u )
+  {
+    return( in_v );
+  }
+  
+  if( 0 == in_v )
+  {
+    return( in_u );
+  }
+  
+  // look for factors of 2
+  if( ~in_u & 1 ) // u is even
+  {
+    if( in_v & 1 )
+    {
+      // v is odd
+      return( csignal_greatest_common_divisor( in_u >> 1, in_v ) );
+    }
+    else
+    {
+      // both u and v are even
+      return( csignal_greatest_common_divisor( in_u >> 1, in_v >> 1 ) << 1 );
+    }
+  }
+  
+  if( ~in_v & 1 )
+  {
+    // u is odd, v is even
+    return( csignal_greatest_common_divisor( in_u, in_v >> 1 ) );
+  }
+  
+  // reduce larger argument
+  if( in_u > in_v )
+  {
+    return( csignal_greatest_common_divisor( ( in_u - in_v ) >> 1, in_v ) );
+  }
+  else
+  {
+    return( csignal_greatest_common_divisor( ( in_v - in_u ) >> 1, in_u ) );
+  }
 }

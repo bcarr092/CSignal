@@ -6,7 +6,59 @@ import random
 import struct
 import copy
 
+import fractions
+
 class TestsSignalOperations( unittest.TestCase ):
+  def test_generate_carrier( self ):
+    # Negative tests
+    result = python_generate_carrier_signal( 48000, -20000.0 )
+
+    self.assertEquals( None, result )
+
+    result = python_generate_carrier_signal( 480000000, 2000000000.0 )
+
+    self.assertEquals( None, result )
+
+    signal = python_generate_carrier_signal( 48000, 20000 )
+
+    self.assertNotEquals( None, signal )
+    self.assertNotEquals( 0, len( signal ) )
+
+    gcd = fractions.gcd( 48000, 20000 )
+    
+    self.assertEquals( 48000 * 20000 / gcd, len( signal ) )
+
+    for value in signal:
+      self.assertTrue( abs( value ) <= 2 )
+      self.assertTrue( abs( value ) >= 0 )
+
+    bitPacker = python_bit_packer_initialize()
+    
+    self.assertNotEquals( None, bitPacker )
+
+    bitStream = python_bit_stream_initialize_from_bit_packer( True, bitPacker )
+
+    self.assertNotEquals( None, bitStream )
+
+    for value in signal:
+      sampleValue = int( 2 ** ( 32 - 2 ) - 1 * value )
+
+      sampleValue = struct.pack( "i", sampleValue )
+
+      python_bit_packer_add_bytes( sampleValue, bitPacker )
+
+    for i in range( len( signal ) * 2 ):
+      ( numberOfBits, buffer ) = python_bit_stream_get_bits( bitStream, 32 )
+
+      self.assertNotEquals( None, numberOfBits )
+      self.assertNotEquals( None, buffer )
+
+      self.assertEquals( 32, numberOfBits )
+
+      retrievedValue = struct.unpack( "i", buffer )[ 0 ]
+
+      self.assertNotEquals( None, retrievedValue )
+
   def test_demodulate( self ):
     decision = python_csignal_demodulate_binary_PAM( [ 1.0 for i in range( 10 ) ] )
 
@@ -174,7 +226,7 @@ class TestsSignalOperations( unittest.TestCase ):
 
     data = '\x00' * 13 # Want to go through one iteration of the code sequence
     
-    tracker = python_bit_stream_initialize( data )
+    tracker = python_bit_stream_initialize( False, data )
 
     ( numberOfBits, buffer ) = \
       python_bit_stream_get_bits( tracker, bitsPerSymbol ) 
@@ -301,7 +353,7 @@ class TestsSignalOperations( unittest.TestCase ):
 
     data = '\x00' * 13 # Want to go through one iteration of the code sequence
     
-    tracker = python_bit_stream_initialize( data )
+    tracker = python_bit_stream_initialize( False, data )
 
     self.assertNotEqual( tracker, None )
 

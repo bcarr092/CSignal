@@ -822,15 +822,26 @@ python_modulate_symbol(
 
 bit_stream*
 python_bit_stream_initialize_from_bit_packer (
+                                              PyObject*   in_circular,
                                               bit_packer* in_bit_packer
                                               )
 {
   bit_stream* stream = NULL;
   
-  if( NULL != in_bit_packer )
+  if( NULL == in_bit_packer )
   {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Packer is null." );
+  }
+  else if( ! PyBool_Check( in_circular ) )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Circular is not a boolean object." );
+  }
+  else
+  {
+    CPC_BOOL circular = ( in_circular == Py_True ) ? CPC_TRUE : CPC_FALSE;
+    
     csignal_error_code result =
-      bit_stream_initialize_from_bit_packer( in_bit_packer, &stream );
+      bit_stream_initialize_from_bit_packer( circular, in_bit_packer, &stream );
     
     if( CPC_ERROR_CODE_NO_ERROR != result )
     {
@@ -839,50 +850,50 @@ python_bit_stream_initialize_from_bit_packer (
       stream = NULL;
     }
   }
-  else
-  {
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Packer is null." );
-  }
   
   return( stream );
 }
 
 bit_stream*
 python_bit_stream_initialize  (
+                               PyObject*  in_circular,
                                PyObject*  in_data
                                )
 {
   bit_stream* stream = NULL;
   
-  if( NULL != in_data )
+  if( NULL == in_data )
   {
-    if( PyString_Check( in_data ) )
-    {
-      Py_ssize_t length = PyString_Size( in_data );
-      char* buffer      = PyString_AsString( in_data );
-      
-      csignal_error_code result =
-        bit_stream_initialize  (
-                                ( UCHAR* ) buffer,
-                                length,
-                                &stream
-                                );
-      
-      if( CPC_ERROR_CODE_NO_ERROR != result )
-      {
-        CPC_ERROR( "Could not initialize stream: 0x%x.", result );
-        
-        stream = NULL;
-      }
-    }
-    else
-    {
-      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "data is not a string." );
-    }
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Data is null." );
+  }
+  else if( ! PyString_Check( in_data ) )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "data is not a string." );
+  }
+  else if( ! PyBool_Check( in_circular ) )
+  {
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Circular is not a boolean." );
   }
   else
   {
-    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Data is null." );
+    Py_ssize_t length = PyString_Size( in_data );
+    char* buffer      = PyString_AsString( in_data );
+    CPC_BOOL circular = ( in_circular == Py_True ) ? CPC_TRUE : CPC_FALSE;
+    
+    csignal_error_code result =
+      bit_stream_initialize  (
+                              circular,
+                              ( UCHAR* ) buffer,
+                              length,
+                              &stream
+                              );
+    
+    if( CPC_ERROR_CODE_NO_ERROR != result )
+    {
+      CPC_ERROR( "Could not initialize stream: 0x%x.", result );
+      
+      stream = NULL;
+    }
   }
   
   return( stream );
@@ -1685,7 +1696,7 @@ python_csignal_demodulate_binary_PAM (
       
       if( CPC_ERROR_CODE_NO_ERROR == result )
       {
-        CPC_LOG( CPC_LOG_LEVEL_ERROR, "Decision: %d.", decision );
+        CPC_LOG( CPC_LOG_LEVEL_TRACE, "Decision: %d.", decision );
         
         decision_value = PyInt_FromLong( decision );
         
@@ -1872,6 +1883,48 @@ python_bit_stream_peak  (
   if( CPC_ERROR_CODE_NO_ERROR == result )
   {
     return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_generate_carrier_signal  (
+                                 UINT32   in_sample_rate,
+                                 FLOAT32  in_carrier_frequency
+                                 )
+{
+  USIZE signal_length = 0;
+  FLOAT64* signal     = NULL;
+  PyObject* list      = NULL;
+  
+  csignal_error_code result =
+    csignal_generate_carrier_signal (
+                                     in_sample_rate,
+                                     in_carrier_frequency,
+                                     &signal_length,
+                                     &signal
+                                     );
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    result = python_convert_array_to_list( signal_length, signal, &list );
+    
+    if( CPC_ERROR_CODE_NO_ERROR != result )
+    {
+      CPC_ERROR( "Could not convert array to list: 0x%x.", result );
+    }
+  }
+  else
+  {
+    CPC_ERROR( "Could not generate carrier: 0x%x.", result );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( list );
   }
   else
   {
