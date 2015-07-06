@@ -12,6 +12,133 @@ except ImportError:
     print "ERROR: Could not import fractions, skipping some tests."
 
 class TestsSignalOperations( unittest.TestCase ):
+  def test_threshold_speed( self ):
+    bitsPerSymbol         = 8
+    constellationSize     = 2 ** bitsPerSymbol
+    sampleRate            = 48000
+    basebandAmplitude     = 1
+    carrierFrequency      = 21000
+    symbolDuration        = 480
+    chipDuration          = 48 
+    widebandStopbandGap   = 1000
+    narrowbandStopbandGap = 2000
+    testsPerChip          = 1
+    decimationFactor      = int( chipDuration / testsPerChip )
+
+    widebandFirstPassband  = carrierFrequency - ( sampleRate / chipDuration )
+    widebandSecondPassband = carrierFrequency + ( sampleRate / chipDuration )
+
+    widebandFirstStopband  = widebandFirstPassband - widebandStopbandGap
+    widebandSecondStopband = widebandSecondPassband + widebandStopbandGap
+
+    narrowbandFirstPassband = \
+      carrierFrequency - ( sampleRate / symbolDuration )
+    narrowbandSecondPassband = \
+      carrierFrequency + ( sampleRate / symbolDuration )
+
+    narrowbandFirstStopband  = narrowbandFirstPassband - narrowbandStopbandGap
+    narrowbandSecondStopband = narrowbandSecondPassband + narrowbandStopbandGap
+
+    attenuationPassband = 0.1
+    attenuationStopband = 80
+
+    widebandFilter = \
+      python_initialize_kaiser_filter (
+        widebandFirstStopband,
+        widebandFirstPassband,
+        widebandSecondPassband,
+        widebandSecondStopband,
+        attenuationPassband,
+        attenuationStopband,
+        sampleRate
+                                      )
+    narrowbandFilter = \
+      python_initialize_kaiser_filter (
+        narrowbandFirstStopband,
+        narrowbandFirstPassband,
+        narrowbandSecondPassband,
+        narrowbandSecondStopband,
+        attenuationPassband,
+        attenuationStopband,
+        sampleRate
+                                      )
+
+    inphaseCode = \
+      python_initialize_gold_code (
+        7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000
+                                  )
+    quadratureCode =  \
+      python_initialize_gold_code (
+        7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000
+                                  )
+
+    data = '\x00' * 13 # Want to go through one iteration of the code sequence
+    
+    tracker = python_bit_stream_initialize( False, data )
+
+    ( numberOfBits, buffer ) = \
+      python_bit_stream_get_bits( tracker, bitsPerSymbol ) 
+
+    symbol = struct.unpack( "B", buffer )[ 0 ]
+
+    spreadingCode = []
+
+    while( symbol != None ):
+      components = python_modulate_symbol (
+          symbol,
+          constellationSize,
+          sampleRate,
+          symbolDuration,
+          basebandAmplitude,
+          carrierFrequency
+                                          )
+
+      I = python_spread_signal (
+          inphaseCode,
+          chipDuration,
+          components[ 0 ]
+                                          )
+
+      Q = python_spread_signal  (
+          quadratureCode,
+          chipDuration,
+          components[ 1 ]
+                                )
+
+      part = []
+
+      for index in range( symbolDuration ):
+        sampleValue = I[ index ] - Q[ index ]
+
+        part.append( sampleValue )
+
+      spreadingCode = spreadingCode + part
+
+      ( numberOfBits, buffer ) = \
+        python_bit_stream_get_bits( tracker, bitsPerSymbol ) 
+
+      if( 0 == numberOfBits ):
+        symbol = None
+      else:
+        symbol = struct.unpack( "B", buffer )[ 0 ]
+
+    signal = [ 0.0 for i in range( 1 * sampleRate ) ]
+
+    thresholds =  \
+      python_csignal_calculate_thresholds ( 
+        spreadingCode,
+        widebandFilter,
+        narrowbandFilter,
+        signal,
+        decimationFactor
+                                          )
+
+    self.assertEquals( bit_stream_destroy( tracker ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_passband_filter( widebandFilter ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_passband_filter( narrowbandFilter ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_gold_code( inphaseCode ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( csignal_destroy_gold_code( quadratureCode ), CPC_ERROR_CODE_NO_ERROR )
+"""
   def test_generate_carrier( self ):
     # Negative tests
     result = python_generate_carrier_signal( 48000, -20000.0 )
@@ -172,133 +299,6 @@ class TestsSignalOperations( unittest.TestCase ):
 
     self.assertNotEquals( None, cs_sum )
     self.assertEquals( 0.0, cs_sum )
-
-  def test_threshold_speed( self ):
-    bitsPerSymbol         = 8
-    constellationSize     = 2 ** bitsPerSymbol
-    sampleRate            = 48000
-    basebandAmplitude     = 1
-    carrierFrequency      = 21000
-    symbolDuration        = 480
-    chipDuration          = 48 
-    widebandStopbandGap   = 1000
-    narrowbandStopbandGap = 2000
-    testsPerChip          = 1
-    decimationFactor      = int( chipDuration / testsPerChip )
-
-    widebandFirstPassband  = carrierFrequency - ( sampleRate / chipDuration )
-    widebandSecondPassband = carrierFrequency + ( sampleRate / chipDuration )
-
-    widebandFirstStopband  = widebandFirstPassband - widebandStopbandGap
-    widebandSecondStopband = widebandSecondPassband + widebandStopbandGap
-
-    narrowbandFirstPassband = \
-      carrierFrequency - ( sampleRate / symbolDuration )
-    narrowbandSecondPassband = \
-      carrierFrequency + ( sampleRate / symbolDuration )
-
-    narrowbandFirstStopband  = narrowbandFirstPassband - narrowbandStopbandGap
-    narrowbandSecondStopband = narrowbandSecondPassband + narrowbandStopbandGap
-
-    attenuationPassband = 0.1
-    attenuationStopband = 80
-
-    widebandFilter = \
-      python_initialize_kaiser_filter (
-        widebandFirstStopband,
-        widebandFirstPassband,
-        widebandSecondPassband,
-        widebandSecondStopband,
-        attenuationPassband,
-        attenuationStopband,
-        sampleRate
-                                      )
-    narrowbandFilter = \
-      python_initialize_kaiser_filter (
-        narrowbandFirstStopband,
-        narrowbandFirstPassband,
-        narrowbandSecondPassband,
-        narrowbandSecondStopband,
-        attenuationPassband,
-        attenuationStopband,
-        sampleRate
-                                      )
-
-    inphaseCode = \
-      python_initialize_gold_code (
-        7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000
-                                  )
-    quadratureCode =  \
-      python_initialize_gold_code (
-        7, 0x12000000, 0x1E000000, 0x40000000, 0x40000000
-                                  )
-
-    data = '\x00' * 13 # Want to go through one iteration of the code sequence
-    
-    tracker = python_bit_stream_initialize( False, data )
-
-    ( numberOfBits, buffer ) = \
-      python_bit_stream_get_bits( tracker, bitsPerSymbol ) 
-
-    symbol = struct.unpack( "B", buffer )[ 0 ]
-
-    spreadingCode = []
-
-    while( symbol != None ):
-      components = python_modulate_symbol (
-          symbol,
-          constellationSize,
-          sampleRate,
-          symbolDuration,
-          basebandAmplitude,
-          carrierFrequency
-                                          )
-
-      I = python_spread_signal (
-          inphaseCode,
-          chipDuration,
-          components[ 0 ]
-                                          )
-
-      Q = python_spread_signal  (
-          quadratureCode,
-          chipDuration,
-          components[ 1 ]
-                                )
-
-      part = []
-
-      for index in range( symbolDuration ):
-        sampleValue = I[ index ] - Q[ index ]
-
-        part.append( sampleValue )
-
-      spreadingCode = spreadingCode + part
-
-      ( numberOfBits, buffer ) = \
-        python_bit_stream_get_bits( tracker, bitsPerSymbol ) 
-
-      if( 0 == numberOfBits ):
-        symbol = None
-      else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
-
-    signal = [ 0.0 for i in range( 1 * sampleRate ) ]
-
-    thresholds =  \
-      python_csignal_calculate_thresholds ( 
-        spreadingCode,
-        widebandFilter,
-        narrowbandFilter,
-        signal,
-        decimationFactor
-                                          )
-
-    self.assertEquals( bit_stream_destroy( tracker ), CPC_ERROR_CODE_NO_ERROR )
-    self.assertEquals( csignal_destroy_passband_filter( widebandFilter ), CPC_ERROR_CODE_NO_ERROR )
-    self.assertEquals( csignal_destroy_passband_filter( narrowbandFilter ), CPC_ERROR_CODE_NO_ERROR )
-    self.assertEquals( csignal_destroy_gold_code( inphaseCode ), CPC_ERROR_CODE_NO_ERROR )
-    self.assertEquals( csignal_destroy_gold_code( quadratureCode ), CPC_ERROR_CODE_NO_ERROR )
 
   def test_calculate_thresholds( self ):
     bitsPerSymbol         = 8
@@ -650,6 +650,7 @@ class TestsSignalOperations( unittest.TestCase ):
       self.assertNotEquals( output, None )
       self.assertEquals( len( output ), len( test ) )
       self.assertEquals( len( output ), len( test2 ) )
+"""
 
 if __name__ == '__main__':
   cpc_log_set_log_level( CPC_LOG_LEVEL_ERROR )

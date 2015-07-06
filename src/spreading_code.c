@@ -148,6 +148,7 @@ csignal_initialize_spreading_code (
       ( *out_spreading_code )->degree               = in_degree;
       ( *out_spreading_code )->generator_polynomial = in_generator_polynomial;
       ( *out_spreading_code )->state                = in_initial_state;
+      ( *out_spreading_code )->initial_state        = in_initial_state;
       
       CPC_LOG (
                CPC_LOG_LEVEL_TRACE,
@@ -403,5 +404,26 @@ csignal_destroy_spreading_code(
     return_value = cpc_safe_free( ( void** )&io_spreading_code );
   }
 
+  return( return_value );
+}
+
+csignal_error_code
+csignal_reset_spreading_code  (
+                               spreading_code* io_spreading_code
+                               )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == io_spreading_code )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Spreading code is null." );
+  }
+  else
+  {
+    io_spreading_code->state = io_spreading_code->initial_state;
+  }
+  
   return( return_value );
 }

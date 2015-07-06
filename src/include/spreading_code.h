@@ -87,6 +87,12 @@ typedef struct spreading_code_t
    */
   UINT32 state;
   
+  /*! \var    initial_state
+      \brief  Tracks the initial state of the spreading code so that it can be
+              reset at a later point in time.
+   */
+  UINT32 initial_state;
+  
 } spreading_code;
 
 /*! \fn     csignal_error_code csignal_initialize_spreading_code (
@@ -198,5 +204,10 @@ csignal_error_code
 csignal_destroy_spreading_code(
                                 spreading_code* io_spreading_code
                               );
+
+csignal_error_code
+csignal_reset_spreading_code  (
+                               spreading_code* io_spreading_code
+                               );
 
 #endif  /*  __SPREADING_CODE_H__  */

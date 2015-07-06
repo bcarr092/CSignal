@@ -138,4 +138,9 @@ csignal_get_gold_code  (
                         UCHAR**     out_code
                         );
 
+csignal_error_code
+csignal_reset_gold_code (
+                         gold_code* io_gold_code
+                         );
+
 #endif  /*  __GOLD_CODE_H__ */

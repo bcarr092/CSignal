@@ -202,3 +202,53 @@ csignal_get_gold_code  (
   
   return( return_value );
 }
+
+csignal_error_code
+csignal_reset_gold_code (
+                         gold_code* io_gold_code
+                         )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == io_gold_code )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Gold code is null." );
+  }
+  else if (
+           NULL == io_gold_code->polynomials[ 0 ]
+           || NULL == io_gold_code->polynomials[ 1 ]
+           )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Polynomial one (0x%x) or two (0x%x) are null.",
+               io_gold_code->polynomials[ 0 ],
+               io_gold_code->polynomials[ 1 ]
+               );
+  }
+  else
+  {
+    return_value =
+      csignal_reset_spreading_code( io_gold_code->polynomials[ 0 ] );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      return_value =
+        csignal_reset_spreading_code( io_gold_code->polynomials[ 1 ] );
+      
+      if( CPC_ERROR_CODE_NO_ERROR != return_value )
+      {
+        CPC_ERROR( "Could not reset polynomial two: 0x%x.", return_value );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not reset polynomial one: 0x%x.", return_value );
+    }
+  }
+  
+  return( return_value );
+}
