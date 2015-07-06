@@ -65,6 +65,9 @@ class TestsSignalOperations( unittest.TestCase ):
 
       self.assertNotEquals( None, retrievedValue )
 
+    self.assertEquals( bit_stream_destroy( bitStream ), CPC_ERROR_CODE_NO_ERROR )
+    self.assertEquals( bit_packer_destroy( bitPacker ), CPC_ERROR_CODE_NO_ERROR )
+
   def test_demodulate( self ):
     decision = python_csignal_demodulate_binary_PAM( [ 1.0 for i in range( 10 ) ] )
 
