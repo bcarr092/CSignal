@@ -100,9 +100,11 @@ class TestsEqualizer( unittest.TestCase ):
     self.passbandAttenuation = 0.1
     self.stopbandAttenuation = 80
 
+    self.generatorDegree  = 7
+
     self.inphaseCode = \
       python_initialize_gold_code (
-        7,
+        self.generatorDegree,
         0x12000000,
         0x1E000000,
         0x12345678,
@@ -110,7 +112,7 @@ class TestsEqualizer( unittest.TestCase ):
                                   )
     self.quadratureCode =  \
       python_initialize_gold_code (
-        7,
+        self.generatorDegree,
         0x12000000,
         0x1E000000,
         0x12345678,
@@ -161,7 +163,7 @@ class TestsEqualizer( unittest.TestCase ):
 
       python_bit_packer_add_bytes( sampleValue, self.carrierPacker )   
 
-    self.numberOfTrainingSymbols = 13
+    self.numberOfTrainingChips = 2 ** 7 - 1
 
     self.generate_training_sequence()
 
@@ -200,43 +202,13 @@ class TestsEqualizer( unittest.TestCase ):
           self.basebandAmplitude,
           self.carrierFrequency
                                           )
-
-      I = python_spread_signal (
-          self.inphaseCode,
-          self.chipDuration,
-          components[ 0 ]
-                                          )
-
-      Q = python_spread_signal  (
-          self.quadratureCode,
-          self.chipDuration,
-          components[ 1 ]
-                                )
-
-      part = []
-
-      for index in range( self.symbolDuration ):
-        sampleValue = I[ index ] - Q[ index ]
-
-        part.append( sampleValue )
-
-      self.spreadingCode = self.spreadingCode + part
-
-      ( numberOfBits, buffer ) = \
-        python_bit_stream_get_bits( tracker, self.bitsPerSymbol ) 
-
-      if( 0 == numberOfBits ):
-        symbol = None
-      else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
-
   def generate_transmit_signal( self ):
     trainingData  = '\x00' * self.numberOfTrainingSymbols
-    #data          = \
-      #''.join( random.choice( string.ascii_lowercase ) for _ in range( 5 * self.numberOfTrainingSymbols ) )
+    data          = \
+      ''.join( random.choice( string.ascii_lowercase ) for _ in range( 2 * self.numberOfTrainingSymbols ) )
 
-    #transmitData = trainingData + data
-    transmitData = trainingData
+    transmitData = trainingData + data
+    #transmitData = trainingData
     
     tracker = python_bit_stream_initialize( False, transmitData )
 
@@ -470,12 +442,14 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.outputSignal( "received.WAV", receivedSignal )
 
-    startOffset = self.findStartOffset( receivedSignal )
+    #startOffset = self.findStartOffset( receivedSignal )
 
-    if( None != startOffset ):
-      print "Start offset is %d." %( startOffset )
+    #if( None != startOffset ):
+      #print "Start offset is %d." %( startOffset )
 
-      self.receiveSignal( receivedSignal[ startOffset : ] )
+      #self.receiveSignal( receivedSignal[ startOffset : ] )
+
+    self.receiveSignal( receivedSignal )
 
   def outputSignal( self, fileName, signal ):
     maxValue = -1

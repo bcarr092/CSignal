@@ -142,6 +142,10 @@ csignal_initialize_spreading_code (
             configured in in_spreading_code. The generated bits are returned
             as a byte array in out_code. The size of the byte array is in
             out_size.
+
+    \note   Bits are packed into out_spreading_code starting with the MSB
+            of each byte, i.e., if one bit is requested it will be stored in
+            the MSB of out_spreading_code[ 0 ].
  
     \param  io_spreading_code The generator and initial state of the LFSR.
     \param  in_number_of_bits The number of code bits to get from the LFSR.
