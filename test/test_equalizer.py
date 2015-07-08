@@ -59,6 +59,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.testsPerChip      = 1
     self.decimationFactor  = int( self.chipDuration / self.testsPerChip )
 
+    self.SNRdB             = 20
+
     self.widebandStopbandGap    = 1000
     self.narrowbandStopbandGap  = 2000
 
@@ -88,9 +90,11 @@ class TestsEqualizer( unittest.TestCase ):
     self.passbandAttenuation = 0.1
     self.stopbandAttenuation = 80
 
+    self.generatorDegree  = 7
+
     self.inphaseCode = \
       python_initialize_gold_code (
-        7,
+        self.generatorDegree,
         0x12000000,
         0x1E000000,
         0x12345678,
@@ -98,7 +102,7 @@ class TestsEqualizer( unittest.TestCase ):
                                   )
     self.quadratureCode =  \
       python_initialize_gold_code (
-        7,
+        self.generatorDegree,
         0x12000000,
         0x1E000000,
         0x12345678,
@@ -135,8 +139,6 @@ class TestsEqualizer( unittest.TestCase ):
         self.sampleRate
                                               )
 
-    self.channelImpulseResponse = [ 0.0, 0.0, 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
-
     carrierSignal =  \
       python_generate_carrier_signal( self.sampleRate, self.carrierFrequency )
 
@@ -151,67 +153,54 @@ class TestsEqualizer( unittest.TestCase ):
 
       python_bit_packer_add_bytes( sampleValue, self.carrierPacker )   
 
-    self.numberOfTrainingSymbols = 13
+    self.numberOfTrainingChips = 2 ** 7 - 1
 
     self.generate_training_sequence()
 
+    self.propagationDelay       = \
+      math.ceil( ( 1.0 / 340.0 ) * ( 1.0 * self.sampleRate ) )
+    self.silence                = \
+      2 * self.numberOfTrainingSymbols * self.symbolDuration
+    self.channelImpulseResponse = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
+
+    self.channelImpulseResponse = \
+      [ 0.0 ] * int( self.silence + self.propagationDelay ) \
+      + self.channelImpulseResponse
+
   def generate_training_sequence( self ):
-    data = '\x00' * self.numberOfTrainingSymbols
-    
-    tracker = python_bit_stream_initialize( False, data )
+    csignal_reset_gold_code( self.inphaseCode )
 
-    ( numberOfBits, buffer ) = \
-      python_bit_stream_get_bits( tracker, self.bitsPerSymbol ) 
+    codeStream =  \
+      python_bit_stream_initialize  (
+        False,
+        python_get_gold_code( gold_code, self.numberOfTrainingChips )
+                                    )
+  
+    self.SpreadingCode = []
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
-
-    self.spreadingCode = []
-
-    while( symbol != None ):
-      components = python_modulate_symbol (
-          symbol,
-          self.constellationSize,
-          self.sampleRate,
-          self.symbolDuration,
-          self.basebandAmplitude,
-          self.carrierFrequency
-                                          )
-
-      I = python_spread_signal (
-          self.inphaseCode,
-          self.chipDuration,
-          components[ 0 ]
-                                          )
-
-      Q = python_spread_signal  (
-          self.quadratureCode,
-          self.chipDuration,
-          components[ 1 ]
-                                )
-
-      part = []
-
-      for index in range( self.symbolDuration ):
-        sampleValue = I[ index ] - Q[ index ]
-
-        part.append( sampleValue )
-
-      self.spreadingCode = self.spreadingCode + part
-
+    for i in range( self.numberOfTrainingChips ) ):
       ( numberOfBits, buffer ) = \
-        python_bit_stream_get_bits( tracker, self.bitsPerSymbol ) 
+        python_bit_stream_get_bits( codeStream, 1 ) 
 
-      if( 0 == numberOfBits ):
-        symbol = None
-      else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
+      codeBit = struct.unpack( "B", buffer )[ 0 ] >> 7
+
+      chipSignal = []
+
+      chipSignal.append( 1.0 if( codeBit ) else -1.0 )
+
+      chipSignal = chipSignal * self.chipDuration
+
+      self.SpreadingCode = self.SpreadingCode + chipSignal  
+      
+    self.spreadingCode = []
 
   def generate_transmit_signal( self ):
     trainingData  = '\x00' * self.numberOfTrainingSymbols
     data          = \
-      ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+      ''.join( random.choice( string.ascii_lowercase ) for _ in range( 2 * self.numberOfTrainingSymbols ) )
 
     transmitData = trainingData + data
+    #transmitData = trainingData
     
     tracker = python_bit_stream_initialize( False, transmitData )
 
@@ -292,7 +281,6 @@ class TestsEqualizer( unittest.TestCase ):
     return( signal )
 
   def perturb_signal( self, signal, SNRdB ):
-    return( signal )
     signal = python_convolve( signal, self.channelImpulseResponse )
 
     self.assertNotEquals( None, signal )
@@ -304,9 +292,9 @@ class TestsEqualizer( unittest.TestCase ):
       / ( 1.0 * len( signal ) )
 
     powerRatio    = 10 ** ( SNRdB / 10 )
-    noiseVariance = signalPower / powerRatio
+    noiseVariance = math.sqrt( signalPower / powerRatio )
 
-    signalPlusNoise = \
+    signal = \
       map (
         lambda x: x + random.normalvariate( 0, noiseVariance ),
         signal
@@ -379,13 +367,13 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.outputSignal( "transmitted.WAV", transmittedSignal )
 
-    receivedSignal = self.perturb_signal( transmittedSignal, 20 )
+    receivedSignal = self.perturb_signal( transmittedSignal, self.SNRdB )
 
     self.outputSignal( "received.WAV", receivedSignal )
 
-    startOffset = self.findStartOffset( receivedSignal )
+    #startOffset = self.findStartOffset( receivedSignal )
 
-    #self.receiveSignal( receivedSignal )
+    self.receiveSignal( receivedSignal )
 
   def outputSignal( self, fileName, signal ):
     maxValue = -1
