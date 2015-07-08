@@ -476,4 +476,9 @@ python_generate_carrier_signal  (
                                  FLOAT32  in_carrier_frequency
                                  );
 
+PyObject*
+python_filter_get_group_delay (
+                               fir_passband_filter*  in_filter
+                               );
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

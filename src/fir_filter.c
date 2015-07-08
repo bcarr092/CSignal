@@ -152,3 +152,36 @@ csignal_filter_signal (
   
   return( return_value );
 }
+
+csignal_error_code
+csignal_filter_get_group_delay  (
+                                 fir_passband_filter* in_filter,
+                                 UINT32*              out_group_delay
+                                 )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == in_filter || NULL == out_group_delay )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Filter (0x%x) or group delay (0x%x) are null.",
+               in_filter,
+               out_group_delay
+               );
+  }
+  else if( 0 == ( in_filter->number_of_taps % 2 ) )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR( "Number of taps (%d) must be odd.", in_filter->number_of_taps );
+  }
+  else
+  {
+    //    *out_group_delay = ( in_filter->number_of_taps - 1 ) / 2;
+    *out_group_delay = in_filter->number_of_taps;
+  }
+  
+  return( return_value );
+}

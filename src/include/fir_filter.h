@@ -191,4 +191,36 @@ csignal_filter_signal (
                        FLOAT64**            out_filtered_signal
                        );
 
+/*! \fn     csignal_error_code csignal_filter_get_group_delay  (
+              fir_passband_filter* in_filter,
+              UINT32*              out_group_delay
+            )
+    \brief  Returns the number of samples of delay introduced by the use of the
+            filter defined in in_filter.
+ 
+    \note   This function ONLY works for linear phase filters (i.e., filters
+            that delay all frequencies by the same amount). The underlying
+            assumption is that the filter being passed as in_filter is linear
+            phase, if that is not the case than a proper frequency-dependant
+            group delay would need to be calculated.
+ 
+    \note   This function does not perform any checks to ensure that in_filter
+            is linear phase (for expediency - calculation requires a couple
+            multiplications and a couple of FFTs).
+ 
+    \param  in_filter The filter whose group delay is to be calculated.
+    \param  out_group_delay The group delay (in samples) of the filter.
+    \return Returns NO_ERROR upon succesful execution or one of these errors
+            (see cpc_safe_free for other possible errors):
+
+            CPC_ERROR_CODE_NULL_POINTER If any of the parameters are null.
+            CPC_ERROR_INVALID_PARAMTER  If the number of taps in in_filter are
+                                        not odd.
+ */
+csignal_error_code
+csignal_filter_get_group_delay  (
+                                 fir_passband_filter* in_filter,
+                                 UINT32*              out_group_delay
+                                 );
+
 #endif  /*  __FIR_FILTER_H__  */

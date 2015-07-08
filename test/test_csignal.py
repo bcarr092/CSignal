@@ -17,6 +17,29 @@ def touch_random_file():
   return( file_handle, file_name )
 
 class TestsCSignal( unittest.TestCase ):
+  def test_get_group_delay( self ):
+    delay = csignal_tests.python_filter_get_group_delay( None )
+
+    self.assertEquals( None, delay )
+
+    filter = csignal_tests.python_initialize_kaiser_lowpass_filter( 10000, 12000, 0.1, 80, 48000 )
+
+    delay = csignal_tests.python_filter_get_group_delay( filter )
+
+    self.assertNotEquals( None, filter )
+    self.assertTrue( delay > 0 )
+
+    self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
+    filter = csignal_tests.python_initialize_kaiser_filter( 8000, 10000, 12000, 14000, 0.1, 80, 48000 )
+
+    delay = csignal_tests.python_filter_get_group_delay( filter )
+
+    self.assertNotEquals( None, filter )
+    self.assertTrue( delay > 0 )
+
+    self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
+
   def test_fft_of_lowpass_filter( self ):
     bits_per_symbol     = 8
     constellation_size  = 2 ** bits_per_symbol

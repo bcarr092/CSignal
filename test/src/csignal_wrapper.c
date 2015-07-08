@@ -1936,3 +1936,49 @@ python_generate_carrier_signal  (
     Py_RETURN_NONE;
   }
 }
+
+PyObject*
+python_filter_get_group_delay (
+                               fir_passband_filter*  in_filter
+                               )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  UINT32 group_delay        = 0;
+  PyObject* delay           = NULL;
+  
+  if( NULL == in_filter )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Filter is null." );
+  }
+  else
+  {
+    result = csignal_filter_get_group_delay( in_filter, &group_delay );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      delay = PyInt_FromLong( group_delay );
+      
+      if( ! PyInt_Check( delay ) )
+      {
+        result = CPC_ERROR_CODE_API_ERROR;
+        
+        CPC_ERROR( "Could not create a Python int from %d.", group_delay );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not get group delay: 0x%x.", result );
+    }
+  }
+ 
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( delay );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}

@@ -56,8 +56,20 @@ class TestsEqualizer( unittest.TestCase ):
     self.carrierFrequency  = 21000
     self.symbolDuration    = 480
     self.chipDuration      = 48
-    self.testsPerChip      = 1
+    self.testsPerChip      = 4
     self.decimationFactor  = int( self.chipDuration / self.testsPerChip )
+
+    #self.threshold         = 8 * 10 ** 9
+    #self.SNR               = 20
+
+    #self.threshold         = 2.25 * 10 ** 10
+    #self.SNR               = 10 
+
+    self.threshold         = 7.25 * 10 ** 10
+    self.SNR               = 0 
+
+    #self.threshold         = 2.2 * 10 ** 11
+    #self.SNR               = -10 
 
     self.widebandStopbandGap    = 1000
     self.narrowbandStopbandGap  = 2000
@@ -135,8 +147,6 @@ class TestsEqualizer( unittest.TestCase ):
         self.sampleRate
                                               )
 
-    self.channelImpulseResponse = [ 0.0, 0.0, 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
-
     carrierSignal =  \
       python_generate_carrier_signal( self.sampleRate, self.carrierFrequency )
 
@@ -155,6 +165,17 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.generate_training_sequence()
 
+    self.silenceSamples           = \
+      self.numberOfTrainingSymbols * self.symbolDuration * 4
+    self.propagationDelaySamples  = int( math.ceil( self.sampleRate / 340 ) )
+    self.channelImpulseResponse   = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
+    self.channelImpulseResponse   = \
+      [ 0.0 ] * ( self.silenceSamples + self.propagationDelaySamples )  \
+      + self.channelImpulseResponse
+
+    print "Number of delay samples: %d."  \
+      %( self.silenceSamples + self.propagationDelaySamples )
+
   def generate_training_sequence( self ):
     data = '\x00' * self.numberOfTrainingSymbols
     
@@ -166,6 +187,9 @@ class TestsEqualizer( unittest.TestCase ):
     symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.spreadingCode = []
+
+    csignal_reset_gold_code( self.inphaseCode )
+    csignal_reset_gold_code( self.quadratureCode )
 
     while( symbol != None ):
       components = python_modulate_symbol (
@@ -208,10 +232,11 @@ class TestsEqualizer( unittest.TestCase ):
 
   def generate_transmit_signal( self ):
     trainingData  = '\x00' * self.numberOfTrainingSymbols
-    data          = \
-      ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    #data          = \
+      #''.join( random.choice( string.ascii_lowercase ) for _ in range( 5 * self.numberOfTrainingSymbols ) )
 
-    transmitData = trainingData + data
+    #transmitData = trainingData + data
+    transmitData = trainingData
     
     tracker = python_bit_stream_initialize( False, transmitData )
 
@@ -292,7 +317,6 @@ class TestsEqualizer( unittest.TestCase ):
     return( signal )
 
   def perturb_signal( self, signal, SNRdB ):
-    return( signal )
     signal = python_convolve( signal, self.channelImpulseResponse )
 
     self.assertNotEquals( None, signal )
@@ -304,9 +328,9 @@ class TestsEqualizer( unittest.TestCase ):
       / ( 1.0 * len( signal ) )
 
     powerRatio    = 10 ** ( SNRdB / 10 )
-    noiseVariance = signalPower / powerRatio
+    noiseVariance = math.sqrt( signalPower / powerRatio )
 
-    signalPlusNoise = \
+    signal = \
       map (
         lambda x: x + random.normalvariate( 0, noiseVariance ),
         signal
@@ -317,6 +341,8 @@ class TestsEqualizer( unittest.TestCase ):
     return( signal )
 
   def findStartOffset( self, signal ):
+    print "Signal length is %d." %( len( signal ) )
+
     startTime = time.time()
 
     thresholds =  \
@@ -336,7 +362,64 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.outputSequence( "thresholds.dat", thresholds )
 
+    thresholdIndex = -1
+
+    for i in range( len( thresholds ) ):
+      if( thresholds[ i ] > self.threshold ):
+        thresholdIndex = i
+
+        break
+
+    if( -1 != thresholdIndex ):
+      print "Threshold index is: %d." %( thresholdIndex )
+
+      adjustedThresholdIndex = thresholdIndex * self.decimationFactor
+
+      print "Adjusted threshold index is: %d." %( adjustedThresholdIndex )
+
+      searchStartIndex =  \
+        int( adjustedThresholdIndex + len( self.spreadingCode )  \
+        + python_filter_get_group_delay( self.widebandFilter ) \
+        - 0.5 * len( self.spreadingCode ) )
+        #- self.chipDuration )
+
+      if( 0 > searchStartIndex ):
+        searchStartIndex = 0
+
+      endSearchIndex =  \
+        int( searchStartIndex + ( 1.5 * len( self.spreadingCode ) ) )
+        #int( searchStartIndex + self.chipDuration + len( self.spreadingCode ) )
+
+      if( endSearchIndex  >= len( signal) ):
+        endSearchIndex = len( signal )
+
+      print "Search space is [ %d, %d )." \
+        %( searchStartIndex, endSearchIndex )
+
+      thresholds =  \
+        python_csignal_calculate_thresholds (
+          self.spreadingCode,
+          self.widebandFilter,
+          self.narrowbandFilter,
+          signal[ searchStartIndex : endSearchIndex ],
+          1
+                                            )
+
+      maxValue  = -1
+      maxOffset = 0
+
+      for i in range( len( thresholds ) ):
+        if( thresholds[ i ] > maxValue ):
+          maxOffset = i
+          maxValue  = thresholds[ i ]
+
+      print "Max offset is %d (%.04f)." %( ( maxOffset + searchStartIndex ), maxValue )
+
+      return( searchStartIndex + maxOffset )
+
   def receiveSignal( self, signal ):
+    print "Received signal is %d samples long." %( len( signal ) )
+
     startTime = time.time()
 
     bandpassFilteredSignal =  \
@@ -374,18 +457,25 @@ class TestsEqualizer( unittest.TestCase ):
     print "Narrowband filter time:\t%.04f"  \
       %( narrowbandFilterTime - demodulateTime )
 
+    print "Group delay: %d."  \
+      %( python_filter_get_group_delay( self.widebandFilter ) \
+        + python_filter_get_group_delay( self.lowpassFilter ) )
+
   def test_equalizer( self ):
     transmittedSignal = self.generate_transmit_signal()
 
     self.outputSignal( "transmitted.WAV", transmittedSignal )
 
-    receivedSignal = self.perturb_signal( transmittedSignal, 20 )
+    receivedSignal = self.perturb_signal( transmittedSignal, self.SNR )
 
     self.outputSignal( "received.WAV", receivedSignal )
 
     startOffset = self.findStartOffset( receivedSignal )
 
-    #self.receiveSignal( receivedSignal )
+    if( None != startOffset ):
+      print "Start offset is %d." %( startOffset )
+
+      self.receiveSignal( receivedSignal[ startOffset : ] )
 
   def outputSignal( self, fileName, signal ):
     maxValue = -1

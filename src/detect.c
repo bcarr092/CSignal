@@ -93,14 +93,17 @@ csignal_calculate_thresholds  (
     USIZE     wideband_filtered_signal_length  = 0;
     FLOAT64*  wideband_filtered_signal         = NULL;
     
-    return_value =
-      csignal_filter_signal (
-                             in_wideband_filter,
-                             in_signal_length,
-                             in_signal,
-                             &wideband_filtered_signal_length,
-                             &wideband_filtered_signal
-                             );
+//    return_value =
+//      csignal_filter_signal (
+//                             in_wideband_filter,
+//                             in_signal_length,
+//                             in_signal,
+//                             &wideband_filtered_signal_length,
+//                             &wideband_filtered_signal
+//                             );
+    
+    wideband_filtered_signal_length = in_signal_length;
+    wideband_filtered_signal        = in_signal;
     
     if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
@@ -227,7 +230,7 @@ csignal_calculate_thresholds  (
         }
       }
     
-      cpc_safe_free( ( void** ) &wideband_filtered_signal );
+//      cpc_safe_free( ( void** ) &wideband_filtered_signal );
     }
     else
     {
