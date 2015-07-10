@@ -179,8 +179,7 @@ csignal_filter_get_group_delay  (
   }
   else
   {
-    //    *out_group_delay = ( in_filter->number_of_taps - 1 ) / 2;
-    *out_group_delay = in_filter->number_of_taps;
+    *out_group_delay = ( in_filter->number_of_taps - 1 ) / 2;
   }
   
   return( return_value );

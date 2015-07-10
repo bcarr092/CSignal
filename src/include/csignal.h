@@ -42,73 +42,6 @@ csignal_initialize( void );
 void
 csignal_terminate( void );
 
-/*! \fn     csignal_error_code csignal_modulate_symbol (
-              UINT32   in_symbol,
-              UINT32   in_constellation_size,
-              UINT32   in_sample_rate,
-              UINT32   in_symbol_duration,
-              INT32    in_baseband_pulse_amplitude,
-              FLOAT32  in_carrier_frequency,
-              FLOAT64* out_signal_inphase,
-              FLOAT64* out_signal_quadrature
-            )
-    \brief  Modulates a data symbol into inphase and quadrature components.
-            Let the data symbol value be m, the constellation size be M, the
-            sample rate be f_s, each time t_i be a multiple of 1 / f_s, the
-            carrier frequency be f_c, and the duration of each symbol (in terms
-            of points) be T. This function returns the following:
- 
-            signal_inphase[ i ] = g( t ) * A_mc * cos( 2 * pi * f_c * t_i )
-            signal_outphase[ i ] = g( t ) * A_ms * sin( 2 * pi * f_c * t_i )
- 
-            where,
-      
-            A_mc = cos( 2 * pi * m' / M )
-            A_ms = sin( 2 * pi * m' / M )
- 
-            and g( t ) is a rectangular pulse with amplitude 
-            in_baseband_pulse_amplitude for each of the T samples. The full
-            array signal is returned and is of size T.
- 
-    \note   The symbol (in_symbol), m, is first converted to a Gray Code, m',
-            before it is modulated.
- 
-    \param  in_symbol The symbol to be modulated, m, it must be < than
-                      in_constellation_size
-    \param  in_constellation_size The maximum number of possible symbols. Must
-                                  be > 0
-    \param  in_sample_rate  The rate at which the signal is sampled. Must be >
-                            in_sample_rate
-    \param  in_symbol_duration  The number of samples in the signal. Must be >
-                                0
-    \param  in_baseband_pulse_amplitude The shape of the pulse being modulated
-    \param  in_carrier_frequency  The frequency of the carrier wave. Must be >
-                                  0
-    \param  out_signal_inphase  The array of inphase samples returned to the
-                                caller if no error is detected.
-    \param  out_signal_quadrature The array of quadrature samples returned to
-                                  the caller if no error is detected.
-    \return Returns NO_ERROR upon succesful exection or one of these errors:
- 
-            CPC_ERROR_CODE_NULL_POINTER If out_signal_inphase or
-                                        out_signal_quadrature are null.
-            CPC_ERROR_CODE_INVALID_PARAMETER
-              If in_symbol >= in_constellation_size
-              If in_carrier_frequency < 0
-              If in_sample_rate < 0
- */
-csignal_error_code
-csignal_modulate_symbol (
-                         UINT32   in_symbol,
-                         UINT32   in_constellation_size,
-                         UINT32   in_sample_rate,
-                         USIZE    in_symbol_duration,
-                         INT32    in_baseband_pulse_amplitude,
-                         FLOAT32  in_carrier_frequency,
-                         FLOAT64* out_signal_inphase,
-                         FLOAT64* out_signal_quadrature
-                         );
-
 /*! \fn     csignal_error_code csignal_spread_signal (
               gold_code* io_gold_code,
               UINT32     in_chip_duration,
@@ -299,10 +232,74 @@ csignal_sum_signal(
  */
 csignal_error_code
 csignal_generate_carrier_signal (
-                                 UINT32   in_sample_rate,
-                                 FLOAT32  in_carrier_frequency,
-                                 USIZE*   out_signal_length,
-                                 FLOAT64** out_signal
+                                 UINT32     in_sample_rate,
+                                 FLOAT32    in_carrier_frequency,
+                                 USIZE*     out_signal_length,
+                                 FLOAT64**  out_signal_inphase,
+                                 FLOAT64**  out_signal_quadrature
                                  );
+
+/*! \fn     csignal_error_code csignal_modulate_symbol (
+              UINT32   in_symbol,
+              UINT32   in_constellation_size,
+              UINT32   in_sample_rate,
+              UINT32   in_symbol_duration,
+              INT32    in_baseband_pulse_amplitude,
+              FLOAT32  in_carrier_frequency,
+              FLOAT64* out_signal_inphase,
+              FLOAT64* out_signal_quadrature
+            )
+    \brief  Modulates a data symbol into inphase and quadrature components.
+            Let the data symbol value be m, the constellation size be M, the
+            sample rate be f_s, each time t_i be a multiple of 1 / f_s, the
+            carrier frequency be f_c, and the duration of each symbol (in terms
+            of points) be T. This function returns the following:
+ 
+            signal_inphase[ i ] = g( t ) * A_mc * cos( 2 * pi * f_c * t_i )
+            signal_outphase[ i ] = g( t ) * A_ms * sin( 2 * pi * f_c * t_i )
+ 
+            where,
+      
+            A_mc = cos( 2 * pi * m' / M )
+            A_ms = sin( 2 * pi * m' / M )
+ 
+            and g( t ) is a rectangular pulse with amplitude 
+            in_baseband_pulse_amplitude for each of the T samples. The full
+            array signal is returned and is of size T.
+ 
+    \note   The symbol (in_symbol), m, is first converted to a Gray Code, m',
+            before it is modulated.
+ 
+    \param  in_symbol The symbol to be modulated, m, it must be < than
+                      in_constellation_size
+    \param  in_constellation_size The maximum number of possible symbols. Must
+                                  be > 0
+    \param  in_sample_rate  The rate at which the signal is sampled. Must be >
+                            in_sample_rate
+    \param  in_symbol_duration  The number of samples in the signal. Must be >
+                                0
+    \param  in_baseband_pulse_amplitude The shape of the pulse being modulated
+    \param  in_carrier_frequency  The frequency of the carrier wave. Must be >
+                                  0
+    \param  out_signal_inphase  The array of inphase samples returned to the
+                                caller if no error is detected.
+    \param  out_signal_quadrature The array of quadrature samples returned to
+                                  the caller if no error is detected.
+    \return Returns NO_ERROR upon succesful exection or one of these errors:
+ 
+            CPC_ERROR_CODE_NULL_POINTER If out_signal_inphase or
+                                        out_signal_quadrature are null.
+            CPC_ERROR_CODE_INVALID_PARAMETER
+              If in_symbol >= in_constellation_size
+              If in_carrier_frequency < 0
+              If in_sample_rate < 0
+ */
+csignal_error_code
+csignal_modulate_symbol (
+                         UINT32   in_symbol,
+                         UINT32   in_constellation_size,
+                         FLOAT64* out_symbol_inphase,
+                         FLOAT64* out_symbol_quadrature
+                         );
 
 #endif  /*  __CSIGNAL_H__ */

@@ -331,3 +331,25 @@ bit_stream_peak (
   
   return( return_value );
 }
+
+csignal_error_code
+bit_stream_reset  (
+                   bit_stream* io_bit_stream
+                   )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == io_bit_stream )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Bit stream is null." );
+  }
+  else
+  {
+    io_bit_stream->bit_offset   = 0;
+    io_bit_stream->byte_offset  = 0;
+  }
+  
+  return( return_value );
+}

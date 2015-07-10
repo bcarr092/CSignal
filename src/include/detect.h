@@ -55,10 +55,8 @@
  */
 csignal_error_code
 csignal_calculate_thresholds  (
-                               UINT32               in_spreading_code_length,
+                               USIZE                in_spreading_code_length,
                                FLOAT64*             in_spreading_code,
-                               fir_passband_filter* in_wideband_filter,
-                               fir_passband_filter* in_narrowband_filter,
                                USIZE                in_signal_length,
                                FLOAT64*             in_signal,
                                UINT32               in_decimation,

@@ -299,8 +299,10 @@ python_get_gold_code(
 {
   PyObject* return_value = NULL;
 
-  USIZE size  = 0;
-  UCHAR* code = NULL;
+  USIZE code_length = 0;
+  UCHAR* code       = NULL;
+  
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
 
   if( NULL == in_gold_code )
   {
@@ -308,47 +310,26 @@ python_get_gold_code(
   }
   else
   {
-    csignal_error_code return_code =
+    result =
       csignal_get_gold_code(
                             in_gold_code,
                             in_number_of_bits,
-                            &size,
+                            &code_length,
                             &code
                             );
 
-    if( CPC_ERROR_CODE_NO_ERROR == return_code )
+    if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      PyObject* code_list = PyList_New( size );
-
-      if( NULL == code_list )
+      return_value =
+        PyString_FromStringAndSize( ( CHAR* ) code, code_length );
+      
+      if( NULL == return_value || ! PyString_Check( return_value ) )
       {
-        CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Created a null list." );
-      }
-      else
-      {
-        for( USIZE i = 0; i < size; i++ )
-        {
-          if(
-            0
-            != PyList_SetItem(
-            code_list,
-            i,
-            Py_BuildValue( "B", code[ i ] )
-            )
-            )
-          {
-            PyErr_Print( );
-          }
-        }
-
-        if( PyList_Check( code_list ) )
-        {
-          return_value = code_list;
-        }
-        else
-        {
-          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
-        }
+        result = CPC_ERROR_CODE_API_ERROR;
+        
+        CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not convert buffer." );
+        
+        return_value = NULL;
       }
     }
     else
@@ -362,12 +343,14 @@ python_get_gold_code(
     cpc_safe_free( ( void** )&code );
   }
 
-  if( NULL != return_value )
+  if( CPC_ERROR_CODE_NO_ERROR == result )
   {
     return( return_value );
   }
   else
   {
+    Py_XDECREF( return_value );
+    
     Py_RETURN_NONE;
   }
 }
@@ -696,118 +679,86 @@ python_write_FLOAT_wav(
 
 PyObject*
 python_modulate_symbol(
-                       unsigned int     in_symbol,
-                       unsigned int     in_constellation_size,
-                       unsigned int     in_sample_rate,
-                       size_t           in_symbol_duration,
-                       int              in_baseband_pulse_amplitude,
-                       float            in_carrier_frequency
+                       UINT32 in_symbol,
+                       UINT32 in_constellation_size
                        )
 {
+  FLOAT64 inphase_value    = 0.0;
+  FLOAT64 quadrature_value = 0.0;
+ 
+  PyObject* inphase       = NULL;
+  PyObject* quadrature    = NULL;
   PyObject* return_value  = NULL;
-  
-  FLOAT64* inphase    = NULL;
-  FLOAT64* quadrature = NULL;
 
-  if  (
-       0 >= in_carrier_frequency
-       || 0 == in_constellation_size
-       || 0 == in_sample_rate
-       || 0 >= in_symbol_duration
-       )
+  if( 0 == in_constellation_size )
   {
     CPC_ERROR(
-              "Invalid inputs: f_c=%.2f, cs=0x%x, sr=0x%x, sd=0x%x",
-              in_carrier_frequency,
-              in_constellation_size,
-              in_sample_rate,
-              in_symbol_duration
+              "Constellation size (%d) must be strictly positive.",
+              in_constellation_size
               );
   }
   else
   {
     csignal_error_code result =
-      cpc_safe_malloc(
-                      ( void** )&inphase,
-                      sizeof( FLOAT64 )* in_symbol_duration
-                      );
+      csignal_modulate_symbol(
+                              in_symbol,
+                              in_constellation_size,
+                              &inphase_value,
+                              &quadrature_value
+                              );
 
     if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      result =
-        cpc_safe_malloc(
-                        ( void** )&quadrature,
-                        sizeof( FLOAT64 )* in_symbol_duration
-                        );
-
-      if( CPC_ERROR_CODE_NO_ERROR == result )
+      inphase     = PyFloat_FromDouble( inphase_value );
+      quadrature  = PyFloat_FromDouble( quadrature_value );
+      
+      if  (
+           NULL != inphase && PyFloat_Check( inphase )
+           && NULL != quadrature && PyFloat_Check( quadrature )
+           )
       {
-        result =
-          csignal_modulate_symbol(
-                                  in_symbol,
-                                  in_constellation_size,
-                                  in_sample_rate,
-                                  in_symbol_duration,
-                                  in_baseband_pulse_amplitude,
-                                  in_carrier_frequency,
-                                  inphase,
-                                  quadrature
-                                  );
-
-        if( CPC_ERROR_CODE_NO_ERROR == result )
+        return_value = PyTuple_New( 2 );
+        
+        if( NULL != return_value && PyTuple_Check( return_value ) )
         {
-          return_value = PyList_New( 2 );
-
-          if( NULL != return_value )
+          if  (
+               0 != PyTuple_SetItem( return_value, 0, inphase )
+               || 0 != PyTuple_SetItem( return_value, 1, quadrature )
+               )
           {
-            PyObject* inphase_list    = NULL;
-            PyObject* quadrature_list = NULL;
+            CPC_LOG_STRING  (
+                             CPC_LOG_LEVEL_ERROR,
+                             "Could not add items to tuple."
+                             );
             
-            result =
-              python_convert_array_to_list  (
-                                             in_symbol_duration,
-                                             inphase,
-                                             &inphase_list
-                                             );
-            
-            if( CPC_ERROR_CODE_NO_ERROR == result )
-            {
-              result =
-                python_convert_array_to_list  (
-                                               in_symbol_duration,
-                                               quadrature,
-                                               &quadrature_list
-                                               );
-              
-              if( CPC_ERROR_CODE_NO_ERROR == result )
-              {
-                PyList_SetItem( return_value, 0, inphase_list );
-                PyList_SetItem( return_value, 1, quadrature_list );
-              }
-              else
-              {
-                Py_DECREF( inphase_list );
-                Py_DECREF( return_value );
-              }
-            }
-            else
-            {
-              Py_DECREF( return_value );
-            }
+            return_value = NULL;
           }
         }
+        else
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create tuple." );
+          
+          return_value = NULL;
+        }
+      }
+      else
+      {
+        CPC_ERROR (
+                   "Could not convert inphase (%.02f) and"
+                   " quadrature (%.02f).",
+                   inphase_value,
+                   quadrature_value
+                   );
       }
     }
-  }
-  
-  if( NULL != inphase )
-  {
-    cpc_safe_free( ( void** )&inphase );
-  }
-
-  if( NULL != quadrature )
-  {
-    cpc_safe_free( ( void** )&quadrature );
+    else
+    {
+      CPC_ERROR (
+                 "Could not modulate symbol (%d): 0x%x.",
+                 in_symbol,
+                 return_value
+                 );
+    }
   }
 
   if( NULL != return_value )
@@ -816,6 +767,10 @@ python_modulate_symbol(
   }
   else
   {
+    Py_XDECREF( inphase );
+    Py_XDECREF( quadrature );
+    Py_XDECREF( return_value );
+    
     Py_RETURN_NONE;
   }
 }
@@ -1188,11 +1143,11 @@ python_csignal_multiply_signals (
     if( CPC_ERROR_CODE_NO_ERROR == result )
     {
       result =
-      python_convert_list_to_array  (
-                                     in_signal_two,
-                                     &signal_two_length,
-                                     &signal_two
-                                     );
+        python_convert_list_to_array  (
+                                       in_signal_two,
+                                       &signal_two_length,
+                                       &signal_two
+                                       );
       
       if( CPC_ERROR_CODE_NO_ERROR == result )
       {
@@ -1247,8 +1202,6 @@ python_csignal_multiply_signals (
 PyObject*
 python_csignal_calculate_thresholds (
                                      PyObject*            in_spreading_code,
-                                     fir_passband_filter* in_wideband_filter,
-                                     fir_passband_filter* in_narrowband_filter,
                                      PyObject*            in_signal,
                                      UINT32               in_decimation
                                      )
@@ -1270,19 +1223,14 @@ python_csignal_calculate_thresholds (
        || Py_None == in_spreading_code
        || NULL == in_signal
        || Py_None == in_signal
-       || NULL == in_wideband_filter
-       || NULL == in_narrowband_filter
        )
   {
     result = CPC_ERROR_CODE_NULL_POINTER;
     
     CPC_ERROR (
-               "Spreading code (0x%x), signal (0x%x), wideband (0x%x)"
-               " or narrowband (0x%x) are null or Python None.",
+               "Spreading code (0x%x) or signal (0x%x) are null or Python None.",
                in_spreading_code,
-               in_signal,
-               in_wideband_filter,
-               in_narrowband_filter
+               in_signal
                );
   }
   else
@@ -1323,8 +1271,6 @@ python_csignal_calculate_thresholds (
           csignal_calculate_thresholds  (
                                          spreading_code_length,
                                          spreading_code,
-                                         in_wideband_filter,
-                                         in_narrowband_filter,
                                          signal_length,
                                          signal,
                                          in_decimation,
@@ -1570,6 +1516,8 @@ python_convert_array_to_list  (
       {
         if( ! PyList_Check( *out_list ) )
         {
+          return_value = CPC_ERROR_CODE_API_ERROR;
+          
           CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List check failed." );
           
           Py_DECREF( *out_list );
@@ -1600,7 +1548,6 @@ python_convert_list_to_array  (
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
  
-  
   if  (
        NULL == in_py_list
        || Py_None == in_py_list
@@ -1623,13 +1570,13 @@ python_convert_list_to_array  (
     *out_array_length = PyList_Size( in_py_list );
     *out_array        = NULL;
     
-    csignal_error_code return_code =
+    return_value =
       cpc_safe_malloc (
                        ( void** ) out_array,
                        sizeof( FLOAT64 ) * *out_array_length
                        );
     
-    if( CPC_ERROR_CODE_NO_ERROR == return_code )
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
     {
       for( USIZE i = 0; i < *out_array_length; i++ )
       {
@@ -1642,7 +1589,7 @@ python_convert_list_to_array  (
         {
           CPC_ERROR( "Entry 0x%x is not a float.", i );
           
-          return_code = CPC_ERROR_CODE_INVALID_PARAMETER;
+          return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
           
           *out_array_length = 0;
           
@@ -1897,24 +1844,71 @@ python_generate_carrier_signal  (
                                  )
 {
   USIZE signal_length = 0;
-  FLOAT64* signal     = NULL;
-  PyObject* list      = NULL;
+  
+  FLOAT64* signal_inphase     = NULL;
+  FLOAT64* signal_quadrature  = NULL;
+  
+  PyObject* inphase       = NULL;
+  PyObject* quadrature    = NULL;
+  PyObject* return_value  = NULL;
   
   csignal_error_code result =
     csignal_generate_carrier_signal (
                                      in_sample_rate,
                                      in_carrier_frequency,
                                      &signal_length,
-                                     &signal
+                                     &signal_inphase,
+                                     &signal_quadrature
                                      );
   
   if( CPC_ERROR_CODE_NO_ERROR == result )
   {
-    result = python_convert_array_to_list( signal_length, signal, &list );
+    result =
+      python_convert_array_to_list( signal_length, signal_inphase, &inphase );
     
-    if( CPC_ERROR_CODE_NO_ERROR != result )
+    if( CPC_ERROR_CODE_NO_ERROR == result )
     {
-      CPC_ERROR( "Could not convert array to list: 0x%x.", result );
+      result =
+        python_convert_array_to_list  (
+                                       signal_length,
+                                       signal_quadrature,
+                                       &quadrature
+                                       );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        return_value = PyTuple_New( 2 );
+        
+        if( NULL != return_value && PyTuple_Check( return_value ) )
+        {
+          if  (
+               0 != PyTuple_SetItem( return_value, 0, inphase )
+               || 0 != PyTuple_SetItem( return_value, 1, quadrature )
+               )
+          {
+            CPC_LOG_STRING  (
+                             CPC_LOG_LEVEL_ERROR,
+                             "Could not add items to tuple."
+                             );
+            
+            return_value = NULL;
+          }
+        }
+        else
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create tuple." );
+          
+          return_value = NULL;
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not convert quadrature array to list: 0x%x.", result );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not convert inphase array to list: 0x%x.", result );
     }
   }
   else
@@ -1922,17 +1916,26 @@ python_generate_carrier_signal  (
     CPC_ERROR( "Could not generate carrier: 0x%x.", result );
   }
   
-  if( NULL != signal )
+  if( NULL != signal_inphase )
   {
-    cpc_safe_free( ( void** ) &signal );
+    cpc_safe_free( ( void** ) &signal_inphase );
+  }
+  
+  if( NULL != signal_quadrature )
+  {
+    cpc_safe_free( ( void** ) &signal_quadrature );
   }
   
   if( CPC_ERROR_CODE_NO_ERROR == result )
   {
-    return( list );
+    return( return_value );
   }
   else
   {
+    Py_XDECREF( inphase );
+    Py_XDECREF( quadrature );
+    Py_XDECREF( return_value );
+    
     Py_RETURN_NONE;
   }
 }

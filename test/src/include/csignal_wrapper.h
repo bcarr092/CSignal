@@ -94,9 +94,9 @@ python_initialize_kaiser_lowpass_filter(
  */
 PyObject*
 python_get_gold_code(
-  gold_code*  in_gold_code,
-  size_t      in_number_of_bits
-);
+                     gold_code*  in_gold_code,
+                     size_t      in_number_of_bits
+                     );
 
 /*! \fn     gold_code* python_initialize_gold_code  (
               int in_degree,
@@ -215,12 +215,8 @@ python_write_FLOAT_wav(
  */
 PyObject*
 python_modulate_symbol(
-                       unsigned int     in_symbol,
-                       unsigned int     in_constellation_size,
-                       unsigned int     in_sample_rate,
-                       size_t           in_symbol_duration,
-                       int              in_baseband_pulse_amplitude,
-                       float            in_carrier_frequency
+                       UINT32 in_symbol,
+                       UINT32 in_constellation_size
                        );
 
 
@@ -399,8 +395,6 @@ python_csignal_calculate_energy (
 PyObject*
 python_csignal_calculate_thresholds (
                                      PyObject*            in_spreading_code,
-                                     fir_passband_filter* in_wideband_filter,
-                                     fir_passband_filter* in_narrowband_filter,
                                      PyObject*            in_signal,
                                      UINT32               in_decimation
                                      );

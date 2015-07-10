@@ -238,4 +238,19 @@ bit_stream_peak (
                  UCHAR**      out_buffer
                  );
 
+/*! \fn     csignal_error_code bit_stream_reset  (
+              bit_stream* io_bit_stream
+            )
+    \brief  Reset the read pointers to be front of the packer buffer.
+ 
+    \param  io_bit_stream The bit stream whose read pointers are to be reset.
+    \return Returns NO_ERROR upon succesful execution or one of these errors:
+ 
+            CPC_ERROR_CODE_NULL_POINTER If any of the inputs are null.
+ */
+csignal_error_code
+bit_stream_reset  (
+                   bit_stream* io_bit_stream
+                   );
+
 #endif  /*  __BIT_STREAM_H__  */
