@@ -14,11 +14,11 @@
 
     \return A list of Python Complex values is returned or None if an error
              occurrs.
-*/
+ */
 PyObject*
 python_calculate_FFT(
-  PyObject* in_signal
-);
+                     PyObject* in_signal
+                     );
 
 /*! \fn     PyObject* python_filter_signal  (
               fir_passband_filter*  in_filter,
@@ -474,5 +474,13 @@ PyObject*
 python_filter_get_group_delay (
                                fir_passband_filter*  in_filter
                                );
+
+PyObject*
+python_csignal_modulate_BFSK_symbol  (
+                                      UINT32     in_symbol,
+                                      UINT32     in_samples_per_symbol,
+                                      UINT32     in_sample_rate,
+                                      FLOAT32    in_carrier_frequency
+                                      );
 
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

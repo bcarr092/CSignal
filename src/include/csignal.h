@@ -302,4 +302,15 @@ csignal_modulate_symbol (
                          FLOAT64* out_symbol_quadrature
                          );
 
+csignal_error_code
+csignal_modulate_BFSK_symbol  (
+                               UINT32     in_symbol,
+                               UINT32     in_samples_per_symbol,
+                               UINT32     in_sample_rate,
+                               FLOAT32    in_carrier_frequency,
+                               USIZE*     out_signal_length,
+                               FLOAT64**  out_signal_inphase,
+                               FLOAT64**  out_signal_quadrature
+                               );
+
 #endif  /*  __CSIGNAL_H__ */

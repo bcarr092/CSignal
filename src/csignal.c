@@ -63,6 +63,101 @@ csignal_terminate( void )
 }
 
 csignal_error_code
+csignal_modulate_BFSK_symbol  (
+                               UINT32     in_symbol,
+                               UINT32     in_samples_per_symbol,
+                               UINT32     in_sample_rate,
+                               FLOAT32    in_carrier_frequency,
+                               USIZE*     out_signal_length,
+                               FLOAT64**  out_signal_inphase,
+                               FLOAT64**  out_signal_quadrature
+                               )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if  (
+       NULL == out_signal_length
+       || NULL == out_signal_inphase
+       || NULL == out_signal_quadrature
+       )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Lenght (0x%x), inphase (0x%x), or quadrature (0x%x) are NULL.",
+               out_signal_length,
+               out_signal_inphase,
+               out_signal_quadrature
+               );
+  }
+  else if( 2 <= in_symbol )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR( "Symbol (%d) must be 0 or 1.", in_symbol );
+  }
+  else
+  {
+    *out_signal_length = in_samples_per_symbol;
+    
+    return_value =
+      cpc_safe_malloc (
+                       ( void** ) out_signal_inphase,
+                       sizeof( FLOAT64 ) * *out_signal_length
+                       );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      return_value =
+        cpc_safe_malloc (
+                         ( void** ) out_signal_quadrature,
+                         sizeof( FLOAT64 ) * *out_signal_length
+                         );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        FLOAT64 delta_frequency =
+          ( in_sample_rate / in_samples_per_symbol );
+        FLOAT64 frequency       =
+          ( in_symbol ? delta_frequency / 2.0 : -1.0 * delta_frequency / 2.0 );
+        
+        CPC_LOG (
+                 CPC_LOG_LEVEL_ERROR,
+                 "Symbol: %d\tFrequency: %.02f",
+                 in_symbol,
+                 frequency
+                 );
+        
+        for( UINT32 i = 0; i < *out_signal_length; i++ )
+        {
+          ( *out_signal_inphase )[ i ] =
+          cos (
+               2.0 * M_PI * ( in_carrier_frequency + frequency )
+               * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+               );
+          
+          ( *out_signal_quadrature )[ i ] =
+          sin ( 
+               2.0 * M_PI * ( in_carrier_frequency + frequency )
+               * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+               );
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not malloc quadrature: 0x%x.", return_value );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not malloc inphase: 0x%x.", return_value );
+    }
+  }
+  
+  return( return_value );
+}
+
+csignal_error_code
 csignal_modulate_symbol (
                          UINT32   in_symbol,
                          UINT32   in_constellation_size,

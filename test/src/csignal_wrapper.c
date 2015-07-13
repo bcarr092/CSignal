@@ -1985,3 +1985,110 @@ python_filter_get_group_delay (
     Py_RETURN_NONE;
   }
 }
+
+PyObject*
+python_csignal_modulate_BFSK_symbol  (
+                                      UINT32     in_symbol,
+                                      UINT32     in_samples_per_symbol,
+                                      UINT32     in_sample_rate,
+                                      FLOAT32    in_carrier_frequency
+                                      )
+{
+  USIZE signal_length = 0;
+  
+  FLOAT64* signal_inphase     = NULL;
+  FLOAT64* signal_quadrature  = NULL;
+  
+  PyObject* inphase       = NULL;
+  PyObject* quadrature    = NULL;
+  PyObject* return_value  = NULL;
+  
+  csignal_error_code result =
+    csignal_modulate_BFSK_symbol  (
+                                   in_symbol,
+                                   in_samples_per_symbol,
+                                   in_sample_rate,
+                                   in_carrier_frequency,
+                                   &signal_length,
+                                   &signal_inphase,
+                                   &signal_quadrature
+                                   );
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    result =
+      python_convert_array_to_list( signal_length, signal_inphase, &inphase );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      result =
+        python_convert_array_to_list  (
+                                       signal_length,
+                                       signal_quadrature,
+                                       &quadrature
+                                       );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        return_value = PyTuple_New( 2 );
+        
+        if( NULL != return_value && PyTuple_Check( return_value ) )
+        {
+          if  (
+               0 != PyTuple_SetItem( return_value, 0, inphase )
+               || 0 != PyTuple_SetItem( return_value, 1, quadrature )
+               )
+          {
+            CPC_LOG_STRING  (
+                             CPC_LOG_LEVEL_ERROR,
+                             "Could not add items to tuple."
+                             );
+            
+            return_value = NULL;
+          }
+        }
+        else
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create tuple." );
+          
+          return_value = NULL;
+        }
+      }
+      else
+      {
+        CPC_ERROR( "Could not convert quadrature array to list: 0x%x.", result );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not convert inphase array to list: 0x%x.", result );
+    }
+  }
+  else
+  {
+    CPC_ERROR( "Could not generate carrier: 0x%x.", result );
+  }
+  
+  if( NULL != signal_inphase )
+  {
+    cpc_safe_free( ( void** ) &signal_inphase );
+  }
+  
+  if( NULL != signal_quadrature )
+  {
+    cpc_safe_free( ( void** ) &signal_quadrature );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_XDECREF( inphase );
+    Py_XDECREF( quadrature );
+    Py_XDECREF( return_value );
+    
+    Py_RETURN_NONE;
+  }
+}
