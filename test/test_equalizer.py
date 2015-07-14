@@ -83,7 +83,7 @@ class TestsEqualizer( unittest.TestCase ):
                       )
 
   def setUp( self ):
-    self.bitsPerSymbol     = 1
+    self.bitsPerSymbol     = 3
     self.constellationSize = 2 ** self.bitsPerSymbol
     self.sampleRate        = 48000
     self.bitDepth          = 16
@@ -106,7 +106,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.threshold         = 2.2 * 10 ** 11
     #self.SNR               = -10 
 
-    self.SNR               = 10 
+    self.SNR               = 20
 
     self.widebandStopbandGap    = 1000
     self.narrowbandStopbandGap  = 2000
@@ -141,7 +141,7 @@ class TestsEqualizer( unittest.TestCase ):
     self.codePeriod       = 2 ** self.generatorDegree - 1
 
     self.numberOfTrainingSymbols  = 8
-    self.numberOfDataSymbols      = 8
+    self.numberOfDataSymbols      = 10
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -188,7 +188,7 @@ class TestsEqualizer( unittest.TestCase ):
         self.sampleRate
                                               )
 
-    self.delay = 0
+    self.delay = 2
     #self.delay                  = \
       #random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
     #self.initialChannelImpulseResponse = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
@@ -211,7 +211,7 @@ class TestsEqualizer( unittest.TestCase ):
     self.spreadingSignalPacker  = None
     self.spreadingSignalStream  = None
 
-    self.numberOfFeedforwardTaps  = self.numberOfTrainingSymbols
+    self.numberOfFeedforwardTaps  = 10
     self.numberOfFeedbackTaps     = 5
 
     self.equalizerStepSize        = 0.01
@@ -226,7 +226,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.generateSpreadingSignal()
 
-    self.generateSymbolSignals()
+    #self.generateSymbolSignals()
 
     self.generateDataSymbols()
 
@@ -646,7 +646,7 @@ class TestsEqualizer( unittest.TestCase ):
     demodulatedSignal = []
 
     for i in range( len( signal ) ):
-      sampleValue = inphaseSamples[ i ] + quadratureSamples[ i ]
+      sampleValue = inphaseSamples[ i ] - quadratureSamples[ i ]
 
       demodulatedSignal.append( sampleValue )
 
@@ -655,7 +655,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( demodulatedSignal )
 
-  def modulateData( self, inphaseSignal, quadratureSignal ):
+  def modulateData( self, inphaseSymbol, quadratureSymbol ):
     signal = []
 
     result =  \
@@ -736,22 +736,25 @@ class TestsEqualizer( unittest.TestCase ):
     self.assertNotEquals( None, quadratureSamples )
     self.assertEquals( len( quadratureSamples ), self.symbolDuration )
 
-    inphase = \
-      python_csignal_multiply_signals( inphaseSignal, chipSamples )
+    #inphase = \
+      #python_csignal_multiply_signals( inphaseSignal, chipSamples )
 
-    self.assertNotEquals( None, inphase )
-    self.assertEquals( len( inphase ), self.symbolDuration )
+    #self.assertNotEquals( None, inphase )
+    #self.assertEquals( len( inphase ), self.symbolDuration )
 
-    quadrature =  \
-      python_csignal_multiply_signals( quadratureSignal, quadratureSamples )
+    #quadrature =  \
+      #python_csignal_multiply_signals( quadratureSignal, quadratureSamples )
 
-    self.assertNotEquals( None, quadrature )
-    self.assertEquals( len( quadrature ), self.symbolDuration )
+    #self.assertNotEquals( None, quadrature )
+    #self.assertEquals( len( quadrature ), self.symbolDuration )
 
     for i in range( self.symbolDuration ):
+      sampleValue =                                     \
+        ( inphaseSymbol * inphaseSamples[ i ] )         \
+        + ( quadratureSymbol * quadratureSamples[ i ] )
       #sampleValue = inphase[ i ] - quadrature[ i ]
       #sampleValue = inphaseSignal[ i ]
-      sampleValue = inphase[ i ]
+      #sampleValue = inphase[ i ]
 
       signal.append( sampleValue )
 
@@ -776,17 +779,14 @@ class TestsEqualizer( unittest.TestCase ):
     for i in range( self.numberOfTrainingSymbols ):
       symbol = struct.unpack( 'B', '\x00' )[ 0 ]
 
-      bit_packer_add_bits( symbol, 1, self.dataPacker )
+      bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
 
     for i in range( self.numberOfDataSymbols ):
-      symbol = random.randint( 0, 1 )
+      symbol = random.randint( 0, self.constellationSize )
 
-      if( symbol ):
-        symbol = struct.unpack( 'B', '\x01' )[ 0 ]
-      else:
-        symbol = struct.unpack( 'B', '\x00' )[ 0 ]
+      symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
 
-      bit_packer_add_bits( symbol, 1, self.dataPacker )
+      bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
 
   def generateTransmitSignal( self ):
     self.assertEquals (
@@ -813,19 +813,22 @@ class TestsEqualizer( unittest.TestCase ):
 
     for i in range( self.numberOfTrainingSymbols + self.numberOfDataSymbols ):
       ( numberOfBits, buffer ) = \
-        python_bit_stream_get_bits( self.dataStream, 1 ) 
+        python_bit_stream_get_bits( self.dataStream, self.bitsPerSymbol ) 
 
-      self.assertEquals( numberOfBits, 1 )
+      self.assertEquals( numberOfBits, self.bitsPerSymbol )
       self.assertNotEquals( buffer, None )
 
-      symbol = struct.unpack( "B", buffer )[ 0 ] >> 7 
+      symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - self.bitsPerSymbol )
 
       self.assertNotEquals( symbol, None )
 
-      inphaseSignal    = self.symbolSignals[ symbol ][ 0 ]
-      quadratureSignal = self.symbolSignals[ symbol ][ 1 ]
+      ( inphaseSymbol, quadratureSymbol ) = \
+        python_modulate_symbol( symbol, self.constellationSize )
 
-      part = self.modulateData( inphaseSignal, quadratureSignal )
+      #inphaseSignal    = self.symbolSignals[ symbol ][ 0 ]
+      #quadratureSignal = self.symbolSignals[ symbol ][ 1 ]
+
+      part = self.modulateData( inphaseSymbol, quadratureSymbol )
 
       self.assertNotEquals( part, None )
 
@@ -892,7 +895,11 @@ class TestsEqualizer( unittest.TestCase ):
 
     startTime = time.time()
 
-    nTests = len( signal ) - len( chipSamples )
+    #nTests = len( signal ) - len( chipSamples )
+    nTests = int( self.delay + ( 0.5 * len( chipSamples ) ) )
+
+    if( nTests > len( signal ) - len( chipSamples ) ):
+      nTests = len( signal ) - len( chipSamples )
 
     energy = []
 
@@ -928,16 +935,6 @@ class TestsEqualizer( unittest.TestCase ):
     return( maxIndex * self.decimationFactor )
 
   def receiveSignal( self, signal ):
-    self.assertEquals (
-      bit_stream_reset( self.carrierInphaseStream ),
-      CPC_ERROR_CODE_NO_ERROR
-                      )
-
-    self.assertEquals (
-      bit_stream_reset( self.carrierQuadratureStream ),
-      CPC_ERROR_CODE_NO_ERROR
-                      )
-
     startTime = time.time()
 
     bandpassFilteredSignal =  \
@@ -946,7 +943,7 @@ class TestsEqualizer( unittest.TestCase ):
     self.assertNotEquals( None, bandpassFilteredSignal )
     self.assertTrue( len( bandpassFilteredSignal ) > 0 )
 
-    self.outputSignal( "filtered.WAV", bandpassFilteredSignal )
+    self.outputSignal( "widebandFiltered.WAV", bandpassFilteredSignal )
 
     widebandFilterTime = time.time()
 
@@ -1043,8 +1040,96 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( filteredSignal )
 
-  def correctPhase( self, signal ):
-    self.outputSignal( "phaseCorrection.WAV", signal )
+  def determinePhaseOffset( self, signal ):
+    self.assertEquals (
+      bit_stream_reset( self.carrierInphaseStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    self.assertEquals (
+      bit_stream_reset( self.carrierQuadratureStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    for i in range( self.constellationSize ):
+      ( I, Q ) = python_modulate_symbol( i, self.constellationSize )
+
+      print "I: %.04f\tQ: %.04f" %( I, Q )
+
+    quit()
+
+    phaseOffsets = []
+
+    ( inphaseSymbol, quadratureSymbol ) =  \
+      python_modulate_symbol( 0, self.constellationSize )
+
+    result =  \
+      python_bit_stream_get_bits  (
+        self.carrierInphaseStream,
+        64 * self.symbolDuration
+                                    )
+
+    self.assertNotEquals( None, result )
+    self.assertEquals( len( result ), 2 )
+
+    ( numberOfBits, buffer ) = result
+
+    self.assertNotEquals( None, numberOfBits )
+    self.assertNotEquals( None, buffer )
+
+    self.assertEquals( numberOfBits, 64 * self.symbolDuration )
+    self.assertEquals( len( buffer ), 8 * self.symbolDuration )
+
+    inphaseCarrier =  \
+      list( struct.unpack( "d" * self.symbolDuration, buffer ) )
+
+    self.assertEquals( len( inphaseCarrier ), self.symbolDuration )
+
+    result =  \
+      python_bit_stream_get_bits  (
+        self.carrierQuadratureStream,
+        64 * self.symbolDuration
+                                  )
+
+    self.assertNotEquals( None, result )
+    self.assertEquals( len( result ), 2 )
+
+    ( numberOfBits, buffer ) = result
+
+    self.assertNotEquals( None, numberOfBits )
+    self.assertNotEquals( None, buffer )
+
+    self.assertEquals( numberOfBits, 64 * self.symbolDuration )
+    self.assertEquals( len( buffer ), 8 * self.symbolDuration )
+
+    quadratureCarrier = \
+      list( struct.unpack( "d" * self.symbolDuration, buffer ) )
+
+    self.assertEquals( len( quadratureCarrier ), self.symbolDuration )
+    self.assertEquals( len( inphaseCarrier ), len( quadratureCarrier ) )
+
+    for i in range( self.decimationFactor ):
+    #for i in range( self.chipDuration ):
+      estimate =  \
+        ( inphaseSymbol * inphaseCarrier[ i ] ) \
+        + ( quadratureSymbol * quadratureCarrier[ i ] )
+
+      phaseOffsets.append( 0.5 * estimate ) 
+
+    for i in range( 0, len( signal ), self.symbolDuration ):
+      if( len( signal ) - i < self.symbolDuration ):
+        break
+
+      symbolSignal = signal[ i : i + self.symbolDuration  ]
+
+      sum   = python_csignal_sum_signal( symbolSignal, 1 )
+      phase = sum / self.symbolDuration
+
+      for j in range( len( phaseOffsets ) ):
+        print "Difference: %.04f\tPhase: %.04f\tPhase offset: %.04f\tI-Symbol: %.04f\tI-Carrier: %.04f\tQ-Symbol: %.04f\tQ-Carrier: %.04f"  \
+          %( ( phase - phaseOffsets[ j ] ), phase, phaseOffsets[ j ], inphaseSymbol, inphaseCarrier[ j ], quadratureSymbol, quadratureCarrier[ j ] )
+
+      print
 
   def test_equalizer( self ):
     transmittedSignal = self.generateTransmitSignal()
@@ -1059,12 +1144,10 @@ class TestsEqualizer( unittest.TestCase ):
     #( filteredSignal, bandpassSignal ) = self.receiveSignal( receivedSignal )
     filteredSignal = self.receiveSignal( receivedSignal )
 
-    self.outputSignal( "filtered.WAV", filteredSignal )
-
     print "Delay from wideband filter: %d samples." %( python_filter_get_group_delay( self.widebandFilter ) )
 
     startOffset = self.findStartOffset( filteredSignal )
-    #startOffset = 296
+    #startOffset = 433
 
     if( None != startOffset ):
       print "Start offset:\t\t%d (Delay: %d)" %( startOffset, self.delay )
@@ -1074,29 +1157,60 @@ class TestsEqualizer( unittest.TestCase ):
 
       startOffset = python_filter_get_group_delay( self.narrowbandFilter )
 
+      print "Delay from narrowband filter: %d samples." %( startOffset )
+
       self.outputSignal( "despreadSignal.WAV", despreadSignal[ startOffset : ] )
       #self.outputSignal( "despreadSignal.WAV", despreadSignal )
 
-      self.determineFrequencies( despreadSignal[ startOffset : ] )
+      demodulatedSignal = self.demodulateData( despreadSignal[ startOffset : ] )
+
+      filteredSignal =  \
+        python_filter_signal( self.lowpassFilter, demodulatedSignal )
+
+      startOffset = python_filter_get_group_delay( self.lowpassFilter )
+
+      self.outputSignal( "lowpassFiltered.WAV", filteredSignal[ startOffset : ] )
+
+      self.determinePhaseOffset( filteredSignal[ startOffset : ] )
+
+      #decisions = self.determineFrequencies( demodulatedSignal )
       #self.determineFrequencies( despreadSignal )
 
       #phaseCorrectedSignal =  \
         #self.correctPhase( bandpassSignal[ startOffset : ] )
 
-      #initialCodeSequence =  \
-        #self.getInitialCodeSequence( despreadSignal )
+      #initialSymbols =  \
+        #self.getInitialSymbols()
 
-      #benchmarkNoEq = self.benchmarkCodeSequence( initialCodeSequence )
+      #print "Symbols:\t",
+      #for i in range( min( len( initialSymbols ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
+        #print "%+d " %( initialSymbols[ i ] ),
+      #print
+
+      #print "Initial:\t",
+      #for i in range( min( len( decisions ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
+        #print "%+d " %( decisions[ i ] ),
+      #print
+
+      #benchmarkNoEq = self.benchmarkDemodulation( initialSymbols, decisions )
+
+      #equalizedDecisions = self.getEqualizedSymbols( decisions )
+
+      #print "Equalized:\t",
+      #for i in range( min( len( equalizedDecisions ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
+        #print "%+d " %( equalizedDecisions[ i ] ),
+      #print
 
       #print "No equalization P_e:\t%.02f" %( 1.0 - benchmarkNoEq )
 
-      #codeSequence = self.getEqualizedCodeSequence( initialCodeSequence )
-
-      #benchmarkEq = self.benchmarkCodeSequence( codeSequence )
+      #benchmarkEq = \
+        #self.benchmarkDemodulation( initialSymbols, equalizedDecisions )
 
       #print "Equalization P_e:\t%.02f" %( 1.0 - benchmarkEq )
 
   def determineFrequencies( self, signal ):
+    decisions = []
+
     symbol0 = self.symbolSignals[ 0 ][ 0 ]
     symbol1 = self.symbolSignals[ 1 ][ 0 ]
     #symbol0 = map( lambda x, y: x - y, self.symbolSignals[ 0 ][ 0 ], self.symbolSignals[ 0 ][ 1 ] )
@@ -1122,9 +1236,12 @@ class TestsEqualizer( unittest.TestCase ):
       c_s0 = python_csignal_sum_signal( c_s0, 1 )
       c_s1 = python_csignal_sum_signal( c_s1, 1 )
 
-      print "Correlation %d: 0:%.04f\t1:%.04f\tDecision:%d" %( ( i / self.symbolDuration ), c_s0, c_s1, ( 0 if( c_s0 > c_s1 ) else 1 ) )
+      #print "Correlation %02d: 0:%+01.04f\t1:%+01.04f\tDecision:%d" %( ( i / self.symbolDuration ), c_s0, c_s1, ( 0 if( c_s0 > c_s1 ) else 1 ) )
 
     for i in range( 0, len( signal ), self.symbolDuration ):
+      if( len( signal ) - i < self.symbolDuration ):
+        break
+
       testSignal    = signal[ i : i + self.symbolDuration ] * 10
       fft           = python_calculate_FFT( testSignal )
       fftMagnitudes = map( lambda x: abs( x ), fft )
@@ -1135,10 +1252,10 @@ class TestsEqualizer( unittest.TestCase ):
       maxValue = -1
       maxIndex = 0
 
-      for i in range( 1, N / 2 ):
-        if( fftMagnitudes[ i ] > maxValue ):
-          maxValue = fftMagnitudes[ i ]
-          maxIndex = i
+      for j in range( 1, N / 2 ):
+        if( fftMagnitudes[ j ] > maxValue ):
+          maxValue = fftMagnitudes[ j ]
+          maxIndex = j
       
       #fft_mag = map( lambda x: 10**-12 if x == 0 else x, fft_mag )
       #fft_mag = map( lambda x: 10 * math.log10( x / max_value ), fft_mag )
@@ -1146,7 +1263,12 @@ class TestsEqualizer( unittest.TestCase ):
       #frequencies = []
       #magnitudes  = []
 
-      print "Index magnitudes: 21050=%03.04f\t20950=%03.04f" %( fftMagnitudes[ int( 21050.0 * delta * N ) ], fftMagnitudes[ int( 20950.0 * delta * N ) ] )
+      one  = fftMagnitudes[ int( 21050.0 * delta * N ) ]
+      zero   = fftMagnitudes[ int( 20950.0 * delta * N ) ]
+
+      #print "Index magnitudes %02d: 0=%03.04f\t1=%03.04f\tDecision:%d" %( ( i / self.symbolDuration ), zero, one, 0 if( zero > one ) else 1  )
+
+      decisions.append( -1 if( zero > one ) else 1 )
 
       #frequency = maxIndex / ( delta * N )
 
@@ -1160,33 +1282,30 @@ class TestsEqualizer( unittest.TestCase ):
 
       #self.outputDependantSequence( "symbol_%d.dat" %( int( i / self.symbolDuration ) ), frequencies, magnitudes )
 
+    return( decisions )
+
   def getTrainingSequence( self ):
     self.assertEquals (
-      bit_stream_reset( self.spreadingCodeStream ),
+      bit_stream_reset( self.dataStream ),
       CPC_ERROR_CODE_NO_ERROR
                       )
 
-    trainingSequence = []
+    symbols = []
 
-    for i in range( self.numberOfTrainingChips ):
-      result = python_bit_stream_get_bits( self.spreadingCodeStream, 8 )
+    for i in range( self.numberOfTrainingSymbols ):
+      ( numberOfBits, buffer ) = \
+        python_bit_stream_get_bits( self.dataStream, 1 ) 
 
-      self.assertNotEquals( None, result )
-      self.assertEquals( len( result ), 2 )
+      self.assertEquals( numberOfBits, 1 )
+      self.assertNotEquals( buffer, None )
 
-      ( numberOfBits, buffer ) = result
+      symbol = struct.unpack( "B", buffer )[ 0 ] >> 7 
 
-      self.assertNotEquals( None, numberOfBits )
-      self.assertNotEquals( None, buffer )
+      self.assertNotEquals( symbol, None )
 
-      self.assertEquals( numberOfBits, 8 )
-      self.assertEquals( len( buffer ), 1 )
+      symbols.append( 1 if( symbol ) else -1 )
 
-      chipValue = struct.unpack( "b", buffer )[ 0 ]     
-
-      trainingSequence.append( chipValue )
-
-    return( trainingSequence )
+    return( symbols )
 
   def initializeEqualizer( self ):
     feedforwardWeights  = \
@@ -1345,7 +1464,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     symbolEstimate = feedforwardValue - feedbackValue
 
-    decision = 1.0 if( symbolEstimate >= 0 ) else -1.0
+    decision = 1.0 if( symbolEstimate >= 0.0 ) else -1.0
 
     error = 0.0
 
@@ -1356,7 +1475,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( int( decision ), error )
 
-  def getEqualizedCodeSequence( self, initialCodeSequence ):
+  def getEqualizedSymbols( self, initialDecisions ):
     trainingSymbol    = None
     trainingSequence  = self.getTrainingSequence()
 
@@ -1368,11 +1487,11 @@ class TestsEqualizer( unittest.TestCase ):
 
     codeSequence = []
 
-    for i in range( len( initialCodeSequence ) ):
+    for i in range( len( initialDecisions ) ):
       self.equalizerAddAndIncrement (
         feedforwardBufferPacker,
         feedforwardBufferStream,
-        initialCodeSequence[ i ]
+        initialDecisions[ i ]
                                     ) 
       feedforwardValues =  \
         self.equalizerGetTapValues  (
@@ -1397,13 +1516,13 @@ class TestsEqualizer( unittest.TestCase ):
             feedforwardWeights, feedforwardValues,
             feedbackWeights, feedbackValues,
             trainingSymbol
-                                      )
+                                        )
 
         #print "Before:"
-        #print "Feedforward weights:", feedforwardWeights
-        #print "Feedforward values:", feedforwardValues
-        #print "Feedback weights:", feedbackWeights
-        #print "Feedback values:", feedbackValues
+        #print "Feedforward weights:\t", feedforwardWeights
+        #print "Feedforward values:\t", [ value * 1.0 for value in feedforwardValues ]
+        #print "Feedback weights:\t", feedbackWeights
+        #print "Feedback values:\t", [ value * 1.0 for value in feedbackValues ]
 
         ( feedforwardWeights, feedbackWeights ) = \
           self.equalizerUpdateWeights (
@@ -1412,10 +1531,10 @@ class TestsEqualizer( unittest.TestCase ):
                                       )
 
         #print "After (Error = %.04f):" %( error )
-        #print "Feedforward weights:", feedforwardWeights
-        #print "Feedforward values:", feedforwardValues
-        #print "Feedback weights:", feedbackWeights
-        #print "Feedback values:", feedbackValues
+        #print "Feedforward weights:\t", feedforwardWeights
+        #print "Feedforward values:\t", feedforwardValues
+        #print "Feedback weights:\t", feedbackWeights
+        #print "Feedback values:\t", feedbackValues
 
       codeSequence.append( symbol )
 
@@ -1424,8 +1543,6 @@ class TestsEqualizer( unittest.TestCase ):
         feedbackBufferStream,
         symbol
                                     )
-
-    print "Calculated:", codeSequence
 
     self.destroyEqualizer ( 
       feedforwardBufferPacker, feedforwardBufferStream,
@@ -1455,57 +1572,39 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( feedforwardWeights, feedbackWeights )
 
-  def getInitialCodeSequence( self, signal ):
-    codeSequence = []
-
-    self.outputSignal( "equalize.WAV", signal )
-
-    for i in range( 0, len( signal ), self.chipDuration ):
-      binaryPAMSymbol = \
-        python_csignal_demodulate_binary_PAM  (
-          signal[ i : i + self.chipDuration ]
-                                              )
-
-      self.assertNotEquals( None, binaryPAMSymbol )
-      self.assertEquals( abs( binaryPAMSymbol ), 1 )
-
-      codeSequence.append( binaryPAMSymbol )
-
-    return( codeSequence )
-
-  def benchmarkCodeSequence( self, codeSequence ):
+  def getInitialSymbols( self ):
     self.assertEquals (
-      bit_stream_reset( self.spreadingCodeStream ),
+      bit_stream_reset( self.dataStream ),
       CPC_ERROR_CODE_NO_ERROR
                       )
 
-    hitCount        = 0
-    desiredSequence = []
+    symbols = []
 
-    for i in range( len( codeSequence ) ):
-      result = python_bit_stream_get_bits( self.spreadingCodeStream, 8 )
+    for i in range( self.numberOfTrainingSymbols + self.numberOfDataSymbols ):
+      ( numberOfBits, buffer ) = \
+        python_bit_stream_get_bits( self.dataStream, 1 ) 
 
-      self.assertNotEquals( None, result )
-      self.assertEquals( len( result ), 2 )
+      self.assertEquals( numberOfBits, 1 )
+      self.assertNotEquals( buffer, None )
 
-      ( numberOfBits, buffer ) = result
+      symbol = struct.unpack( "B", buffer )[ 0 ] >> 7 
 
-      self.assertNotEquals( None, numberOfBits )
-      self.assertNotEquals( None, buffer )
+      self.assertNotEquals( symbol, None )
 
-      self.assertEquals( numberOfBits, 8 )
-      self.assertEquals( len( buffer ), 1 )
+      symbols.append( 1 if( symbol ) else -1 )
 
-      chipValue = struct.unpack( "b", buffer )[ 0 ]     
+    return( symbols )
 
-      desiredSequence.append( chipValue )
+  def benchmarkDemodulation( self, initialSymbols, demodulatedSymbols ):
+    nTests = min( len( initialSymbols ), len( demodulatedSymbols ) )
 
-      if( chipValue == codeSequence[ i ] ):
-        hitCount += 1
+    hitCount = 0.0
 
-    print "Expected:", desiredSequence
+    for i in range( nTests ):
+      if( initialSymbols[ i ] == demodulatedSymbols[ i ] ):
+        hitCount += 1.0
 
-    hitRate = ( hitCount + 1.0 ) / ( len( codeSequence ) * 1.0 )
+    hitRate = hitCount / ( len( initialSymbols ) * 1.0 )
 
     return( hitRate )
 
