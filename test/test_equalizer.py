@@ -1,5 +1,6 @@
 from csignal_tests import *
 
+import sys
 import time
 import os
 import math
@@ -83,7 +84,7 @@ class TestsEqualizer( unittest.TestCase ):
                       )
 
   def setUp( self ):
-    self.bitsPerSymbol     = 3
+    self.bitsPerSymbol     = 1
     self.constellationSize = 2 ** self.bitsPerSymbol
     self.sampleRate        = 48000
     self.bitDepth          = 16
@@ -106,7 +107,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.threshold         = 2.2 * 10 ** 11
     #self.SNR               = -10 
 
-    self.SNR               = 20
+    self.SNR               = 0
 
     self.widebandStopbandGap    = 1000
     self.narrowbandStopbandGap  = 2000
@@ -188,9 +189,9 @@ class TestsEqualizer( unittest.TestCase ):
         self.sampleRate
                                               )
 
-    self.delay = 2
-    #self.delay                  = \
-      #random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
+    #self.delay = 0
+    self.delay                  = \
+      random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
     #self.initialChannelImpulseResponse = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
     self.initialChannelImpulseResponse = [ 1.0 ]
     self.channelImpulseResponse = \
@@ -575,7 +576,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( signal )
 
-  def demodulateData( self, signal ):
+  def demodulateData( self, signal, phaseOffset ):
     self.assertEquals (
       bit_stream_reset( self.carrierInphaseStream ),
       CPC_ERROR_CODE_NO_ERROR
@@ -585,6 +586,17 @@ class TestsEqualizer( unittest.TestCase ):
       bit_stream_reset( self.carrierQuadratureStream ),
       CPC_ERROR_CODE_NO_ERROR
                       )
+
+    inphaseOffset     = math.cos( phaseOffset )
+    quadratureOffset  = math.sin( phaseOffset )
+
+    amplitude = 0
+
+    for sampleValue in signal:
+      if( abs( sampleValue ) > amplitude ):
+        amplitude = abs( sampleValue )
+
+    signal = map( lambda x: x / amplitude, signal )
 
     result =  \
       python_bit_stream_get_bits  (
@@ -646,7 +658,9 @@ class TestsEqualizer( unittest.TestCase ):
     demodulatedSignal = []
 
     for i in range( len( signal ) ):
-      sampleValue = inphaseSamples[ i ] - quadratureSamples[ i ]
+      sampleValue = \
+        inphaseOffset * inphaseSamples[ i ] \
+        - quadratureOffset * quadratureSamples[ i ]
 
       demodulatedSignal.append( sampleValue )
 
@@ -777,13 +791,13 @@ class TestsEqualizer( unittest.TestCase ):
     self.assertNotEquals( None, self.dataStream )
 
     for i in range( self.numberOfTrainingSymbols ):
-      symbol = struct.unpack( 'B', '\x00' )[ 0 ]
+      symbol = i % self.constellationSize
+      symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
 
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
 
     for i in range( self.numberOfDataSymbols ):
       symbol = random.randint( 0, self.constellationSize )
-
       symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
 
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
@@ -1040,96 +1054,100 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( filteredSignal )
 
+  def findOffset( self, inphaseSymbol, quadratureSymbol, signal ):
+    sum     = python_csignal_sum_signal( signal, 1 )
+    symbol  = sum / self.symbolDuration
+
+    print "Symbol: %.04f" %( symbol )
+    print "I-Symbol: %.04f\tQ-Symbol: %.04f" %( inphaseSymbol, quadratureSymbol )
+
+    previousDiff = 0
+    offsetPhase  = 0
+
+    nTests = 1000
+
+    for i in range( nTests + 1 ):
+      angle = i * ( 180.0 / nTests );
+      phase = ( 2.0 * math.pi * angle ) / 360.0
+
+      estimate =  \
+        0.5 *   \
+        ( ( inphaseSymbol * math.cos( phase ) ) \
+        - ( quadratureSymbol * math.sin( phase ) ) )
+
+
+      diff = symbol - estimate
+
+      if( diff * previousDiff < 0 ):
+        offsetPhase = phase
+
+        break
+
+      previousDiff = diff
+
+      #diffs.append( symbol - ( 0.5 * estimate ) )
+      #diffs.append( symbol - estimate )
+
+      #print "Diff: %.04f\tSymbol: %.04f\tPhase: %.04f\tPhase offset: %.04f\tI-Symbol: %.04f\tI-Phase: %.04f\tQ-Symbol: %.04f\tQ-Phase: %.04f"  \
+        #%( ( symbol - estimate ), symbol, phase, estimate, inphaseSymbol, math.cos( phase ), quadratureSymbol, math.sin( phase ) )
+
+    #crossingIndices = self.findZeroCrossings( diffs )
+
+    return( offsetPhase )
+    
   def determinePhaseOffset( self, signal ):
     self.assertEquals (
-      bit_stream_reset( self.carrierInphaseStream ),
+      bit_stream_reset( self.dataStream ),
       CPC_ERROR_CODE_NO_ERROR
                       )
 
-    self.assertEquals (
-      bit_stream_reset( self.carrierQuadratureStream ),
-      CPC_ERROR_CODE_NO_ERROR
-                      )
-
-    for i in range( self.constellationSize ):
-      ( I, Q ) = python_modulate_symbol( i, self.constellationSize )
-
-      print "I: %.04f\tQ: %.04f" %( I, Q )
-
-    quit()
-
-    phaseOffsets = []
-
-    ( inphaseSymbol, quadratureSymbol ) =  \
-      python_modulate_symbol( 0, self.constellationSize )
-
-    result =  \
-      python_bit_stream_get_bits  (
-        self.carrierInphaseStream,
-        64 * self.symbolDuration
-                                    )
-
-    self.assertNotEquals( None, result )
-    self.assertEquals( len( result ), 2 )
-
-    ( numberOfBits, buffer ) = result
-
-    self.assertNotEquals( None, numberOfBits )
-    self.assertNotEquals( None, buffer )
-
-    self.assertEquals( numberOfBits, 64 * self.symbolDuration )
-    self.assertEquals( len( buffer ), 8 * self.symbolDuration )
-
-    inphaseCarrier =  \
-      list( struct.unpack( "d" * self.symbolDuration, buffer ) )
-
-    self.assertEquals( len( inphaseCarrier ), self.symbolDuration )
-
-    result =  \
-      python_bit_stream_get_bits  (
-        self.carrierQuadratureStream,
-        64 * self.symbolDuration
-                                  )
-
-    self.assertNotEquals( None, result )
-    self.assertEquals( len( result ), 2 )
-
-    ( numberOfBits, buffer ) = result
-
-    self.assertNotEquals( None, numberOfBits )
-    self.assertNotEquals( None, buffer )
-
-    self.assertEquals( numberOfBits, 64 * self.symbolDuration )
-    self.assertEquals( len( buffer ), 8 * self.symbolDuration )
-
-    quadratureCarrier = \
-      list( struct.unpack( "d" * self.symbolDuration, buffer ) )
-
-    self.assertEquals( len( quadratureCarrier ), self.symbolDuration )
-    self.assertEquals( len( inphaseCarrier ), len( quadratureCarrier ) )
-
-    for i in range( self.decimationFactor ):
-    #for i in range( self.chipDuration ):
-      estimate =  \
-        ( inphaseSymbol * inphaseCarrier[ i ] ) \
-        + ( quadratureSymbol * quadratureCarrier[ i ] )
-
-      phaseOffsets.append( 0.5 * estimate ) 
+    symbolCount = 0
+    offsetSum   = 0
 
     for i in range( 0, len( signal ), self.symbolDuration ):
       if( len( signal ) - i < self.symbolDuration ):
         break
+      if( symbolCount >= self.numberOfTrainingSymbols ):
+        break
+
+      symbolCount += 1 
+
+      ( numberOfBits, buffer ) = \
+        python_bit_stream_get_bits( self.dataStream, self.bitsPerSymbol ) 
+
+      self.assertEquals( numberOfBits, self.bitsPerSymbol )
+      self.assertNotEquals( buffer, None )
+
+      symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - self.bitsPerSymbol )
+
+      self.assertNotEquals( symbol, None )
+
+      ( inphaseSymbol, quadratureSymbol ) = \
+        python_modulate_symbol( symbol, self.constellationSize )
 
       symbolSignal = signal[ i : i + self.symbolDuration  ]
 
-      sum   = python_csignal_sum_signal( symbolSignal, 1 )
-      phase = sum / self.symbolDuration
+      offset = self.findOffset( inphaseSymbol, quadratureSymbol, symbolSignal )
 
-      for j in range( len( phaseOffsets ) ):
-        print "Difference: %.04f\tPhase: %.04f\tPhase offset: %.04f\tI-Symbol: %.04f\tI-Carrier: %.04f\tQ-Symbol: %.04f\tQ-Carrier: %.04f"  \
-          %( ( phase - phaseOffsets[ j ] ), phase, phaseOffsets[ j ], inphaseSymbol, inphaseCarrier[ j ], quadratureSymbol, quadratureCarrier[ j ] )
+      print "Offset: %.04f" %( offset )
 
-      print
+      offsetSum += offset
+
+    print "Estimated offset: %.04f" %( offsetSum / self.numberOfTrainingSymbols )
+
+    return( offsetSum / self.numberOfTrainingSymbols )
+
+  def findZeroCrossings( self, values ):
+    previousValue   = None
+    crossingPoints  = []
+
+    for i in range( len( values ) ):
+      if( None != previousValue and previousValue * values[ i ] <= 0 ):
+        crossingPoints.append( ( i + ( i - 1 ) ) / 2 )
+
+      previousValue = values[ i ]
+
+    return( crossingPoints )
 
   def test_equalizer( self ):
     transmittedSignal = self.generateTransmitSignal()
@@ -1148,6 +1166,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     startOffset = self.findStartOffset( filteredSignal )
     #startOffset = 433
+    #startOffset = 0
 
     if( None != startOffset ):
       print "Start offset:\t\t%d (Delay: %d)" %( startOffset, self.delay )
@@ -1155,26 +1174,39 @@ class TestsEqualizer( unittest.TestCase ):
       despreadSignal = self.despreadSignal( filteredSignal[ startOffset : ] )
       #despreadSignal = self.despreadSignal( receivedSignal[ startOffset : ] )
 
-      startOffset = python_filter_get_group_delay( self.narrowbandFilter )
+      despreadOffset = python_filter_get_group_delay( self.narrowbandFilter )
 
-      print "Delay from narrowband filter: %d samples." %( startOffset )
+      print "Delay from narrowband filter: %d samples." %( despreadOffset )
 
-      self.outputSignal( "despreadSignal.WAV", despreadSignal[ startOffset : ] )
+      self.outputSignal( "despreadSignal.WAV", despreadSignal[ despreadOffset : ] )
       #self.outputSignal( "despreadSignal.WAV", despreadSignal )
 
-      demodulatedSignal = self.demodulateData( despreadSignal[ startOffset : ] )
+      demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], 0 )
 
       filteredSignal =  \
         python_filter_signal( self.lowpassFilter, demodulatedSignal )
 
       startOffset = python_filter_get_group_delay( self.lowpassFilter )
 
+      print max( filteredSignal[ startOffset : ] )
+      print min( filteredSignal[ startOffset : ] )
+
       self.outputSignal( "lowpassFiltered.WAV", filteredSignal[ startOffset : ] )
 
-      self.determinePhaseOffset( filteredSignal[ startOffset : ] )
+      phaseOffset = self.determinePhaseOffset( filteredSignal[ startOffset : ] )
 
-      #decisions = self.determineFrequencies( demodulatedSignal )
+      demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], phaseOffset )
+
+      filteredSignal = \
+        python_filter_signal( self.lowpassFilter, demodulatedSignal )
+
+      self.outputSignal( "correctedLowpassFiltered.WAV", filteredSignal[ startOffset : ] )
+
+      ( values, decisions ) = self.determineSymbols( filteredSignal[ startOffset : ] )
       #self.determineFrequencies( despreadSignal )
+
+      print "Values: ", values
+      print "Decisions: ", decisions
 
       #phaseCorrectedSignal =  \
         #self.correctPhase( bandpassSignal[ startOffset : ] )
@@ -1207,6 +1239,35 @@ class TestsEqualizer( unittest.TestCase ):
         #self.benchmarkDemodulation( initialSymbols, equalizedDecisions )
 
       #print "Equalization P_e:\t%.02f" %( 1.0 - benchmarkEq )
+
+  def determineSymbols( self, signal ):
+    rawValues           = []
+    demodulatedSymbols  = []
+
+    for i in range( 0, len( signal ), self.symbolDuration ):
+      if( len( signal ) - i < self.symbolDuration ):
+        break
+
+      sum     = \
+        python_csignal_sum_signal( signal[ i : i + self.symbolDuration ], 1 )
+      symbol  = sum / self.symbolDuration
+
+      rawValues.append( symbol )
+
+      distance          = sys.maxint
+      demodulatedSymbol = -1
+
+      for i in range( self.constellationSize ):
+        ( inphaseValue, quadratureValue ) = \
+          python_modulate_symbol( i, self.constellationSize )
+
+        if( abs( inphaseValue - symbol ) < distance ):
+          demodulatedSymbol = i
+          distance          = abs( inphaseValue - symbol )
+         
+      demodulatedSymbols.append( demodulatedSymbol )
+
+    return( rawValues, demodulatedSymbols )
 
   def determineFrequencies( self, signal ):
     decisions = []

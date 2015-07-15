@@ -199,13 +199,14 @@ csignal_modulate_symbol (
   {
     UINT32 gray_code_symbol = csignal_gray_code_encode( in_symbol );
     FLOAT64 phase           =
-      ( ( 2.0 * gray_code_symbol ) - 1.0 ) / ( 2.0 * in_constellation_size );
+      ( 1.0 * gray_code_symbol ) / ( 1.0 * in_constellation_size );
     
     CPC_LOG (
              CPC_LOG_LEVEL_TRACE,
-             "Encoded symbol 0x%x as 0x%x.",
+             "Encoded symbol 0x%x as 0x%x. Phase is %.2f",
              in_symbol,
-             gray_code_symbol
+             gray_code_symbol,
+             phase
              );
     
     *out_symbol_inphase     = cos( 2.0 * M_PI * phase );
