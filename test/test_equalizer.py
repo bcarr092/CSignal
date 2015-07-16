@@ -3,6 +3,7 @@ from csignal_tests import *
 import sys
 import time
 import os
+import cmath
 import math
 import unittest
 import random
@@ -212,11 +213,11 @@ class TestsEqualizer( unittest.TestCase ):
     self.spreadingSignalPacker  = None
     self.spreadingSignalStream  = None
 
-    self.numberOfFeedforwardTaps  = 10
-    self.numberOfFeedbackTaps     = 5
+    self.numberOfFeedforwardTaps  = 2
+    self.numberOfFeedbackTaps     = 1
 
-    self.equalizerStepSize        = 0.01
-    self.equalizerIterations      = 100
+    self.equalizerStepSize        = 0.001
+    self.equalizerIterations      = 1000
 
     self.dataPacker = None
     self.dataStream = None
@@ -660,7 +661,7 @@ class TestsEqualizer( unittest.TestCase ):
     for i in range( len( signal ) ):
       sampleValue = \
         inphaseOffset * inphaseSamples[ i ] \
-        - quadratureOffset * quadratureSamples[ i ]
+        + quadratureOffset * quadratureSamples[ i ]
 
       demodulatedSignal.append( sampleValue )
 
@@ -765,7 +766,7 @@ class TestsEqualizer( unittest.TestCase ):
     for i in range( self.symbolDuration ):
       sampleValue =                                     \
         ( inphaseSymbol * inphaseSamples[ i ] )         \
-        + ( quadratureSymbol * quadratureSamples[ i ] )
+        - ( quadratureSymbol * quadratureSamples[ i ] )
       #sampleValue = inphase[ i ] - quadrature[ i ]
       #sampleValue = inphaseSignal[ i ]
       #sampleValue = inphase[ i ]
@@ -949,6 +950,12 @@ class TestsEqualizer( unittest.TestCase ):
     return( maxIndex * self.decimationFactor )
 
   def receiveSignal( self, signal ):
+    attenuationFactor = random.uniform( 0, 1 )
+
+    print "Attenuation factor: %.04f" %( attenuationFactor )
+
+    signal = map( lambda x: x * attenuationFactor, signal )
+
     startTime = time.time()
 
     bandpassFilteredSignal =  \
@@ -1149,6 +1156,43 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( crossingPoints )
 
+  def scoreMatch( self, values, symbols ):
+    self.assertEquals (
+      bit_stream_reset( self.dataStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    symbolCount = 0
+    offsetSum   = 0
+
+    expectedValues  = []
+    expectedSymbols = []
+
+    for i in range( self.numberOfTrainingSymbols ): 
+      ( numberOfBits, buffer ) = \
+        python_bit_stream_get_bits( self.dataStream, self.bitsPerSymbol ) 
+
+      self.assertEquals( numberOfBits, self.bitsPerSymbol )
+      self.assertNotEquals( buffer, None )
+
+      symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - self.bitsPerSymbol )
+
+      self.assertNotEquals( symbol, None )
+
+      ( inphaseSymbol, quadratureSymbol ) = \
+        python_modulate_symbol( symbol, self.constellationSize )
+
+      expectedValues.append( 0.5 * ( inphaseSymbol + quadratureSymbol ) )
+      expectedSymbols.append( symbol )
+
+    valueDistance = map( lambda x, y: ( x - y ) ** 2, values[ 0 : self.numberOfTrainingSymbols ], expectedValues )
+    symbolDistance = map( lambda x, y : ( x - y ) ** 2, symbols[ 0 : self.numberOfTrainingSymbols ], expectedSymbols )
+
+    valueScore = math.sqrt( sum( valueDistance ) )
+    symbolScore = math.sqrt( sum( symbolDistance ) )
+
+    return( valueScore, symbolScore )
+
   def test_equalizer( self ):
     transmittedSignal = self.generateTransmitSignal()
 
@@ -1172,73 +1216,98 @@ class TestsEqualizer( unittest.TestCase ):
       print "Start offset:\t\t%d (Delay: %d)" %( startOffset, self.delay )
 
       despreadSignal = self.despreadSignal( filteredSignal[ startOffset : ] )
-      #despreadSignal = self.despreadSignal( receivedSignal[ startOffset : ] )
 
       despreadOffset = python_filter_get_group_delay( self.narrowbandFilter )
 
       print "Delay from narrowband filter: %d samples." %( despreadOffset )
 
       self.outputSignal( "despreadSignal.WAV", despreadSignal[ despreadOffset : ] )
-      #self.outputSignal( "despreadSignal.WAV", despreadSignal )
 
-      demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], 0 )
+      #demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], 0 )
 
-      filteredSignal =  \
-        python_filter_signal( self.lowpassFilter, demodulatedSignal )
+      bestScore = sys.maxint
+      delayGuess = -1
 
-      startOffset = python_filter_get_group_delay( self.lowpassFilter )
+      for i in range( self.decimationFactor ):
+        phaseOffset = \
+          2.0 * math.pi * self.carrierFrequency * ( ( 1.0 * i ) / self.sampleRate )
 
-      print max( filteredSignal[ startOffset : ] )
-      print min( filteredSignal[ startOffset : ] )
+        demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], phaseOffset )
+  
+        lowpassSignal =  \
+          python_filter_signal( self.lowpassFilter, demodulatedSignal )
 
-      self.outputSignal( "lowpassFiltered.WAV", filteredSignal[ startOffset : ] )
+        filterOffset = python_filter_get_group_delay( self.lowpassFilter )
 
-      phaseOffset = self.determinePhaseOffset( filteredSignal[ startOffset : ] )
+        self.outputSignal( "lowpassFiltered_phase_%d_%.04f.WAV" %( i, phaseOffset ), lowpassSignal[ filterOffset : ] )
+
+        ( values, decisions ) = self.determineSymbols( lowpassSignal[ filterOffset : ] )
+
+        print "Delay: %d" %( i )
+        print "Values: ", values
+        print "Decisions: ", decisions
+
+        ( valueScore, decisionScore ) = self.scoreMatch( values, decisions )
+
+        print "Value score: %.04f" %( valueScore )
+        print "Decision score: %.04f" %( decisionScore )
+
+        score = map( lambda x, y: ( x - y ) ** 2, [ 0, 0 ], [ valueScore, decisionScore ] )
+        score = math.sqrt( sum( score ) )
+
+        if( score < bestScore ):
+          bestScore = score
+          delayGuess = i
+
+      phaseOffset = \
+          2.0 * math.pi * self.carrierFrequency * ( ( 1.0 * delayGuess ) / self.sampleRate )
+
+      print "Delay: %d\tScore: %.04f\tPhase: %.04f" %( delayGuess, bestScore, phaseOffset )
 
       demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], phaseOffset )
 
       filteredSignal = \
         python_filter_signal( self.lowpassFilter, demodulatedSignal )
 
-      self.outputSignal( "correctedLowpassFiltered.WAV", filteredSignal[ startOffset : ] )
+      filterOffset = python_filter_get_group_delay( self.lowpassFilter )
 
-      ( values, decisions ) = self.determineSymbols( filteredSignal[ startOffset : ] )
-      #self.determineFrequencies( despreadSignal )
+      self.outputSignal( "correctedLowpassFiltered.WAV", filteredSignal[ filterOffset : ] )
 
-      print "Values: ", values
-      print "Decisions: ", decisions
+      ( values, decisions ) = self.determineSymbols( filteredSignal[ filterOffset : ] )
 
-      #phaseCorrectedSignal =  \
-        #self.correctPhase( bandpassSignal[ startOffset : ] )
+      print "Final values: ", values
+      print "Final decisions: ", decisions
 
-      #initialSymbols =  \
-        #self.getInitialSymbols()
+      initialSymbols =  \
+        self.getInitialSymbols()
 
-      #print "Symbols:\t",
-      #for i in range( min( len( initialSymbols ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
-        #print "%+d " %( initialSymbols[ i ] ),
-      #print
+      print "Symbols:\t",
+      for i in range( min( len( initialSymbols ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
+        print "%+d " %( initialSymbols[ i ] ),
+      print
 
-      #print "Initial:\t",
-      #for i in range( min( len( decisions ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
-        #print "%+d " %( decisions[ i ] ),
-      #print
+      decisions = map( lambda x: x if( x ) else -1, decisions )
 
-      #benchmarkNoEq = self.benchmarkDemodulation( initialSymbols, decisions )
+      print "Initial:\t",
+      for i in range( min( len( decisions ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
+        print "%+d " %( decisions[ i ] ),
+      print
 
-      #equalizedDecisions = self.getEqualizedSymbols( decisions )
+      benchmarkNoEq = self.benchmarkDemodulation( initialSymbols, decisions )
 
-      #print "Equalized:\t",
-      #for i in range( min( len( equalizedDecisions ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
-        #print "%+d " %( equalizedDecisions[ i ] ),
-      #print
+      equalizedDecisions = self.getEqualizedSymbols( values )
 
-      #print "No equalization P_e:\t%.02f" %( 1.0 - benchmarkNoEq )
+      print "Equalized:\t",
+      for i in range( min( len( equalizedDecisions ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
+        print "%+d " %( equalizedDecisions[ i ] ),
+      print
 
-      #benchmarkEq = \
-        #self.benchmarkDemodulation( initialSymbols, equalizedDecisions )
+      print "No equalization P_e:\t%.02f" %( 1.0 - benchmarkNoEq )
 
-      #print "Equalization P_e:\t%.02f" %( 1.0 - benchmarkEq )
+      benchmarkEq = \
+        self.benchmarkDemodulation( initialSymbols, equalizedDecisions )
+
+      print "Equalization P_e:\t%.02f" %( 1.0 - benchmarkEq )
 
   def determineSymbols( self, signal ):
     rawValues           = []
@@ -1355,24 +1424,27 @@ class TestsEqualizer( unittest.TestCase ):
 
     for i in range( self.numberOfTrainingSymbols ):
       ( numberOfBits, buffer ) = \
-        python_bit_stream_get_bits( self.dataStream, 1 ) 
+        python_bit_stream_get_bits( self.dataStream, self.bitsPerSymbol ) 
 
       self.assertEquals( numberOfBits, 1 )
       self.assertNotEquals( buffer, None )
 
-      symbol = struct.unpack( "B", buffer )[ 0 ] >> 7 
+      symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - self.bitsPerSymbol )
 
       self.assertNotEquals( symbol, None )
 
-      symbols.append( 1 if( symbol ) else -1 )
+      ( inphaseSymbol, quadratureSymbol ) = \
+        python_modulate_symbol( symbol, self.constellationSize )
+
+      symbols.append( complex( inphaseSymbol, quadratureSymbol ) )
 
     return( symbols )
 
   def initializeEqualizer( self ):
     feedforwardWeights  = \
-      [ 0.0 for i in range( self.numberOfFeedforwardTaps ) ]
+      [ complex( 1.0, 0.0 ) for i in range( self.numberOfFeedforwardTaps ) ]
     feedbackWeights     = \
-      [ 0.0 for i in range(  self.numberOfFeedbackTaps ) ]
+      [ complex( 1.0, 0.0 ) for i in range(  self.numberOfFeedbackTaps ) ]
 
     feedforwardBufferPacker = python_bit_packer_initialize()
 
@@ -1389,7 +1461,7 @@ class TestsEqualizer( unittest.TestCase ):
     for i in range( self.numberOfFeedforwardTaps ):
       self.assertEquals (
         python_bit_packer_add_bytes (
-          struct.pack( "i", 0 ),
+          struct.pack( "d", 0.0 ),
           feedforwardBufferPacker
                                     ),
         CPC_ERROR_CODE_NO_ERROR
@@ -1410,7 +1482,7 @@ class TestsEqualizer( unittest.TestCase ):
     for i in range( self.numberOfFeedbackTaps ):
       self.assertEquals (
         python_bit_packer_add_bytes (
-          struct.pack( "i", 0 ),
+          struct.pack( "d", 0.0 ),
           feedbackBufferPacker
                                     ),
         CPC_ERROR_CODE_NO_ERROR
@@ -1450,13 +1522,13 @@ class TestsEqualizer( unittest.TestCase ):
   def equalizerAddAndIncrement( self, packer, stream, value ):
     self.assertEquals (
         python_bit_packer_add_bytes (
-          struct.pack( "i", value ),
+          struct.pack( "d", value ),
           packer
                                     ),
         CPC_ERROR_CODE_NO_ERROR
                         )
 
-    result = python_bit_stream_get_bits( stream, 32 )
+    result = python_bit_stream_get_bits( stream, 64 )
 
     self.assertNotEquals( None, result )
     self.assertEquals( len( result ), 2 )
@@ -1466,10 +1538,10 @@ class TestsEqualizer( unittest.TestCase ):
     self.assertNotEquals( None, numberOfBits )
     self.assertNotEquals( None, buffer )
 
-    self.assertEquals( numberOfBits, 32 )
-    self.assertEquals( len( buffer ), 4 )
+    self.assertEquals( numberOfBits, 64 )
+    self.assertEquals( len( buffer ), 8 )
 
-    value = struct.unpack( "i", buffer )[ 0 ]
+    value = struct.unpack( "d", buffer )[ 0 ]
 
     return( value )
 
@@ -1485,9 +1557,9 @@ class TestsEqualizer( unittest.TestCase ):
     self.assertNotEquals( None, writePointer )
     self.assertNotEquals( None, buffer )
 
-    self.assertEquals( len( buffer ), 4 * numberOfTaps )
+    self.assertEquals( len( buffer ), 8 * numberOfTaps )
 
-    values = list( struct.unpack( "i" * numberOfTaps, buffer ) )
+    values = list( struct.unpack( "d" * numberOfTaps, buffer ) )
 
     self.assertNotEquals( None, values )
     self.assertEquals( len( values ), numberOfTaps )
@@ -1498,8 +1570,8 @@ class TestsEqualizer( unittest.TestCase ):
     self, feedforwardWeights, feedforwardValues, feedbackWeights,
     feedbackValues, expectedSymbol
                                 ):
-    feedforwardValue  = 0.0
-    feedbackValue     = 0.0
+    feedforwardValue  = complex( 0.0, 0.0 )
+    feedbackValue     = complex( 0.0, 0.0 )
 
     self.assertEquals (
       len( feedforwardWeights ),
@@ -1516,29 +1588,55 @@ class TestsEqualizer( unittest.TestCase ):
     for i in range( self.numberOfFeedforwardTaps ):
       feedforwardValue =  \
         feedforwardValue  \
-        + ( feedforwardWeights[ i ] * ( feedforwardValues[ i ] * 1.0 ) )
+        + ( feedforwardWeights[ i ] * feedforwardValues[ i ] )
 
     for i in range( self.numberOfFeedbackTaps ):
       feedbackValue = \
         feedbackValue \
-        + ( feedbackWeights[ i ] * ( feedbackValues[ i ] * 1.0 ) )
+        + ( feedbackWeights[ i ] * feedbackValues[ i ] )
 
-    symbolEstimate = feedforwardValue - feedbackValue
+    valueEstimate = feedforwardValue - feedbackValue
 
-    decision = 1.0 if( symbolEstimate >= 0.0 ) else -1.0
+    print "FeedforwardValue: (%+.04e, %+.04ej)" %( feedforwardValue.real, feedforwardValue.imag )
+    print "FeedbackValue: %+.04e, %+.04ej)" %( feedbackValue.real, feedbackValue.imag )
+    print "Estimate: (%+.04e, %+.04ej)" %( valueEstimate.real, valueEstimate.imag )
 
-    error = 0.0
+    bestSymbol    = -1
+    minDistance   = sys.maxint
+    minDifference = None
+
+    for i in range( self.constellationSize ):
+      ( inphaseSymbol, quadratureSymbol ) = \
+        python_modulate_symbol( i, self.constellationSize )
+
+      symbolValue = complex( inphaseSymbol, quadratureSymbol )
+
+      difference = symbolValue - valueEstimate
+      distance = math.sqrt( difference.real ** 2 + difference.imag ** 2 )
+
+      if( distance < minDistance ):
+        minDifference = difference
+        minDistance = distance
+        bestSymbol = i
+
+    decision  = 1.0 if( bestSymbol ) else -1.0
+    error     = None
 
     if( None == expectedSymbol ):
-      error = decision - symbolEstimate
+      error = minDifference
     else:
-      error = expectedSymbol - symbolEstimate
+      error = expectedSymbol - valueEstimate
 
     return( int( decision ), error )
 
-  def getEqualizedSymbols( self, initialDecisions ):
+  def getEqualizedSymbols( self, initialValues ):
     trainingSymbol    = None
     trainingSequence  = self.getTrainingSequence()
+
+    print "Training sequence: ",
+    for value in trainingSequence:
+      print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+    print
 
     (
       feedforwardBufferPacker, feedforwardBufferStream,
@@ -1548,11 +1646,14 @@ class TestsEqualizer( unittest.TestCase ):
 
     codeSequence = []
 
-    for i in range( len( initialDecisions ) ):
+    #for i in range( len( initialValues ) ):
+    for i in range( 2 ):
+      print "Symbol: %d" %( i + 1 )
+
       self.equalizerAddAndIncrement (
         feedforwardBufferPacker,
         feedforwardBufferStream,
-        initialDecisions[ i ]
+        initialValues[ i ]
                                     ) 
       feedforwardValues =  \
         self.equalizerGetTapValues  (
@@ -1567,7 +1668,7 @@ class TestsEqualizer( unittest.TestCase ):
                                     )
 
       if( i < len( trainingSequence ) ):
-        trainingSymbol = 1.0 * trainingSequence[ i ]
+        trainingSymbol = trainingSequence[ i ]
       else:
         trainingSymbol = None
 
@@ -1579,11 +1680,23 @@ class TestsEqualizer( unittest.TestCase ):
             trainingSymbol
                                         )
 
-        #print "Before:"
-        #print "Feedforward weights:\t", feedforwardWeights
-        #print "Feedforward values:\t", [ value * 1.0 for value in feedforwardValues ]
-        #print "Feedback weights:\t", feedbackWeights
-        #print "Feedback values:\t", [ value * 1.0 for value in feedbackValues ]
+        print "Before:"
+        print "Feedforward weights:\t",
+        for value in feedforwardWeights:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
+        print "Feedforward values:\t",
+        for value in feedforwardValues:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
+        print "Feedback weights:\t",
+        for value in feedbackWeights:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
+        print "Feedback values:\t",
+        for value in feedbackValues:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
 
         ( feedforwardWeights, feedbackWeights ) = \
           self.equalizerUpdateWeights (
@@ -1591,11 +1704,23 @@ class TestsEqualizer( unittest.TestCase ):
             feedbackWeights, feedbackValues
                                       )
 
-        #print "After (Error = %.04f):" %( error )
-        #print "Feedforward weights:\t", feedforwardWeights
-        #print "Feedforward values:\t", feedforwardValues
-        #print "Feedback weights:\t", feedbackWeights
-        #print "Feedback values:\t", feedbackValues
+        print "After (Error=(%+.04e, %+.04ej)\t|Error|=%+.04e" %( error.real, error.imag, abs( error ) )
+        print "Feedforward weights:\t",
+        for value in feedforwardWeights:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
+        print "Feedforward values:\t",
+        for value in feedforwardValues:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
+        print "Feedback weights:\t",
+        for value in feedbackWeights:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
+        print "Feedback values:\t",
+        for value in feedbackValues:
+          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        print
 
       codeSequence.append( symbol )
 
