@@ -108,7 +108,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.threshold         = 2.2 * 10 ** 11
     #self.SNR               = -10 
 
-    self.SNR               = 0
+    self.SNR               = -20
 
     self.widebandStopbandGap    = 1000
     self.narrowbandStopbandGap  = 2000
@@ -143,7 +143,7 @@ class TestsEqualizer( unittest.TestCase ):
     self.codePeriod       = 2 ** self.generatorDegree - 1
 
     self.numberOfTrainingSymbols  = 8
-    self.numberOfDataSymbols      = 10
+    self.numberOfDataSymbols      = 20
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -195,6 +195,16 @@ class TestsEqualizer( unittest.TestCase ):
       random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
     #self.initialChannelImpulseResponse = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
     self.initialChannelImpulseResponse = [ 1.0 ]
+
+    for i in range( 100 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 1 ) )
+    for i in range( 200 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.5 ) )
+    for i in range( 1000 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.1 ) )
+    for i in range( 10000 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.01 ) )
+
     self.channelImpulseResponse = \
       [ 0.0 ] * self.delay \
       + self.initialChannelImpulseResponse
@@ -216,8 +226,16 @@ class TestsEqualizer( unittest.TestCase ):
     self.numberOfFeedforwardTaps  = 2
     self.numberOfFeedbackTaps     = 1
 
-    self.equalizerStepSize        = 0.001
-    self.equalizerIterations      = 1000
+    self.equalizerStepSize        = \
+      1 \
+      / \
+      (
+        5
+        * ( 2 * ( self.numberOfFeedforwardTaps + self.numberOfFeedbackTaps ) + 1 )
+        * ( 10 ** ( self.SNR / 10 ) )
+      )
+
+    self.equalizerIterations      = 200
 
     self.dataPacker = None
     self.dataStream = None
@@ -1436,7 +1454,7 @@ class TestsEqualizer( unittest.TestCase ):
       ( inphaseSymbol, quadratureSymbol ) = \
         python_modulate_symbol( symbol, self.constellationSize )
 
-      symbols.append( complex( inphaseSymbol, quadratureSymbol ) )
+      symbols.append( 0.5 * complex( inphaseSymbol, quadratureSymbol ) )
 
     return( symbols )
 
@@ -1521,12 +1539,12 @@ class TestsEqualizer( unittest.TestCase ):
 
   def equalizerAddAndIncrement( self, packer, stream, value ):
     self.assertEquals (
-        python_bit_packer_add_bytes (
-          struct.pack( "d", value ),
-          packer
-                                    ),
-        CPC_ERROR_CODE_NO_ERROR
-                        )
+      python_bit_packer_add_bytes (
+        struct.pack( "d", value ),
+        packer
+                                  ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
 
     result = python_bit_stream_get_bits( stream, 64 )
 
@@ -1595,39 +1613,42 @@ class TestsEqualizer( unittest.TestCase ):
         feedbackValue \
         + ( feedbackWeights[ i ] * feedbackValues[ i ] )
 
-    valueEstimate = feedforwardValue - feedbackValue
+    valueEstimate = feedforwardValue + feedbackValue
 
-    print "FeedforwardValue: (%+.04e, %+.04ej)" %( feedforwardValue.real, feedforwardValue.imag )
-    print "FeedbackValue: %+.04e, %+.04ej)" %( feedbackValue.real, feedbackValue.imag )
-    print "Estimate: (%+.04e, %+.04ej)" %( valueEstimate.real, valueEstimate.imag )
+    #print "FeedforwardValue: (%+.04e, %+.04ej)" %( feedforwardValue.real, feedforwardValue.imag )
+    #print "FeedbackValue: %+.04e, %+.04ej)" %( feedbackValue.real, feedbackValue.imag )
+    #print "Estimate: (%+.04e, %+.04ej)" %( valueEstimate.real, valueEstimate.imag )
 
-    bestSymbol    = -1
+    bestSymbol    = None
     minDistance   = sys.maxint
-    minDifference = None
 
     for i in range( self.constellationSize ):
       ( inphaseSymbol, quadratureSymbol ) = \
         python_modulate_symbol( i, self.constellationSize )
 
-      symbolValue = complex( inphaseSymbol, quadratureSymbol )
+      symbolValue = 0.5 * complex( inphaseSymbol, quadratureSymbol )
 
       difference = symbolValue - valueEstimate
+
+      #print "Difference: (%+.04e, %+.04ej)" %( difference.real, difference.imag )
+
       distance = math.sqrt( difference.real ** 2 + difference.imag ** 2 )
 
       if( distance < minDistance ):
-        minDifference = difference
         minDistance = distance
-        bestSymbol = i
+        bestSymbol = symbolValue
 
-    decision  = 1.0 if( bestSymbol ) else -1.0
+    decision  = bestSymbol
     error     = None
 
     if( None == expectedSymbol ):
-      error = minDifference
+      error = bestSymbol - valueEstimate
+      #print "Best symbol: (%+.04e, %+.04ej)" %( bestSymbol.real, bestSymbol.imag )
     else:
       error = expectedSymbol - valueEstimate
+      #print "Expected symbol: (%+.04e, %+.04ej)" %( expectedSymbol.real, expectedSymbol.imag )
 
-    return( int( decision ), error )
+    return( decision, error )
 
   def getEqualizedSymbols( self, initialValues ):
     trainingSymbol    = None
@@ -1646,8 +1667,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     codeSequence = []
 
-    #for i in range( len( initialValues ) ):
-    for i in range( 2 ):
+    for i in range( len( initialValues ) ):
       print "Symbol: %d" %( i + 1 )
 
       self.equalizerAddAndIncrement (
@@ -1680,23 +1700,23 @@ class TestsEqualizer( unittest.TestCase ):
             trainingSymbol
                                         )
 
-        print "Before:"
-        print "Feedforward weights:\t",
-        for value in feedforwardWeights:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
-        print "Feedforward values:\t",
-        for value in feedforwardValues:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
-        print "Feedback weights:\t",
-        for value in feedbackWeights:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
-        print "Feedback values:\t",
-        for value in feedbackValues:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
+        #print "Before:"
+        #print "Feedforward weights:\t",
+        #for value in feedforwardWeights:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
+        #print "Feedforward values:\t",
+        #for value in feedforwardValues:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
+        #print "Feedback weights:\t",
+        #for value in feedbackWeights:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
+        #print "Feedback values:\t",
+        #for value in feedbackValues:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
 
         ( feedforwardWeights, feedbackWeights ) = \
           self.equalizerUpdateWeights (
@@ -1704,30 +1724,44 @@ class TestsEqualizer( unittest.TestCase ):
             feedbackWeights, feedbackValues
                                       )
 
-        print "After (Error=(%+.04e, %+.04ej)\t|Error|=%+.04e" %( error.real, error.imag, abs( error ) )
-        print "Feedforward weights:\t",
-        for value in feedforwardWeights:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
-        print "Feedforward values:\t",
-        for value in feedforwardValues:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
-        print "Feedback weights:\t",
-        for value in feedbackWeights:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
-        print "Feedback values:\t",
-        for value in feedbackValues:
-          print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-        print
+        #print "After (Error=(%+.04e, %+.04ej)\t|Error|=%+.04e" %( error.real, error.imag, abs( error ) )
+        #print "Feedforward weights:\t",
+        #for value in feedforwardWeights:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
+        #print "Feedforward values:\t",
+        #for value in feedforwardValues:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
+        #print "Feedback weights:\t",
+        #for value in feedbackWeights:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
+        #print "Feedback values:\t",
+        #for value in feedbackValues:
+          #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+        #print
 
-      codeSequence.append( symbol )
+      detectedSymbol = None
+
+      for i in range( self.constellationSize ):
+        ( inphaseValue, quadratureValue ) = \
+          python_modulate_symbol( i, self.constellationSize )
+
+        if( 0.5 * complex( inphaseValue, quadratureValue ) == symbol ):
+          detectedSymbol = i
+
+          break
+
+      print "Detected symbol: (%+.04f,%+.04f)" %( detectedSymbol.real, detectedSymbol.imag )
+      print "Error: (%+.04e, %+.04ej)\t|Error|=%+.04e" %( error.real, error.imag, abs( error ) )
+
+      codeSequence.append( 1 if( detectedSymbol ) else -1 )
 
       self.equalizerAddAndIncrement (
         feedbackBufferPacker,
         feedbackBufferStream,
-        symbol
+        symbol.real
                                     )
 
     self.destroyEqualizer ( 
