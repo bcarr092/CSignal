@@ -91,9 +91,9 @@ class TestsEqualizer( unittest.TestCase ):
     self.bitDepth          = 16
     self.basebandAmplitude = 2 ** ( self.bitDepth - 2 ) - 1
     self.carrierFrequency  = 21000
-    self.symbolDuration    = 480
+    self.symbolDuration    = 48000
     self.chipDuration      = 48
-    self.testsPerChip      = 4
+    self.testsPerChip      = self.chipDuration
     self.decimationFactor  = int( self.chipDuration / self.testsPerChip )
 
     #self.threshold         = 8 * 10 ** 9
@@ -142,8 +142,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.generatorDegree  = 7
     self.codePeriod       = 2 ** self.generatorDegree - 1
 
-    self.numberOfTrainingSymbols  = 8
-    self.numberOfDataSymbols      = 20
+    self.numberOfTrainingSymbols  = 1
+    self.numberOfDataSymbols      = 0
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -190,20 +190,20 @@ class TestsEqualizer( unittest.TestCase ):
         self.sampleRate
                                               )
 
-    #self.delay = 0
-    self.delay                  = \
-      random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
+    self.delay = 800
+    #self.delay                  = \
+      #random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
     #self.initialChannelImpulseResponse = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
     self.initialChannelImpulseResponse = [ 1.0 ]
 
-    for i in range( 100 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 1 ) )
-    for i in range( 200 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.5 ) )
-    for i in range( 1000 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.1 ) )
-    for i in range( 10000 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.01 ) )
+    #for i in range( 100 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 1 ) )
+    #for i in range( 200 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.5 ) )
+    #for i in range( 1000 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.1 ) )
+    #for i in range( 10000 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.01 ) )
 
     self.channelImpulseResponse = \
       [ 0.0 ] * self.delay \
@@ -816,7 +816,8 @@ class TestsEqualizer( unittest.TestCase ):
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
 
     for i in range( self.numberOfDataSymbols ):
-      symbol = random.randint( 0, self.constellationSize )
+      symbol = i % self.constellationSize
+      #symbol = random.randint( 0, self.constellationSize )
       symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
 
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
@@ -928,8 +929,8 @@ class TestsEqualizer( unittest.TestCase ):
 
     startTime = time.time()
 
-    #nTests = len( signal ) - len( chipSamples )
-    nTests = int( self.delay + ( 0.5 * len( chipSamples ) ) )
+    nTests = len( signal ) - len( chipSamples )
+    #nTests = int( self.delay + ( 0.5 * len( chipSamples ) ) )
 
     if( nTests > len( signal ) - len( chipSamples ) ):
       nTests = len( signal ) - len( chipSamples )
@@ -968,11 +969,11 @@ class TestsEqualizer( unittest.TestCase ):
     return( maxIndex * self.decimationFactor )
 
   def receiveSignal( self, signal ):
-    attenuationFactor = random.uniform( 0, 1 )
+    #attenuationFactor = random.uniform( 0, 1 )
 
-    print "Attenuation factor: %.04f" %( attenuationFactor )
+    #print "Attenuation factor: %.04f" %( attenuationFactor )
 
-    signal = map( lambda x: x * attenuationFactor, signal )
+    #signal = map( lambda x: x * attenuationFactor, signal )
 
     startTime = time.time()
 
@@ -1211,13 +1212,75 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( valueScore, symbolScore )
 
+  def getReceivedSignal( self ):
+    wavPath = "/Users/user/Downloads/received.WAV"
+
+    signal = []
+
+    try:
+      wav = wave.open( wavPath, 'r' )
+
+      if( wav ):
+        print "Received file: %s" %( wavPath )
+        print "Channels: %d" %( wav.getnchannels() )
+        print "Sample width: %d" %( wav.getsampwidth() )
+        print "Sample rate: %d" %( wav.getframerate() )
+        print "Number of samples: %d" %( wav.getnframes() )
+
+        if( wav.getsampwidth() == 1 ):
+          signal = \
+            list  (
+              struct.unpack (
+                "b" * wav.getnframes(), wav.readframes( wav.getnframes() )
+                            )
+                  )
+        elif( wav.getsampwidth() == 2 ):
+          signal = \
+            list  (
+              struct.unpack (
+                "h" * wav.getnframes(), wav.readframes( wav.getnframes() )
+                            )
+                  )
+        elif( wav.getsampwidth() == 4 ):
+          signal = \
+            list  (
+              struct.unpack (
+                "i" * wav.getnframes(), wav.readframes( wav.getnframes() )
+                            )
+                  )
+        else:
+          print "ERROR: Could not handle sample width %d."  \
+            %( wav.getsampwidth() )
+
+          print "Value: %d" %( sampleValue )
+
+        average = sum( signal ) / ( 1.0 * len( signal ) )
+
+        print "Max: %d\tMin: %d\tAverage: %.04f" %( max( signal ), min( signal ), average )
+
+        signal = map( lambda x: ( x * 1.0 ) - average, signal )
+
+        maxValue  = max( [ max( signal ), abs( min( signal ) ) ] )
+        signal    = map( lambda x: ( x * 1.0 ) / ( maxValue * 1.0 ), signal )
+
+        average = sum( signal ) / ( 1.0 * len( signal ) )
+
+        print "Max: %+.04f\tMin: %+.04f\tAverage: %+.04f" %( max( signal ), min( signal ), average )
+        
+        wav.close()
+    except wave.Error:
+      print "ERROR: Could not open '%s'." %( wavPath )
+
+    return( signal )
+
   def test_equalizer( self ):
-    transmittedSignal = self.generateTransmitSignal()
+    #transmittedSignal = self.generateTransmitSignal()
 
-    self.outputSignal( "transmitted.WAV", transmittedSignal )
+    #self.outputSignal( "transmitted.WAV", transmittedSignal )
 
-    receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
-    #receivedSignal = transmittedSignal
+    #receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
+
+    receivedSignal = self.getReceivedSignal()
 
     self.outputSignal( "received.WAV", receivedSignal )
 
@@ -1228,6 +1291,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     startOffset = self.findStartOffset( filteredSignal )
     #startOffset = 433
+    #startOffset = 2700
     #startOffset = 0
 
     if( None != startOffset ):
