@@ -91,10 +91,10 @@ class TestsEqualizer( unittest.TestCase ):
     self.bitDepth          = 16
     self.basebandAmplitude = 2 ** ( self.bitDepth - 2 ) - 1
     self.carrierFrequency  = 21000
-    self.symbolDuration    = 480
-    self.chipDuration      = 48
+    self.symbolDuration    = 4800
+    self.chipDuration      = 480
     self.testsPerChip      = 4
-    self.samplesPerSymbol  = 4
+    self.samplesPerSymbol  = 1
 
     self.chipDecimationFactor  = int( self.chipDuration / self.testsPerChip )
     self.symbolDecimationFactor = int( self.symbolDuration / self.samplesPerSymbol )
@@ -111,7 +111,9 @@ class TestsEqualizer( unittest.TestCase ):
     #self.threshold         = 2.2 * 10 ** 11
     #self.SNR               = -10 
 
-    self.SNR               = 20
+    self.numberOfStartOffsets = 10
+    self.threshold            = 1
+    self.SNR                  = 20
 
     self.widebandStopbandGap    = 1000
     self.narrowbandStopbandGap  = 2000
@@ -145,8 +147,12 @@ class TestsEqualizer( unittest.TestCase ):
     self.generatorDegree  = 7
     self.codePeriod       = 2 ** self.generatorDegree - 1
 
+    #self.dataSequence = [ 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 ]
+    #self.dataSequence = [ 0,  0,  0,  0,  1,  1,  1,  1,  0,  1,  1,  0,  1,  1,  0,  0,  0,  0,  1,  0,  0,  1,  1,  1,  0,  1,  1,  0,  0,  1,  1,  0,  0,  0,  1,  0,  1,  1,  0,  1,  0,  0,  0,  1,  0,  0,  0,  1,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  1,  0,  1,  0,  0,  1,  0,  1,  0,  0,  1,  0,  1,  1,  1,  0,  1,  0,  1,  1,  1,  1,  0,  1,  1,  0,  0,  0,  0,  0,  1,  0,  1,  0,  0,  1  ]
+    self.dataSequence = None
+
     self.numberOfTrainingSymbols  = 8
-    self.numberOfDataSymbols      = 100
+    self.numberOfDataSymbols      = 0
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -226,8 +232,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.spreadingSignalPacker  = None
     self.spreadingSignalStream  = None
 
-    self.numberOfFeedforwardTaps  = 4
-    self.numberOfFeedbackTaps     = 4
+    self.numberOfFeedforwardTaps  = 2
+    self.numberOfFeedbackTaps     = 1
 
     #self.equalizerStepSize        = 0.2
     self.equalizerStepSize        = 0.1
@@ -821,12 +827,16 @@ class TestsEqualizer( unittest.TestCase ):
 
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
 
-    for i in range( self.numberOfDataSymbols ):
-      #symbol = i % self.constellationSize
-      symbol = random.randint( 0, self.constellationSize )
-      symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
-
-      bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
+    if( self.dataSequence ):
+      for symbol in self.dataSequence:
+        bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
+    else:
+      for i in range( self.numberOfDataSymbols ):
+        #symbol = i % self.constellationSize
+        symbol = random.randint( 0, self.constellationSize )
+        symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
+  
+        bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
 
   def generateTransmitSignal( self ):
     self.assertEquals (
@@ -904,6 +914,20 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( signal )
 
+  def calculateEnergy( self, signal, chipSignal ):
+    despread  = \
+      python_csignal_multiply_signals (
+        chipSignal,
+        signal
+                                      )
+
+    filtered  = python_filter_signal( self.narrowbandFilter, despread )
+    squared   = python_csignal_multiply_signals( filtered, filtered )
+    filtered  = python_filter_signal( self.lowpassFilter, squared )
+    signalE   = python_csignal_sum_signal( filtered, 1.0 )
+
+    return( signalE )
+
   def findStartOffset( self, signal ):
     self.assertEquals (
       bit_stream_reset( self.spreadingSignalStream ),
@@ -935,44 +959,60 @@ class TestsEqualizer( unittest.TestCase ):
 
     startTime = time.time()
 
-    #nTests = len( signal ) - len( chipSamples )
-    nTests = int( self.delay + ( 0.5 * len( chipSamples ) ) )
+    nTests = len( signal ) - len( chipSamples )
 
-    if( nTests > len( signal ) - len( chipSamples ) ):
-      nTests = len( signal ) - len( chipSamples )
+    print "Looking for start of signal..."
+
+    startIndex = None
+
+    for i in range( 0, nTests, self.chipDecimationFactor ):
+      signalEnergy =  \
+        self.calculateEnergy  (
+          signal[ i : i + len( chipSamples ) ],
+          chipSamples
+                              )
+
+      if( signalEnergy > self.threshold ):
+        startIndex = i 
+
+        break
+
+    print "Found threshold exceeded at index: %d" %( startIndex )
 
     energy = []
 
-    for i in range( 0, nTests, self.chipDecimationFactor ):
-      despread  = \
-        python_csignal_multiply_signals (
-          chipSamples,
-          signal[ i : i + len( chipSamples ) ]
-                                        )
-      filtered  = python_filter_signal( self.narrowbandFilter, despread )
-      squared   = python_csignal_multiply_signals( filtered, filtered )
-      filtered  = python_filter_signal( self.lowpassFilter, squared )
-      signalE   = python_csignal_sum_signal( filtered, 1.0 )
+    endIndex = int( startIndex + 1.5 * len( chipSamples ) )
 
-      energy.append( signalE )
+    if( endIndex > len( signal ) - len( chipSamples ) ):
+      endIndex = len( signal ) - len( chipSamples )
 
-    maxValue = 0
-    maxIndex = 0
+    print "Searching for top %d peaks between %d and %d"  \
+      %( self.numberOfStartOffsets, startIndex, endIndex )
+
+    for i in range( startIndex, endIndex, self.chipDecimationFactor ):
+      signalEnergy =  \
+        self.calculateEnergy  (
+          signal[ i : i + len( chipSamples ) ],
+          chipSamples
+                              )
+
+      energy.append( signalEnergy )
+
+    sortedEnergy = sorted( energy, None, None, True )
+
+    searchIndices = []
 
     for i in range( len( energy ) ):
-      if( energy[ i ] >= maxValue ):
-        maxValue = energy[ i ]
-        maxIndex = i
+      if( energy[ i ] >= sortedEnergy[ self.numberOfStartOffsets - 1 ] ):
+        searchIndices.append( startIndex + i * self.chipDecimationFactor )
 
     energyTime = time.time() - startTime
-
-    self.assertNotEquals( None, energy )
 
     print "Energy detection time:\t%.04f" %( energyTime )
 
     self.outputSequence( "energy.dat", energy )
 
-    return( maxIndex * self.chipDecimationFactor )
+    return( searchIndices )
 
   def receiveSignal( self, signal ):
     #attenuationFactor = random.uniform( 0, 1 )
@@ -1219,7 +1259,7 @@ class TestsEqualizer( unittest.TestCase ):
     return( valueScore, symbolScore )
 
   def getReceivedSignal( self ):
-    wavPath = "/Users/user/Downloads/received.WAV"
+    wavPath = "/Users/user/Downloads/received_1.WAV"
 
     signal = []
 
@@ -1279,14 +1319,112 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( signal )
 
+  def findOptimalStartOffset( self, startIndices, signal ):
+    narrowbandOffset = python_filter_get_group_delay( self.narrowbandFilter )
+
+    print "Delay from narrowband filter: %d samples." %( narrowbandOffset )
+
+    lowpassOffset = python_filter_get_group_delay( self.lowpassFilter )
+
+    print "Delay from lowpass filter: %d samples." %( lowpassOffset )
+
+    offsetScores  = []
+    offsetPhase   = []
+
+    for startOffset in startIndices:
+      despreadSignal = self.despreadSignal( signal[ startOffset : ] )
+
+      self.outputSignal (
+        "despreadSignal_%d.WAV" %( startOffset ),
+        despreadSignal[ narrowbandOffset : ]
+                        )
+
+      bestValues    = None
+      bestDecisions = None
+      bestScore     = sys.maxint
+      delayGuess    = -1
+
+      for i in range( self.chipDecimationFactor ):
+        phaseOffset =                           \
+          2.0 * math.pi * self.carrierFrequency \
+          * ( ( 1.0 * i ) / self.sampleRate )
+
+        demodulatedSignal = \
+          self.demodulateData (
+            despreadSignal[ narrowbandOffset : ],
+            phaseOffset
+                              )
+  
+        lowpassSignal =  \
+          python_filter_signal( self.lowpassFilter, demodulatedSignal )
+
+        self.outputSignal (
+          "lowpassFiltered_phase_%d_%d_%.04f.WAV" \
+            %( startOffset, i, phaseOffset ),
+          lowpassSignal[ lowpassOffset : ]
+                          )
+
+        ( values, decisions ) = \
+          self.determineSymbols( lowpassSignal[ lowpassOffset : ] )
+
+        #print "Offset: %d\tDelay: %d" %( startOffset, i )
+        #print "Values: ", values
+        #print "Decisions: ", decisions
+
+        ( valueScore, decisionScore ) = self.scoreMatch( values, decisions )
+
+        #print "Value score: %.04f" %( valueScore )
+        #print "Decision score: %.04f" %( decisionScore )
+
+        score = \
+          map (
+            lambda x, y: ( x - y ) ** 2,
+            [ 0, 0 ],
+            [ valueScore, decisionScore ]
+              )
+
+        self.assertEquals( len( score ), 2 )
+
+        score = \
+          math.sqrt( score[ 0 ] + score[ 1 ] * self.numberOfTrainingSymbols )
+
+        if( score < bestScore ):
+          bestValues    = values
+          bestDecisions = decisions
+          bestScore     = score
+          delayGuess    = i
+
+      phaseOffset =                             \
+          2.0 * math.pi * self.carrierFrequency \
+          * ( ( 1.0 * delayGuess ) / self.sampleRate )
+
+      print "Offset: %d\tDelay: %d\tScore: %.04f\tPhase: %.04f\t" \
+        %( startOffset, delayGuess, bestScore, phaseOffset ),
+      print "Decisions: ", bestDecisions, "\tValues: ", bestValues
+
+      offsetScores.append( bestScore )
+      offsetPhase.append( phaseOffset )
+
+    bestScore = sys.maxint
+    bestIndex = -1
+
+    for i in range( len( offsetScores ) ):
+      if( offsetScores[ i ] < bestScore ):
+        bestScore = offsetScores[ i ]
+        bestIndex = i
+     
+    print "Best offset: %d\tScore: %.04f" %( startIndices[ bestIndex ], bestScore ) 
+
+    return( startIndices[ bestIndex ], offsetPhase[ bestIndex ] )
+
   def test_equalizer( self ):
-    transmittedSignal = self.generateTransmitSignal()
+    #transmittedSignal = self.generateTransmitSignal()
 
-    self.outputSignal( "transmitted.WAV", transmittedSignal )
+    #self.outputSignal( "transmitted.WAV", transmittedSignal )
 
-    receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
+    #receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
 
-    #receivedSignal = self.getReceivedSignal()
+    receivedSignal = self.getReceivedSignal()
 
     self.outputSignal( "received.WAV", receivedSignal )
 
@@ -1295,13 +1433,18 @@ class TestsEqualizer( unittest.TestCase ):
 
     print "Delay from wideband filter: %d samples." %( python_filter_get_group_delay( self.widebandFilter ) )
 
-    startOffset = self.findStartOffset( filteredSignal )
-    #startOffset = 433
-    #startOffset = 2700
-    #startOffset = 0
+    print "Sample delay is %d." %( self.delay )
 
-    if( None != startOffset ):
-      print "Start offset:\t\t%d (Delay: %d)" %( startOffset, self.delay )
+    startOffsets = self.findStartOffset( filteredSignal )
+
+    if( None != startOffsets ):
+      print "Delay: %d\tStart offsets: " %( self.delay ), startOffsets
+
+      ( startOffset, phaseOffset ) =  \
+        self.findOptimalStartOffset( startOffsets, filteredSignal )
+
+      print "Start offset: %d\tPhase offset: %.04f" \
+        %( startOffset, phaseOffset )
 
       despreadSignal = self.despreadSignal( filteredSignal[ startOffset : ] )
 
@@ -1310,47 +1453,6 @@ class TestsEqualizer( unittest.TestCase ):
       print "Delay from narrowband filter: %d samples." %( despreadOffset )
 
       self.outputSignal( "despreadSignal.WAV", despreadSignal[ despreadOffset : ] )
-
-      #demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], 0 )
-
-      bestScore = sys.maxint
-      delayGuess = -1
-
-      for i in range( self.chipDecimationFactor ):
-        phaseOffset = \
-          2.0 * math.pi * self.carrierFrequency * ( ( 1.0 * i ) / self.sampleRate )
-
-        demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], phaseOffset )
-  
-        lowpassSignal =  \
-          python_filter_signal( self.lowpassFilter, demodulatedSignal )
-
-        filterOffset = python_filter_get_group_delay( self.lowpassFilter )
-
-        self.outputSignal( "lowpassFiltered_phase_%d_%.04f.WAV" %( i, phaseOffset ), lowpassSignal[ filterOffset : ] )
-
-        ( values, decisions ) = self.determineSymbols( lowpassSignal[ filterOffset : ] )
-
-        print "Delay: %d" %( i )
-        print "Values: ", values
-        print "Decisions: ", decisions
-
-        ( valueScore, decisionScore ) = self.scoreMatch( values, decisions )
-
-        print "Value score: %.04f" %( valueScore )
-        print "Decision score: %.04f" %( decisionScore )
-
-        score = map( lambda x, y: ( x - y ) ** 2, [ 0, 0 ], [ valueScore, decisionScore ] )
-        score = math.sqrt( sum( score ) )
-
-        if( score < bestScore ):
-          bestScore = score
-          delayGuess = i
-
-      phaseOffset = \
-          2.0 * math.pi * self.carrierFrequency * ( ( 1.0 * delayGuess ) / self.sampleRate )
-
-      print "Delay: %d\tScore: %.04f\tPhase: %.04f" %( delayGuess, bestScore, phaseOffset )
 
       demodulatedSignal = self.demodulateData( despreadSignal[ despreadOffset : ], phaseOffset )
 
@@ -1367,15 +1469,33 @@ class TestsEqualizer( unittest.TestCase ):
 
       ( values, decisions ) = self.determineSymbols( filteredSignal[ filterOffset : ] )
 
-      print "Final values: ", values
+      print "Final values:"
+      print "[ ",
+      for value in values:
+       print "%f " %( value ),
+      print "]"
+        
       print "Final decisions: ", decisions
+      print "Start offset:\t\t%d (Delay: %d)" %( startOffset, self.delay )
 
       initialSymbols = self.getInitialSymbols()
+
+      expected = []
 
       print "Symbols:\t",
       for i in range( min( len( initialSymbols ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
         print "%+d " %( initialSymbols[ i ] ),
+
+        symbol = initialSymbols[ i ] if( initialSymbols[ i ] == 1 ) else 0
+
+        expected.append( symbol )
       print
+
+      print "Expected values:"
+      print "[ ",
+      for value in expected:
+        print "%d " %( value ),
+      print "]"
 
       decisions = map( lambda x: x if( x ) else -1, decisions )
 
@@ -1384,7 +1504,7 @@ class TestsEqualizer( unittest.TestCase ):
         print "%+d " %( decisions[ i ] ),
       print
 
-      benchmarkNoEq = self.benchmarkDemodulation( initialSymbols, decisions )
+      benchmarkNoEq = self.benchmarkDemodulation( initialSymbols[ self.numberOfTrainingSymbols : ], decisions[ self.numberOfTrainingSymbols : ] )
 
       equalizedDecisions = self.getEqualizedSymbols( downsampledSignal )
 
@@ -1398,7 +1518,7 @@ class TestsEqualizer( unittest.TestCase ):
       print "No equalization P_e:\t%.02f" %( 1.0 - benchmarkNoEq )
 
       benchmarkEq = \
-        self.benchmarkDemodulation( initialSymbols, equalizedDecisions )
+        self.benchmarkDemodulation( initialSymbols[ self.numberOfTrainingSymbols : ], equalizedDecisions[ self.numberOfTrainingSymbols : ] )
 
       print "Equalization P_e:\t%.02f" %( 1.0 - benchmarkEq )
 
@@ -1742,10 +1862,11 @@ class TestsEqualizer( unittest.TestCase ):
     trainingSymbol    = None
     trainingSequence  = self.getTrainingSequence()
 
-    print "Training sequence: ",
+    print "Training sequence: "
+    print "[ ",
     for value in trainingSequence:
-      print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
-    print
+      print "%+f%+fj " %( value.real, value.imag ),
+    print "]"
 
     (
       feedforwardBufferPacker, feedforwardBufferStream,
