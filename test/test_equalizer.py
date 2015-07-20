@@ -91,10 +91,13 @@ class TestsEqualizer( unittest.TestCase ):
     self.bitDepth          = 16
     self.basebandAmplitude = 2 ** ( self.bitDepth - 2 ) - 1
     self.carrierFrequency  = 21000
-    self.symbolDuration    = 48000
+    self.symbolDuration    = 480
     self.chipDuration      = 48
-    self.testsPerChip      = self.chipDuration
-    self.decimationFactor  = int( self.chipDuration / self.testsPerChip )
+    self.testsPerChip      = 4
+    self.samplesPerSymbol  = 4
+
+    self.chipDecimationFactor  = int( self.chipDuration / self.testsPerChip )
+    self.symbolDecimationFactor = int( self.symbolDuration / self.samplesPerSymbol )
 
     #self.threshold         = 8 * 10 ** 9
     #self.SNR               = 20
@@ -108,7 +111,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.threshold         = 2.2 * 10 ** 11
     #self.SNR               = -10 
 
-    self.SNR               = -20
+    self.SNR               = 20
 
     self.widebandStopbandGap    = 1000
     self.narrowbandStopbandGap  = 2000
@@ -142,8 +145,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.generatorDegree  = 7
     self.codePeriod       = 2 ** self.generatorDegree - 1
 
-    self.numberOfTrainingSymbols  = 1
-    self.numberOfDataSymbols      = 0
+    self.numberOfTrainingSymbols  = 8
+    self.numberOfDataSymbols      = 100
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -190,20 +193,20 @@ class TestsEqualizer( unittest.TestCase ):
         self.sampleRate
                                               )
 
-    self.delay = 800
-    #self.delay                  = \
-      #random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
+    #self.delay = 800
+    self.delay                  = \
+      random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
     #self.initialChannelImpulseResponse = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
     self.initialChannelImpulseResponse = [ 1.0 ]
 
-    #for i in range( 100 ):
-      #self.initialChannelImpulseResponse.append( random.uniform( 0, 1 ) )
-    #for i in range( 200 ):
-      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.5 ) )
-    #for i in range( 1000 ):
-      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.1 ) )
-    #for i in range( 10000 ):
-      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.01 ) )
+    for i in range( 100 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 1 ) )
+    for i in range( 200 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.5 ) )
+    for i in range( 1000 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.1 ) )
+    for i in range( 10000 ):
+      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.01 ) )
 
     self.channelImpulseResponse = \
       [ 0.0 ] * self.delay \
@@ -223,19 +226,22 @@ class TestsEqualizer( unittest.TestCase ):
     self.spreadingSignalPacker  = None
     self.spreadingSignalStream  = None
 
-    self.numberOfFeedforwardTaps  = 2
-    self.numberOfFeedbackTaps     = 1
+    self.numberOfFeedforwardTaps  = 4
+    self.numberOfFeedbackTaps     = 4
 
-    self.equalizerStepSize        = \
-      1 \
-      / \
-      (
-        5
-        * ( 2 * ( self.numberOfFeedforwardTaps + self.numberOfFeedbackTaps ) + 1 )
-        * ( 10 ** ( self.SNR / 10 ) )
-      )
-
+    #self.equalizerStepSize        = 0.2
+    self.equalizerStepSize        = 0.1
+    #self.equalizerStepSize        = \
+      #1.0 \
+      #/ \
+      #(
+        #5.0
+        #* ( 2.0 * ( self.numberOfFeedforwardTaps + self.numberOfFeedbackTaps ) + 1 )
+        #* ( 10.0 ** ( self.SNR / 10.0 ) )
+      #)
     self.equalizerIterations      = 200
+
+    print "Step size: %.04f" %( self.equalizerStepSize )
 
     self.dataPacker = None
     self.dataStream = None
@@ -816,8 +822,8 @@ class TestsEqualizer( unittest.TestCase ):
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
 
     for i in range( self.numberOfDataSymbols ):
-      symbol = i % self.constellationSize
-      #symbol = random.randint( 0, self.constellationSize )
+      #symbol = i % self.constellationSize
+      symbol = random.randint( 0, self.constellationSize )
       symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
 
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
@@ -929,15 +935,15 @@ class TestsEqualizer( unittest.TestCase ):
 
     startTime = time.time()
 
-    nTests = len( signal ) - len( chipSamples )
-    #nTests = int( self.delay + ( 0.5 * len( chipSamples ) ) )
+    #nTests = len( signal ) - len( chipSamples )
+    nTests = int( self.delay + ( 0.5 * len( chipSamples ) ) )
 
     if( nTests > len( signal ) - len( chipSamples ) ):
       nTests = len( signal ) - len( chipSamples )
 
     energy = []
 
-    for i in range( 0, nTests, self.decimationFactor ):
+    for i in range( 0, nTests, self.chipDecimationFactor ):
       despread  = \
         python_csignal_multiply_signals (
           chipSamples,
@@ -966,7 +972,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.outputSequence( "energy.dat", energy )
 
-    return( maxIndex * self.decimationFactor )
+    return( maxIndex * self.chipDecimationFactor )
 
   def receiveSignal( self, signal ):
     #attenuationFactor = random.uniform( 0, 1 )
@@ -1274,13 +1280,13 @@ class TestsEqualizer( unittest.TestCase ):
     return( signal )
 
   def test_equalizer( self ):
-    #transmittedSignal = self.generateTransmitSignal()
+    transmittedSignal = self.generateTransmitSignal()
 
-    #self.outputSignal( "transmitted.WAV", transmittedSignal )
+    self.outputSignal( "transmitted.WAV", transmittedSignal )
 
-    #receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
+    receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
 
-    receivedSignal = self.getReceivedSignal()
+    #receivedSignal = self.getReceivedSignal()
 
     self.outputSignal( "received.WAV", receivedSignal )
 
@@ -1310,7 +1316,7 @@ class TestsEqualizer( unittest.TestCase ):
       bestScore = sys.maxint
       delayGuess = -1
 
-      for i in range( self.decimationFactor ):
+      for i in range( self.chipDecimationFactor ):
         phaseOffset = \
           2.0 * math.pi * self.carrierFrequency * ( ( 1.0 * i ) / self.sampleRate )
 
@@ -1355,13 +1361,16 @@ class TestsEqualizer( unittest.TestCase ):
 
       self.outputSignal( "correctedLowpassFiltered.WAV", filteredSignal[ filterOffset : ] )
 
+      downsampledSignal = self.downsampleSignal( filteredSignal[ filterOffset : ] )
+
+      self.outputSignal( "downsampledSignal.WAV", downsampledSignal, self.sampleRate / self.symbolDecimationFactor )
+
       ( values, decisions ) = self.determineSymbols( filteredSignal[ filterOffset : ] )
 
       print "Final values: ", values
       print "Final decisions: ", decisions
 
-      initialSymbols =  \
-        self.getInitialSymbols()
+      initialSymbols = self.getInitialSymbols()
 
       print "Symbols:\t",
       for i in range( min( len( initialSymbols ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
@@ -1377,7 +1386,9 @@ class TestsEqualizer( unittest.TestCase ):
 
       benchmarkNoEq = self.benchmarkDemodulation( initialSymbols, decisions )
 
-      equalizedDecisions = self.getEqualizedSymbols( values )
+      equalizedDecisions = self.getEqualizedSymbols( downsampledSignal )
+
+      print "Number of downsampled: %d" %( len( downsampledSignal ) )
 
       print "Equalized:\t",
       for i in range( min( len( equalizedDecisions ), self.numberOfTrainingSymbols + self.numberOfDataSymbols ) ):
@@ -1390,6 +1401,19 @@ class TestsEqualizer( unittest.TestCase ):
         self.benchmarkDemodulation( initialSymbols, equalizedDecisions )
 
       print "Equalization P_e:\t%.02f" %( 1.0 - benchmarkEq )
+
+  def downsampleSignal( self, signal ):
+    downsampledSignal = []
+
+    for i in range( 0, len( signal ), self.symbolDecimationFactor ):
+      if( len( signal ) - i < self.symbolDuration ):
+        break
+
+      average = python_csignal_sum_signal( signal[ i : i + self.symbolDecimationFactor ], 1 ) / self.symbolDecimationFactor
+
+      downsampledSignal.append( average )
+
+    return( downsampledSignal )
 
   def determineSymbols( self, signal ):
     rawValues           = []
@@ -1524,7 +1548,7 @@ class TestsEqualizer( unittest.TestCase ):
 
   def initializeEqualizer( self ):
     feedforwardWeights  = \
-      [ complex( 1.0, 0.0 ) for i in range( self.numberOfFeedforwardTaps ) ]
+      [ complex( 1.0, 0.0 ) for i in range( self.numberOfFeedforwardTaps * self.samplesPerSymbol ) ]
     feedbackWeights     = \
       [ complex( 1.0, 0.0 ) for i in range(  self.numberOfFeedbackTaps ) ]
 
@@ -1540,7 +1564,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.assertNotEquals( None, feedforwardBufferStream )
 
-    for i in range( self.numberOfFeedforwardTaps ):
+    for i in range( self.numberOfFeedforwardTaps * self.samplesPerSymbol ):
       self.assertEquals (
         python_bit_packer_add_bytes (
           struct.pack( "d", 0.0 ),
@@ -1657,7 +1681,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.assertEquals (
       len( feedforwardWeights ),
-      self.numberOfFeedforwardTaps
+      self.numberOfFeedforwardTaps * self.samplesPerSymbol
                       )
     self.assertEquals( len( feedforwardWeights ), len( feedforwardValues ) )
 
@@ -1667,7 +1691,7 @@ class TestsEqualizer( unittest.TestCase ):
                       )
     self.assertEquals( len( feedbackWeights ), len( feedbackValues ) )
 
-    for i in range( self.numberOfFeedforwardTaps ):
+    for i in range( self.numberOfFeedforwardTaps * self.samplesPerSymbol ):
       feedforwardValue =  \
         feedforwardValue  \
         + ( feedforwardWeights[ i ] * feedforwardValues[ i ] )
@@ -1731,18 +1755,26 @@ class TestsEqualizer( unittest.TestCase ):
 
     codeSequence = []
 
-    for i in range( len( initialValues ) ):
-      print "Symbol: %d" %( i + 1 )
+    #print "Initial value length: %d" %( len( initialValues ) )
 
-      self.equalizerAddAndIncrement (
-        feedforwardBufferPacker,
-        feedforwardBufferStream,
-        initialValues[ i ]
-                                    ) 
+    for i in range( 0, len( initialValues ), self.samplesPerSymbol ):
+      if( len( initialValues ) - i < self.samplesPerSymbol ):
+        break
+
+      print "Symbol: %d" %( i / self.samplesPerSymbol + 1 )
+
+      for j in range( self.samplesPerSymbol ):
+        self.equalizerAddAndIncrement (
+          feedforwardBufferPacker,
+          feedforwardBufferStream,
+          initialValues[ i + j ]
+                                      ) 
+
       feedforwardValues =  \
         self.equalizerGetTapValues  (
           feedforwardBufferStream,
           self.numberOfFeedforwardTaps
+           * self.samplesPerSymbol
                                     )
 
       feedbackValues =  \
@@ -1751,10 +1783,22 @@ class TestsEqualizer( unittest.TestCase ):
           self.numberOfFeedbackTaps
                                     )
 
-      if( i < len( trainingSequence ) ):
-        trainingSymbol = trainingSequence[ i ]
+      trainingIndex = int( i / self.samplesPerSymbol )
+
+      if( trainingIndex < len( trainingSequence ) ):
+        trainingSymbol = trainingSequence[ trainingIndex ]
       else:
         trainingSymbol = None
+
+      print "Before:"
+      print "Feedforward weights:\t",
+      for value in feedforwardWeights:
+        print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+      print
+      print "Feedback weights:\t",
+      for value in feedbackWeights:
+        print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+      print
 
       for j in range( self.equalizerIterations ):
         ( symbol, error ) = \
@@ -1806,18 +1850,30 @@ class TestsEqualizer( unittest.TestCase ):
           #print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
         #print
 
+      print "After:"
+      print "Feedforward weights:\t",
+      for value in feedforwardWeights:
+        print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+      print
+      print "Feedback weights:\t",
+      for value in feedbackWeights:
+        print "(%+.04e, %+.04ej) " %( value.real, value.imag ),
+      print
+
+      print "Symbol: (%+.04f,%+.04f)" %( symbol.real, symbol.imag )
+
       detectedSymbol = None
 
-      for i in range( self.constellationSize ):
+      for j in range( self.constellationSize ):
         ( inphaseValue, quadratureValue ) = \
-          python_modulate_symbol( i, self.constellationSize )
+          python_modulate_symbol( j, self.constellationSize )
 
         if( 0.5 * complex( inphaseValue, quadratureValue ) == symbol ):
-          detectedSymbol = i
+          detectedSymbol = j
 
           break
 
-      print "Detected symbol: (%+.04f,%+.04f)" %( detectedSymbol.real, detectedSymbol.imag )
+      print "Detected symbol: %d" %( detectedSymbol )
       print "Error: (%+.04e, %+.04ej)\t|Error|=%+.04e" %( error.real, error.imag, abs( error ) )
 
       codeSequence.append( 1 if( detectedSymbol ) else -1 )
@@ -1840,16 +1896,32 @@ class TestsEqualizer( unittest.TestCase ):
     feedbackValues
                               ):
 
+    feedforwardMagnitude = \
+      python_csignal_multiply_signals( feedforwardValues, feedforwardValues )
+    feedforwardMagnitude = 1.0 * python_csignal_sum_signal( feedforwardMagnitude, 1.0 )
+
+    feedbackMagnitude = \
+      python_csignal_multiply_signals( feedbackValues, feedbackValues )
+    feedbackMagnitude = 1.0 * python_csignal_sum_signal( feedbackMagnitude, 1.0 )
+
+    if( 0 == feedbackMagnitude ):
+      feedbackMagnitude = 1.0
+
+    if( 0 == feedforwardMagnitude ):
+      feedforwardMagnitude = 1.0
+
     feedforwardWeights  = \
       map (
-        lambda x, y: x + error * self.equalizerStepSize * y,
+        lambda x, y:  \
+          x + error * self.equalizerStepSize * y / feedforwardMagnitude,
         feedforwardWeights,
         feedforwardValues
           )
 
     feedbackWeights = \
       map (
-        lambda x, y: x + error * self.equalizerStepSize * y,
+        lambda x, y:  \
+          x + error * self.equalizerStepSize * y / feedbackMagnitude,
         feedbackWeights,
         feedbackValues
           )
@@ -1892,7 +1964,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( hitRate )
 
-  def outputSignal( self, fileName, signal ):
+  def outputSignal( self, fileName, signal, sampleRate=48000 ):
     maxValue = -1
 
     for value in signal:
@@ -1910,7 +1982,7 @@ class TestsEqualizer( unittest.TestCase ):
     error = python_write_FLOAT_wav  (
       fileName,
       len( samples ), 
-      self.sampleRate,
+      sampleRate,
       len( wavSignal ),
       samples
                                     )
