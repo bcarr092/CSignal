@@ -91,8 +91,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.bitDepth          = 16
     self.basebandAmplitude = 2 ** ( self.bitDepth - 2 ) - 1
     self.carrierFrequency  = 21000
-    self.symbolDuration    = 4800
-    self.chipDuration      = 480
+    self.symbolDuration    = 480
+    self.chipDuration      = 48
     self.testsPerChip      = 4
     self.samplesPerSymbol  = 1
 
@@ -111,7 +111,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.threshold         = 2.2 * 10 ** 11
     #self.SNR               = -10 
 
-    self.numberOfStartOffsets = 10
+    self.numberOfStartOffsets = 5
     self.threshold            = 1
     self.SNR                  = 20
 
@@ -152,7 +152,7 @@ class TestsEqualizer( unittest.TestCase ):
     self.dataSequence = None
 
     self.numberOfTrainingSymbols  = 8
-    self.numberOfDataSymbols      = 0
+    self.numberOfDataSymbols      = 10
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -200,25 +200,25 @@ class TestsEqualizer( unittest.TestCase ):
                                               )
 
     #self.delay = 800
-    self.delay                  = \
-      random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
+    #self.delay                  = \
+      #random.randint( 0, self.numberOfTrainingSymbols * self.symbolDuration )
     #self.initialChannelImpulseResponse = [ 1.0, 0.0, 0.8, 0.0, 0.6, 0.0 ]
-    self.initialChannelImpulseResponse = [ 1.0 ]
+    #self.initialChannelImpulseResponse = [ 1.0 ]
 
-    for i in range( 100 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 1 ) )
-    for i in range( 200 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.5 ) )
-    for i in range( 1000 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.1 ) )
-    for i in range( 10000 ):
-      self.initialChannelImpulseResponse.append( random.uniform( 0, 0.01 ) )
+    #for i in range( 100 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 1 ) )
+    #for i in range( 200 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.5 ) )
+    #for i in range( 1000 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.1 ) )
+    #for i in range( 10000 ):
+      #self.initialChannelImpulseResponse.append( random.uniform( 0, 0.01 ) )
 
-    self.channelImpulseResponse = \
-      [ 0.0 ] * self.delay \
-      + self.initialChannelImpulseResponse
+    #self.channelImpulseResponse = \
+      #[ 0.0 ] * self.delay \
+      #+ self.initialChannelImpulseResponse
 
-    #self.readImpulseResponse()
+    self.readImpulseResponse()
 
     self.carrierInphasePacker     = None
     self.carrierQuadraturePacker  = None
@@ -233,7 +233,7 @@ class TestsEqualizer( unittest.TestCase ):
     self.spreadingSignalStream  = None
 
     self.numberOfFeedforwardTaps  = 2
-    self.numberOfFeedbackTaps     = 1
+    self.numberOfFeedbackTaps     = 2
 
     #self.equalizerStepSize        = 0.2
     self.equalizerStepSize        = 0.1
@@ -263,9 +263,10 @@ class TestsEqualizer( unittest.TestCase ):
     self.generateDataSymbols()
 
   def readImpulseResponse( self ):
-    file = open( "/Users/user/work/AudioSimulation/echoProfiles/unprocessed_profile_1.dat", 'r' )
+    file = open( "unprocessed_profile_1.dat", 'r' )
 
-    self.channelImpulseResponse = []
+    self.channelImpulseResponse = \
+      [ 0.0 for i in range( self.numberOfTrainingSymbols * self.symbolDuration ) ]
 
     lineCount = 0
 
@@ -274,7 +275,8 @@ class TestsEqualizer( unittest.TestCase ):
         value = float( line )
 
         if( 1.0 == value ):
-          self.delay = lineCount
+          self.delay =  \
+            lineCount + ( self.numberOfTrainingSymbols * self.symbolDuration )
 
         self.channelImpulseResponse.append( value )
 
@@ -1418,13 +1420,13 @@ class TestsEqualizer( unittest.TestCase ):
     return( startIndices[ bestIndex ], offsetPhase[ bestIndex ] )
 
   def test_equalizer( self ):
-    #transmittedSignal = self.generateTransmitSignal()
+    transmittedSignal = self.generateTransmitSignal()
 
-    #self.outputSignal( "transmitted.WAV", transmittedSignal )
+    self.outputSignal( "transmitted.WAV", transmittedSignal )
 
-    #receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
+    receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
 
-    receivedSignal = self.getReceivedSignal()
+    #receivedSignal = self.getReceivedSignal()
 
     self.outputSignal( "received.WAV", receivedSignal )
 
