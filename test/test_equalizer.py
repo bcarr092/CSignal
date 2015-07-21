@@ -90,8 +90,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.sampleRate        = 48000
     self.bitDepth          = 16
     self.basebandAmplitude = 2 ** ( self.bitDepth - 2 ) - 1
-    self.carrierFrequency  = 21000
-    self.symbolDuration    = 480
+    self.carrierFrequency  = 18000
+    self.symbolDuration    = 24000
     self.chipDuration      = 48
     self.testsPerChip      = 4
     self.samplesPerSymbol  = 1
@@ -111,7 +111,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.threshold         = 2.2 * 10 ** 11
     #self.SNR               = -10 
 
-    self.numberOfStartOffsets = 5
+    self.numberOfStartOffsets = 2
     self.threshold            = 1
     self.SNR                  = 20
 
@@ -151,7 +151,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.dataSequence = [ 0,  0,  0,  0,  1,  1,  1,  1,  0,  1,  1,  0,  1,  1,  0,  0,  0,  0,  1,  0,  0,  1,  1,  1,  0,  1,  1,  0,  0,  1,  1,  0,  0,  0,  1,  0,  1,  1,  0,  1,  0,  0,  0,  1,  0,  0,  0,  1,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  1,  0,  1,  0,  0,  1,  0,  1,  0,  0,  1,  0,  1,  1,  1,  0,  1,  0,  1,  1,  1,  1,  0,  1,  1,  0,  0,  0,  0,  0,  1,  0,  1,  0,  0,  1  ]
     self.dataSequence = None
 
-    self.numberOfTrainingSymbols  = 8
+    self.numberOfTrainingSymbols  = 2
     self.numberOfDataSymbols      = 10
     #self.numberOfTrainingSymbols =  \
       #int (
@@ -702,6 +702,66 @@ class TestsEqualizer( unittest.TestCase ):
 
     return( demodulatedSignal )
 
+  def modulateBFSKData( self, symbol ):
+    signal = []
+
+    result =  \
+      python_bit_stream_get_bits  (
+        self.spreadingSignalStream,
+        64 * self.symbolDuration
+                                  )
+
+    self.assertNotEquals( None, result )
+    self.assertEquals( len( result ), 2 )
+
+    ( numberOfBits, buffer ) = result
+
+    self.assertNotEquals( None, numberOfBits )
+    self.assertNotEquals( None, buffer )
+
+    self.assertEquals( numberOfBits, 64 * self.symbolDuration )
+    self.assertEquals( len( buffer ), 8 * self.symbolDuration )
+
+    chipSamples = list( struct.unpack( "d" * self.symbolDuration, buffer ) )
+
+    self.assertEquals( len( chipSamples ), self.symbolDuration )
+
+    result = \
+      python_csignal_modulate_BFSK_symbol( symbol, self.symbolDuration, self.sampleRate, self.carrierFrequency )
+
+    self.assertNotEquals( None, result )
+    self.assertEquals( len( result ), 2 )
+
+    ( inphaseSignal, quadratureSignal ) = result
+
+    self.assertNotEquals( None, inphaseSignal )
+    self.assertNotEquals( None, quadratureSignal )
+
+    self.assertEquals( len( inphaseSignal ), self.symbolDuration )
+    self.assertEquals( len( quadratureSignal ), self.symbolDuration )
+
+    inphase =  \
+      python_csignal_multiply_signals( chipSamples, inphaseSignal )
+
+    self.assertNotEquals( None, inphase )
+    self.assertEquals( len( inphase ), self.symbolDuration )
+
+    quadrature = \
+      python_csignal_multiply_signals( chipSamples, quadratureSignal )
+
+    self.assertNotEquals( None, quadrature )
+    self.assertEquals( len( quadrature ), self.symbolDuration )
+
+    for i in range( self.symbolDuration ):
+      sampleValue = inphase[ i ] - quadrature[ i ]
+
+      signal.append( sampleValue )
+
+    self.assertNotEquals( None, signal )
+    self.assertEquals( len( signal ), self.symbolDuration )
+
+    return( signal )
+
   def modulateData( self, inphaseSymbol, quadratureSymbol ):
     signal = []
 
@@ -824,7 +884,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.assertNotEquals( None, self.dataStream )
 
     for i in range( self.numberOfTrainingSymbols ):
-      symbol = i % self.constellationSize
+      symbol = 0
+      #symbol = i % self.constellationSize
       symbol = struct.unpack( 'B', chr( symbol ) )[ 0 ]
 
       bit_packer_add_bits( symbol, self.bitsPerSymbol, self.dataPacker )
@@ -863,7 +924,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     signal = []
 
-    for i in range( self.numberOfTrainingSymbols + self.numberOfDataSymbols ):
+    for i in range( self.numberOfTrainingSymbols ):
       ( numberOfBits, buffer ) = \
         python_bit_stream_get_bits( self.dataStream, self.bitsPerSymbol ) 
 
@@ -877,10 +938,31 @@ class TestsEqualizer( unittest.TestCase ):
       ( inphaseSymbol, quadratureSymbol ) = \
         python_modulate_symbol( symbol, self.constellationSize )
 
-      #inphaseSignal    = self.symbolSignals[ symbol ][ 0 ]
-      #quadratureSignal = self.symbolSignals[ symbol ][ 1 ]
-
       part = self.modulateData( inphaseSymbol, quadratureSymbol )
+
+      self.assertNotEquals( part, None )
+
+      signal = signal + part
+
+    signal = signal + [ 0.0 for i in range( 2 * self.sampleRate ) ]
+
+    self.assertEquals (
+      bit_stream_reset( self.spreadingSignalStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    for i in range( self.numberOfDataSymbols ):
+      ( numberOfBits, buffer ) = \
+        python_bit_stream_get_bits( self.dataStream, self.bitsPerSymbol ) 
+
+      self.assertEquals( numberOfBits, self.bitsPerSymbol )
+      self.assertNotEquals( buffer, None )
+
+      symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - self.bitsPerSymbol )
+
+      self.assertNotEquals( symbol, None )
+
+      part = self.modulateBFSKData( symbol )
 
       self.assertNotEquals( part, None )
 
@@ -915,6 +997,177 @@ class TestsEqualizer( unittest.TestCase ):
     [ self.assertNotEquals( None, value ) for value in signal ]
 
     return( signal )
+
+  def exhaustiveFindMax( self, signal, sample, startIndex, endIndex ):
+    energy = []
+
+    print "Performing exhaustive search between %d and %d." \
+      %( startIndex, endIndex )
+
+    for i in range( startIndex, endIndex ):
+      signalEnergy =  \
+        self.calculateEnergy  (
+          signal[ i : i + len( sample ) ],
+          sample
+                              )
+
+      energy.append( signalEnergy )
+
+    maxIndex = 0
+
+    print "Energy: %d" %( len( energy ) )
+
+    for i in range( 1, len( energy ) ):
+      if( energy[ i ] > energy[ maxIndex ] ):
+        maxIndex = i
+
+        print "Max energy: %.04f\tIndex: %d" %( energy[ maxIndex ], startIndex + maxIndex )
+
+    return( startIndex + maxIndex )
+
+  def findMax( self, signal, sample, startIndex, endIndex ):
+    if( endIndex - startIndex < 200 ):
+      return( self.exhaustiveFindMax( signal, sample, startIndex, endIndex ) )
+
+    print "Start: %d\tEnd: %d" %( startIndex, endIndex )
+
+    midIndex = int( ( 1.0 * startIndex + 1.0 * endIndex ) / 2.0 )
+
+    hiIndex = int( ( 1.0 * midIndex + 1.0 * endIndex ) / 2.0 )
+    loIndex = int( ( 1.0 * startIndex + 1.0 * midIndex ) / 2.0 )
+
+    print "Low: %d\tMid: %d\tHigh: %d" %( loIndex, midIndex, hiIndex )
+
+    hiEnergy =  \
+      self.calculateEnergy  (
+        signal[ hiIndex : hiIndex + len( sample ) ],
+        sample
+                            )
+    loEnergy =  \
+      self.calculateEnergy  (
+        signal[ loIndex : loIndex + len( sample ) ],
+        sample
+                            )
+
+    print "Low energy: %.04f\tHi energy: %.04f" %( loEnergy, hiEnergy )
+
+    if( hiEnergy > loEnergy ):
+      return( self.findMax( signal, sample, midIndex, endIndex ) )
+    else:
+      return( self.findMax( signal, sample, startIndex, midIndex ) )
+
+  def findPilot( self, signal ):
+    self.assertEquals (
+      bit_stream_reset( self.spreadingSignalStream ),
+      CPC_ERROR_CODE_NO_ERROR
+                      )
+
+    nTrainingSamples = self.numberOfTrainingSymbols * self.symbolDuration
+
+    result =  \
+      python_bit_stream_get_bits  (
+        self.spreadingSignalStream,
+        64 * nTrainingSamples
+                                    )
+
+    self.assertNotEquals( None, result )
+    self.assertEquals( len( result ), 2 )
+
+    ( numberOfBits, buffer ) = result
+
+    self.assertNotEquals( None, numberOfBits )
+    self.assertNotEquals( None, buffer )
+
+    self.assertEquals( numberOfBits, 64 * nTrainingSamples )
+    self.assertEquals( len( buffer ), 8 * nTrainingSamples )
+
+    chipSamples = list( struct.unpack( "d" * nTrainingSamples, buffer ) )
+
+    self.assertEquals( len( chipSamples ), nTrainingSamples )
+
+    nTests    = int( math.ceil( 3.0 * self.sampleRate ) ) - len( chipSamples )
+    maxNTests = len( signal ) - len( chipSamples )
+
+    if( nTests > maxNTests ):
+      nTests = maxNTests
+
+    print "Number of tests: %d" %( nTests )
+    print "Length of signal: %d" %( len( signal ) )
+
+    energy = []
+
+    foundPilot  = False
+    startIndex  = -1
+
+    startTime = time.time()
+
+    ranges = []
+
+    startIndex = -1
+
+    decimationFactor = 10
+
+    for i in range( 0, nTests, nTests / decimationFactor ):
+      signalEnergy =  \
+        self.calculateEnergy  (
+          signal[ i : i + len( chipSamples ) ],
+          chipSamples
+                              )
+
+      print signalEnergy
+
+      if( signalEnergy >= self.threshold ):
+        if( startIndex == -1 ):
+          startIndex = i
+      else:
+        if( startIndex != -1 ):
+          ranges.append( [ startIndex, i ] )
+
+          startIndex = -1
+
+    runTime = time.time() - startTime
+
+    if( startIndex != -1 ):
+      ranges.append( [ startIndex, i ] )
+
+    print "Scanned %d items in %.04f seconds." %( decimationFactor, runTime )
+    print "Ranges: ", ranges
+
+    for offsets in ranges:
+      maxOffset = self.findMax( signal, chipSamples, offsets[ 0 ], offsets[ 1 ] )
+
+      print "Max offset between %d and %d is %d." \
+        %( offsets[ 0 ], offsets[ 1 ], maxOffset )
+
+    sys.exit()
+
+    for i in range( 0, nTests, self.chipDecimationFactor ):
+      signalEnergy =  \
+        self.calculateEnergy  (
+          signal[ i : i + len( chipSamples ) ],
+          chipSamples
+                              )
+        
+      energy.append( signalEnergy )
+
+    self.outputSequence( "pilot.dat", energy )
+
+    sys.exit()
+
+    #if( foundPilot ):
+      #print "Start: %d" %( startIndex )
+
+      #sortedEnergy = sorted( energy[ startIndex : ], None, None, True )
+
+      #searchIndices = []
+
+      #for i in range( startIndex, len( energy ) ):
+        #if( energy[ i ] >= sortedEnergy[ self.numberOfStartOffsets - 1 ] ):
+          #searchIndices.append( i * self.chipDecimationFactor )
+
+      #return( searchIndices )
+    #else:
+      #return( None )
 
   def calculateEnergy( self, signal, chipSignal ):
     despread  = \
@@ -1261,7 +1514,9 @@ class TestsEqualizer( unittest.TestCase ):
     return( valueScore, symbolScore )
 
   def getReceivedSignal( self ):
-    wavPath = "/Users/user/Downloads/received_1.WAV"
+    wavPath = "/Users/user/Downloads/data.WAV"
+    #wavPath = "/Users/user/Downloads/pilot.WAV"
+    #wavPath = "/Users/user/Downloads/noise.WAV"
 
     signal = []
 
@@ -1424,16 +1679,47 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.outputSignal( "transmitted.WAV", transmittedSignal )
 
-    receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
+    #receivedSignal = self.perturbSignal( transmittedSignal, self.SNR )
 
-    #receivedSignal = self.getReceivedSignal()
+    receivedSignal = self.getReceivedSignal()
 
     self.outputSignal( "received.WAV", receivedSignal )
 
     #( filteredSignal, bandpassSignal ) = self.receiveSignal( receivedSignal )
     filteredSignal = self.receiveSignal( receivedSignal )
 
-    print "Delay from wideband filter: %d samples." %( python_filter_get_group_delay( self.widebandFilter ) )
+    widebandDelay = python_filter_get_group_delay( self.widebandFilter )
+
+    print "Delay from wideband filter: %d samples." %( widebandDelay )
+
+    pilotOffsets = self.findPilot( filteredSignal[ widebandDelay : ] )
+
+    if( pilotOffsets and len( pilotOffsets ) > 0 ):
+      print "Start offsets: ", pilotOffsets
+
+      for i in range( len( pilotOffsets ) ):
+        pilotOffset = pilotOffsets[ i ]
+
+        print "Start offset: ", pilotOffset
+
+        dataStartOffset = \
+          widebandDelay + pilotOffset \
+          + ( self.numberOfTrainingSymbols * self.symbolDuration )  \
+          + ( 2 * self.sampleRate )
+
+        print "Data start offset is %d." %( dataStartOffset )
+  
+        self.outputSignal( "filteredOffsetSignal_%d.WAV" %( dataStartOffset ), filteredSignal[ dataStartOffset : ] )
+
+        despreadSignal = self.despreadSignal( filteredSignal[ dataStartOffset : ] )
+  
+        despreadOffset = python_filter_get_group_delay( self.narrowbandFilter )
+
+        print "Delay from narrowband filter: %d samples." %( despreadOffset )
+
+        self.outputSignal( "despreadSignal_%d.WAV" %( dataStartOffset ), despreadSignal[ despreadOffset : ] )
+
+    sys.exit()
 
     print "Sample delay is %d." %( self.delay )
 
@@ -2117,7 +2403,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     if( file ):
       for i in range( len( sequence ) ):
-        file.write( "%.02f\t%.02f\n" %( variable[ i ], sequence[ i ] ) )
+        file.write( "%f\t%f\n" %( variable[ i ], sequence[ i ] ) )
 
       file.close() 
 
@@ -2126,7 +2412,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     if( file ):
       for i in range( len( sequence ) ):
-        file.write( "%.02f\t%.02f\n" %( i, sequence[ i ] ) )
+        file.write( "%f\t%f\n" %( i, sequence[ i ] ) )
 
       file.close() 
 

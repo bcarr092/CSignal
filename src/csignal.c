@@ -122,7 +122,7 @@ csignal_modulate_BFSK_symbol  (
           ( in_symbol ? delta_frequency / 2.0 : -1.0 * delta_frequency / 2.0 );
         
         CPC_LOG (
-                 CPC_LOG_LEVEL_ERROR,
+                 CPC_LOG_LEVEL_TRACE,
                  "Symbol: %d\tFrequency: %.02f",
                  in_symbol,
                  frequency
