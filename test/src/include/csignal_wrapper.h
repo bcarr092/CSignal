@@ -483,4 +483,25 @@ python_csignal_modulate_BFSK_symbol  (
                                       FLOAT32    in_carrier_frequency
                                       );
 
+PyObject*
+python_detect_calculate_energy (
+                                PyObject*            in_signal,
+                                PyObject*            in_spread_signal,
+                                fir_passband_filter* in_narrowband_filter,
+                                fir_passband_filter* in_lowpass_filter
+                                );
+
+PyObject*
+python_detect_find_highest_energy_offset (
+                                  PyObject*            in_signal,
+                                  PyObject*            in_spread_signal,
+                                  USIZE                in_number_of_tests,
+                                  USIZE                in_step_size,
+                                  fir_passband_filter* in_narrowband_filter,
+                                  fir_passband_filter* in_lowpass_filter,
+                                  FLOAT64              in_exhaustive_difference,
+                                  UINT32               in_exhaustive_decimation,
+                                  FLOAT64              in_threshold
+                                          );
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

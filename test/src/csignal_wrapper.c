@@ -2092,3 +2092,231 @@ python_csignal_modulate_BFSK_symbol  (
     Py_RETURN_NONE;
   }
 }
+
+PyObject*
+python_detect_calculate_energy (
+                                PyObject*            in_signal,
+                                PyObject*            in_spread_signal,
+                                fir_passband_filter* in_narrowband_filter,
+                                fir_passband_filter* in_lowpass_filter
+                                )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  
+  FLOAT64* signal         = NULL;
+  FLOAT64* spread_signal  = NULL;
+  
+  FLOAT64 energy  = 0.0;
+  
+  USIZE signal_length         = 0;
+  USIZE spread_signal_length  = 0;
+  
+  PyObject* energy_output = NULL;
+  
+  if  (
+       NULL == in_signal
+       || Py_None == in_signal
+       || NULL == in_spread_signal
+       || Py_None == in_spread_signal
+       || NULL == in_narrowband_filter
+       || NULL == in_lowpass_filter
+       )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal (0x%x), spread signal (0x%x), narrowband (0x%x),"
+               " or lowpass (0x%x) are null or Python None.",
+               in_signal,
+               in_spread_signal,
+               in_narrowband_filter,
+               in_lowpass_filter
+               );
+  }
+  else
+  {
+    result =
+    python_convert_list_to_array  (
+                                   in_signal,
+                                   &signal_length,
+                                   &signal
+                                   );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      result =
+      python_convert_list_to_array  (
+                                     in_spread_signal,
+                                     &spread_signal_length,
+                                     &spread_signal
+                                     );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        result =
+        detect_calculate_energy (
+                                 signal_length,
+                                 signal,
+                                 spread_signal_length,
+                                 spread_signal,
+                                 in_narrowband_filter,
+                                 in_lowpass_filter,
+                                 &energy
+                                 );
+        
+        if( CPC_ERROR_CODE_NO_ERROR == result )
+        {
+          energy_output = PyFloat_FromDouble( energy );
+          
+          if( NULL == energy_output || ! PyFloat_Check( energy_output ) )
+          {
+            result = CPC_ERROR_CODE_API_ERROR;
+            
+            CPC_ERROR (
+                       "Could not convert Float (%.04f) to Python object.",
+                       energy
+                       );
+          }
+        }
+      }
+    }
+  }
+  
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+  
+  if( NULL != spread_signal )
+  {
+    cpc_safe_free( ( void** ) &spread_signal );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( energy_output );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_detect_find_highest_energy_offset (
+                                  PyObject*            in_signal,
+                                  PyObject*            in_spread_signal,
+                                  USIZE                in_number_of_tests,
+                                  USIZE                in_step_size,
+                                  fir_passband_filter* in_narrowband_filter,
+                                  fir_passband_filter* in_lowpass_filter,
+                                  FLOAT64              in_exhaustive_difference,
+                                  UINT32               in_exhaustive_decimation,
+                                  FLOAT64              in_threshold
+                                          )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  
+  FLOAT64* signal         = NULL;
+  FLOAT64* spread_signal  = NULL;
+  
+  USIZE offset = 0;
+  
+  USIZE signal_length         = 0;
+  USIZE spread_signal_length  = 0;
+  
+  PyObject* offset_output = NULL;
+  
+  if  (
+       NULL == in_signal
+       || Py_None == in_signal
+       || NULL == in_spread_signal
+       || Py_None == in_spread_signal
+       || NULL == in_narrowband_filter
+       || NULL == in_lowpass_filter
+       )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Signal (0x%x), spread signal (0x%x), narrowband (0x%x),"
+               " or lowpass (0x%x) are null or Python None.",
+               in_signal,
+               in_spread_signal,
+               in_narrowband_filter,
+               in_lowpass_filter
+               );
+  }
+  else
+  {
+    result =
+    python_convert_list_to_array  (
+                                   in_signal,
+                                   &signal_length,
+                                   &signal
+                                   );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      result =
+      python_convert_list_to_array  (
+                                     in_spread_signal,
+                                     &spread_signal_length,
+                                     &spread_signal
+                                     );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        result =
+        detect_find_highest_energy_offset (
+                                           signal_length,
+                                           signal,
+                                           spread_signal_length,
+                                           spread_signal,
+                                           in_number_of_tests,
+                                           in_step_size,
+                                           in_narrowband_filter,
+                                           in_lowpass_filter,
+                                           in_threshold,
+                                           in_exhaustive_difference,
+                                           in_exhaustive_decimation,
+                                           &offset
+                                           );
+        
+        if( CPC_ERROR_CODE_NO_ERROR == result )
+        {
+          offset_output = PyInt_FromSize_t( offset );
+          
+          if( NULL == offset_output || ! PyInt_Check( offset_output ) )
+          {
+            result = CPC_ERROR_CODE_API_ERROR;
+            
+            CPC_ERROR (
+                       "Could not convert offset (0x%x) to Python object.",
+                       offset
+                       );
+          }
+        }
+      }
+    }
+  }
+  
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** ) &signal );
+  }
+  
+  if( NULL != spread_signal )
+  {
+    cpc_safe_free( ( void** ) &spread_signal );
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( offset_output );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}

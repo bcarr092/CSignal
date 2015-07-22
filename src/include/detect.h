@@ -64,4 +64,31 @@ csignal_calculate_thresholds  (
                                FLOAT64**            out_thresholds
                                );
 
+csignal_error_code
+detect_calculate_energy (
+                         USIZE                in_signal_length,
+                         FLOAT64*             in_signal,
+                         USIZE                in_spread_signal_length,
+                         FLOAT64*             in_spread_signal,
+                         fir_passband_filter* in_narrowband_filter,
+                         fir_passband_filter* in_lowpass_filter,
+                         FLOAT64*             out_energy
+                         );
+
+csignal_error_code
+detect_find_highest_energy_offset (
+                               USIZE                in_signal_length,
+                               FLOAT64*             in_signal,
+                               USIZE                in_spreading_signal_length,
+                               FLOAT64*             in_spread_signal,
+                               USIZE                in_number_of_tests,
+                               USIZE                in_step_size,
+                               fir_passband_filter* in_narrowband_filter,
+                               fir_passband_filter* in_lowpass_filter,
+                               FLOAT64              in_threshold,
+                               FLOAT64              in_exhaustive_difference,
+                               UINT32               in_exhaustive_decimation,
+                               USIZE*               out_offset
+                                   );
+
 #endif  /*  __DETECT_H__  */

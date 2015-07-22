@@ -1,5 +1,6 @@
 from csignal_tests import *
 
+import re
 import sys
 import time
 import os
@@ -11,6 +12,8 @@ import struct
 import string
 
 import wave
+
+dataFile = None
 
 class TestsEqualizer( unittest.TestCase ):
   def tearDown( self ):
@@ -112,7 +115,7 @@ class TestsEqualizer( unittest.TestCase ):
     #self.SNR               = -10 
 
     self.numberOfStartOffsets = 2
-    self.threshold            = 1
+    self.threshold            = 2.0
     self.SNR                  = 20
 
     self.widebandStopbandGap    = 1000
@@ -151,8 +154,8 @@ class TestsEqualizer( unittest.TestCase ):
     #self.dataSequence = [ 0,  0,  0,  0,  1,  1,  1,  1,  0,  1,  1,  0,  1,  1,  0,  0,  0,  0,  1,  0,  0,  1,  1,  1,  0,  1,  1,  0,  0,  1,  1,  0,  0,  0,  1,  0,  1,  1,  0,  1,  0,  0,  0,  1,  0,  0,  0,  1,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  1,  0,  1,  0,  0,  1,  0,  1,  0,  0,  1,  0,  1,  1,  1,  0,  1,  0,  1,  1,  1,  1,  0,  1,  1,  0,  0,  0,  0,  0,  1,  0,  1,  0,  0,  1  ]
     self.dataSequence = None
 
-    self.numberOfTrainingSymbols  = 2
-    self.numberOfDataSymbols      = 10
+    self.numberOfTrainingSymbols  = 1
+    self.numberOfDataSymbols      = 20
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -944,7 +947,7 @@ class TestsEqualizer( unittest.TestCase ):
 
       signal = signal + part
 
-    signal = signal + [ 0.0 for i in range( 2 * self.sampleRate ) ]
+    signal = signal + [ 0.0 for i in range( int( 0.5 * self.sampleRate ) ) ]
 
     self.assertEquals (
       bit_stream_reset( self.spreadingSignalStream ),
@@ -1057,6 +1060,10 @@ class TestsEqualizer( unittest.TestCase ):
       return( self.findMax( signal, sample, startIndex, midIndex ) )
 
   def findPilot( self, signal ):
+    datFileName = "pilot_%s.dat" %( versionInfo )
+
+    print "Saving test data to %s." %( datFileName )
+
     self.assertEquals (
       bit_stream_reset( self.spreadingSignalStream ),
       CPC_ERROR_CODE_NO_ERROR
@@ -1085,7 +1092,7 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.assertEquals( len( chipSamples ), nTrainingSamples )
 
-    nTests    = int( math.ceil( 3.0 * self.sampleRate ) ) - len( chipSamples )
+    nTests    = int( math.ceil( 1.0 * self.sampleRate ) ) - len( chipSamples )
     maxNTests = len( signal ) - len( chipSamples )
 
     if( nTests > maxNTests ):
@@ -1107,52 +1114,87 @@ class TestsEqualizer( unittest.TestCase ):
 
     decimationFactor = 10
 
-    for i in range( 0, nTests, nTests / decimationFactor ):
-      signalEnergy =  \
-        self.calculateEnergy  (
-          signal[ i : i + len( chipSamples ) ],
-          chipSamples
-                              )
+    #for i in range( 0, nTests, nTests / decimationFactor ):
+      #signalEnergy =  \
+        #self.calculateEnergy  (
+          #signal[ i : i + len( chipSamples ) ],
+          #chipSamples
+                              #)
 
-      print signalEnergy
+      #print signalEnergy
 
-      if( signalEnergy >= self.threshold ):
-        if( startIndex == -1 ):
-          startIndex = i
-      else:
-        if( startIndex != -1 ):
-          ranges.append( [ startIndex, i ] )
+      #if( signalEnergy >= self.threshold ):
+        #if( startIndex == -1 ):
+          #startIndex = i
+      #else:
+        #if( startIndex != -1 ):
+          #ranges.append( [ startIndex, i ] )
 
-          startIndex = -1
+          #startIndex = -1
+
+
+    #if( startIndex != -1 ):
+      #ranges.append( [ startIndex, i ] )
+
+    #print "Scanned %d items in %.04f seconds." %( decimationFactor, runTime )
+    #print "Ranges: ", ranges
+
+    startTime = time.time()
+
+    offset = python_detect_find_highest_energy_offset  (
+      signal,
+      chipSamples,
+      nTests,
+      ( nTests / decimationFactor ),
+      self.narrowbandFilter,
+      self.lowpassFilter,
+      0.1,
+      self.chipDecimationFactor,
+      self.threshold
+                                                        )
 
     runTime = time.time() - startTime
 
-    if( startIndex != -1 ):
-      ranges.append( [ startIndex, i ] )
+    print "Peak: ", offset
+    print "Peak detection took %.04f seconds." %( runTime )
 
-    print "Scanned %d items in %.04f seconds." %( decimationFactor, runTime )
-    print "Ranges: ", ranges
+    return( offset )
 
-    for offsets in ranges:
-      maxOffset = self.findMax( signal, chipSamples, offsets[ 0 ], offsets[ 1 ] )
+    #for offsets in ranges:
+      #maxOffset = self.findMax( signal, chipSamples, offsets[ 0 ], offsets[ 1 ] )
 
-      print "Max offset between %d and %d is %d." \
-        %( offsets[ 0 ], offsets[ 1 ], maxOffset )
+      #print "Max offset between %d and %d is %d." \
+        #%( offsets[ 0 ], offsets[ 1 ], maxOffset )
 
-    sys.exit()
+    #maxOffset = 0
 
-    for i in range( 0, nTests, self.chipDecimationFactor ):
-      signalEnergy =  \
-        self.calculateEnergy  (
-          signal[ i : i + len( chipSamples ) ],
-          chipSamples
-                              )
-        
-      energy.append( signalEnergy )
+    #startTime = time.time()
 
-    self.outputSequence( "pilot.dat", energy )
+    #for i in range( 0, nTests, self.chipDecimationFactor ):
+    #for i in range( 0, nTests ):
+      #signalEnergy =  \
+        #self.calculateEnergy  (
+          #signal[ i : i + len( chipSamples ) ],
+          #chipSamples
+                              #)
+    
+      #energy.append( signalEnergy )
 
-    sys.exit()
+      #if( signalEnergy > energy[ maxOffset ] ):
+        #maxOffset = i / self.chipDecimationFactor
+        #maxOffset = i
+
+    #runTime = time.time() - startTime
+
+    #self.outputSequence( datFileName, energy )
+
+    #maxOffset = maxOffset * self.chipDecimationFactor
+
+    #print "Exhaustive peak: %d" %( maxOffset )
+    #print "Exhaustive peak detection took %.04f seconds." %( runTime )
+
+    #if( offset != maxOffset ):
+      #print "ERROR: Mismatch offset detected!"
 
     #if( foundPilot ):
       #print "Start: %d" %( startIndex )
@@ -1170,18 +1212,26 @@ class TestsEqualizer( unittest.TestCase ):
       #return( None )
 
   def calculateEnergy( self, signal, chipSignal ):
-    despread  = \
-      python_csignal_multiply_signals (
+    signalEnergy =  \
+      python_detect_calculate_energy  (
+        signal,
         chipSignal,
-        signal
+        self.narrowbandFilter,
+        self.lowpassFilter
                                       )
 
-    filtered  = python_filter_signal( self.narrowbandFilter, despread )
-    squared   = python_csignal_multiply_signals( filtered, filtered )
-    filtered  = python_filter_signal( self.lowpassFilter, squared )
-    signalE   = python_csignal_sum_signal( filtered, 1.0 )
+    #despread  = \
+      #python_csignal_multiply_signals (
+        #chipSignal,
+        #signal
+                                      #)
 
-    return( signalE )
+    #filtered  = python_filter_signal( self.narrowbandFilter, despread )
+    #squared   = python_csignal_multiply_signals( filtered, filtered )
+    #filtered  = python_filter_signal( self.lowpassFilter, squared )
+    #signalE   = python_csignal_sum_signal( filtered, 1.0 )
+
+    return( signalEnergy )
 
   def findStartOffset( self, signal ):
     self.assertEquals (
@@ -1514,17 +1564,17 @@ class TestsEqualizer( unittest.TestCase ):
     return( valueScore, symbolScore )
 
   def getReceivedSignal( self ):
-    wavPath = "/Users/user/Downloads/data.WAV"
+    #wavPath = "/Users/user/Downloads/data.WAV"
     #wavPath = "/Users/user/Downloads/pilot.WAV"
     #wavPath = "/Users/user/Downloads/noise.WAV"
 
     signal = []
 
     try:
-      wav = wave.open( wavPath, 'r' )
+      wav = wave.open( dataFile, 'r' )
 
       if( wav ):
-        print "Received file: %s" %( wavPath )
+        print "Received file: %s" %( dataFile )
         print "Channels: %d" %( wav.getnchannels() )
         print "Sample width: %d" %( wav.getsampwidth() )
         print "Sample rate: %d" %( wav.getframerate() )
@@ -1692,32 +1742,29 @@ class TestsEqualizer( unittest.TestCase ):
 
     print "Delay from wideband filter: %d samples." %( widebandDelay )
 
-    pilotOffsets = self.findPilot( filteredSignal[ widebandDelay : ] )
+    pilotOffset = self.findPilot( filteredSignal[ widebandDelay : ] )
 
-    if( pilotOffsets and len( pilotOffsets ) > 0 ):
-      print "Start offsets: ", pilotOffsets
+    if( pilotOffset ):
+      print "Start offset: %d" %( pilotOffset )
 
-      for i in range( len( pilotOffsets ) ):
-        pilotOffset = pilotOffsets[ i ]
+      dataStartOffset = \
+        widebandDelay + pilotOffset \
+        + ( self.numberOfTrainingSymbols * self.symbolDuration )  \
+        + ( int( 0.5 * self.sampleRate ) )
 
-        print "Start offset: ", pilotOffset
-
-        dataStartOffset = \
-          widebandDelay + pilotOffset \
-          + ( self.numberOfTrainingSymbols * self.symbolDuration )  \
-          + ( 2 * self.sampleRate )
-
-        print "Data start offset is %d." %( dataStartOffset )
+      print "Data start offset is %d." %( dataStartOffset )
   
-        self.outputSignal( "filteredOffsetSignal_%d.WAV" %( dataStartOffset ), filteredSignal[ dataStartOffset : ] )
+      self.outputSignal( "filteredOffsetSignal_%d.WAV" %( dataStartOffset ), filteredSignal[ dataStartOffset : ] )
 
-        despreadSignal = self.despreadSignal( filteredSignal[ dataStartOffset : ] )
+      despreadSignal = self.despreadSignal( filteredSignal[ dataStartOffset : ] )
   
-        despreadOffset = python_filter_get_group_delay( self.narrowbandFilter )
+      despreadOffset = python_filter_get_group_delay( self.narrowbandFilter )
 
-        print "Delay from narrowband filter: %d samples." %( despreadOffset )
+      print "Delay from narrowband filter: %d samples." %( despreadOffset )
 
-        self.outputSignal( "despreadSignal_%d.WAV" %( dataStartOffset ), despreadSignal[ despreadOffset : ] )
+      self.outputSignal( "despreadSignal_%d.WAV" %( dataStartOffset ), despreadSignal[ despreadOffset : ] )
+
+    self.determineFrequencies( despreadSignal[ despreadOffset : ] )
 
     sys.exit()
 
@@ -1853,80 +1900,103 @@ class TestsEqualizer( unittest.TestCase ):
     return( rawValues, demodulatedSymbols )
 
   def determineFrequencies( self, signal ):
-    decisions = []
+    #decisions = []
 
-    symbol0 = self.symbolSignals[ 0 ][ 0 ]
-    symbol1 = self.symbolSignals[ 1 ][ 0 ]
+    #symbol0 = self.symbolSignals[ 0 ][ 0 ]
+    #symbol1 = self.symbolSignals[ 1 ][ 0 ]
     #symbol0 = map( lambda x, y: x - y, self.symbolSignals[ 0 ][ 0 ], self.symbolSignals[ 0 ][ 1 ] )
     #symbol1 = map( lambda x, y: x - y, self.symbolSignals[ 1 ][ 0 ], self.symbolSignals[ 1 ][ 1 ] )
 
-    e_s0 = python_csignal_calculate_energy( symbol0 )
-    e_s1 = python_csignal_calculate_energy( symbol1 )
+    #e_s0 = python_csignal_calculate_energy( symbol0 )
+    #e_s1 = python_csignal_calculate_energy( symbol1 )
 
-    symbol0 = map( lambda x: x / e_s0, symbol0 )
-    symbol1 = map( lambda x: x / e_s1, symbol1 )
+    #symbol0 = map( lambda x: x / e_s0, symbol0 )
+    #symbol1 = map( lambda x: x / e_s1, symbol1 )
 
-    for i in range( 0, len( signal ), self.symbolDuration ):
-      if( len( signal ) - i < self.symbolDuration ):
-        break
+    #for i in range( 0, len( signal ), self.symbolDuration ):
+      #if( len( signal ) - i < self.symbolDuration ):
+        #break
 
-      e_s = python_csignal_calculate_energy( signal[ i : i + self.symbolDuration ] )
+      #e_s = python_csignal_calculate_energy( signal[ i : i + self.symbolDuration ] )
 
-      r = map( lambda x: x / e_s, signal[ i : i + self.symbolDuration ] )
+      #r = map( lambda x: x / e_s, signal[ i : i + self.symbolDuration ] )
 
-      c_s0 = python_csignal_multiply_signals( symbol0, r )
-      c_s1 = python_csignal_multiply_signals( symbol1, r )
+      #c_s0 = python_csignal_multiply_signals( symbol0, r )
+      #c_s1 = python_csignal_multiply_signals( symbol1, r )
 
-      c_s0 = python_csignal_sum_signal( c_s0, 1 )
-      c_s1 = python_csignal_sum_signal( c_s1, 1 )
+      #c_s0 = python_csignal_sum_signal( c_s0, 1 )
+      #c_s1 = python_csignal_sum_signal( c_s1, 1 )
 
       #print "Correlation %02d: 0:%+01.04f\t1:%+01.04f\tDecision:%d" %( ( i / self.symbolDuration ), c_s0, c_s1, ( 0 if( c_s0 > c_s1 ) else 1 ) )
 
+    count = 0
+
+    deltaFrequency  = ( 1.0 * self.sampleRate ) / ( 1.0 * self.symbolDuration )
+    lowFrequency    = ( 1.0 * self.carrierFrequency ) - ( deltaFrequency / 2.0 )
+    hiFrequency     = ( 1.0 * self.carrierFrequency ) + ( deltaFrequency / 2.0 )
+
+    print "Delta: %.04f" %( deltaFrequency )
+
     for i in range( 0, len( signal ), self.symbolDuration ):
       if( len( signal ) - i < self.symbolDuration ):
         break
+
+      count = count + 1
 
       testSignal    = signal[ i : i + self.symbolDuration ] * 10
       fft           = python_calculate_FFT( testSignal )
       fftMagnitudes = map( lambda x: abs( x ), fft )
 
-      N     = len( fftMagnitudes )
-      delta = 1.0 / self.sampleRate
+      N     = 1.0 * len( fftMagnitudes )
+      delta = 1.0 / ( 1.0 * self.sampleRate )
 
-      maxValue = -1
+      lowIndex  = int( math.floor( lowFrequency * delta * N ) )
+      hiIndex   = int( math.ceil( hiFrequency * delta * N ) )
+
       maxIndex = 0
 
-      for j in range( 1, N / 2 ):
-        if( fftMagnitudes[ j ] > maxValue ):
-          maxValue = fftMagnitudes[ j ]
-          maxIndex = j
+      for j in range( 1, int( N / 2 ) ):
+        frequency = ( 1.0 * j ) / ( delta * N )
+
+        if( int( frequency ) != self.carrierFrequency ):
+          if( fftMagnitudes[ j ] > fftMagnitudes[ maxIndex ] ):
+            maxIndex = j
+
+      lowDistance = abs( maxIndex - lowIndex )
+      hiDistance  = abs( maxIndex - hiIndex )
+
+      symbol = 1 if( hiDistance <= lowDistance ) else 0
+
+      print "Max index: %d\tFrequency: %.04f\tMagnitude: %.04f\tSymbol: %d" \
+        %( maxIndex, ( maxIndex / ( delta * N ) ), fftMagnitudes[ maxIndex ], symbol )
       
       #fft_mag = map( lambda x: 10**-12 if x == 0 else x, fft_mag )
       #fft_mag = map( lambda x: 10 * math.log10( x / max_value ), fft_mag )
 
-      #frequencies = []
-      #magnitudes  = []
+      frequencies = []
+      magnitudes  = []
 
-      one  = fftMagnitudes[ int( 21050.0 * delta * N ) ]
-      zero   = fftMagnitudes[ int( 20950.0 * delta * N ) ]
+      #one  = fftMagnitudes[ int( 21050.0 * delta * N ) ]
+      #zero   = fftMagnitudes[ int( 20950.0 * delta * N ) ]
 
       #print "Index magnitudes %02d: 0=%03.04f\t1=%03.04f\tDecision:%d" %( ( i / self.symbolDuration ), zero, one, 0 if( zero > one ) else 1  )
 
-      decisions.append( -1 if( zero > one ) else 1 )
+      #decisions.append( -1 if( zero > one ) else 1 )
 
       #frequency = maxIndex / ( delta * N )
 
       #print "Max frequency is %.02f" %( frequency )
 
-      #for n in range( N / 2 ):
-        #frequency = n / ( delta * N )
+      for n in range( int( N / 2 ) ):
+        frequency = ( 1.0 * n ) / ( delta * N )
 
-        #frequencies.append( frequency )
+        frequencies.append( frequency )
         #magnitudes.append( fft_mag[ n ] )
+        magnitudes.append( fftMagnitudes[ n ] )
 
-      #self.outputDependantSequence( "symbol_%d.dat" %( int( i / self.symbolDuration ) ), frequencies, magnitudes )
+      self.outputDependantSequence( "symbol_%d.dat" %( int( i / self.symbolDuration ) ), frequencies, magnitudes )
 
-    return( decisions )
+    #return( decisions )
 
   def getTrainingSequence( self ):
     self.assertEquals (
@@ -2417,6 +2487,24 @@ class TestsEqualizer( unittest.TestCase ):
       file.close() 
 
 if __name__ == '__main__':
+  print "Num arguments: %d" %( len( sys.argv ) )
+
+  if( len( sys.argv ) != 2 ):
+    print "ERROR: Script requires an input WAV file."
+
+    sys.exit()
+  else:
+    dataFile = sys.argv[ 1 ]
+
+    match = re.search( ".*\/data_(.*?)\.wav$", dataFile )
+
+    if( not match ):
+      print "ERROR: Could not extract info from file name."
+    else:
+      versionInfo = match.group( 1 )
+
+    sys.argv.remove( dataFile )
+
   cpc_log_set_log_level( CPC_LOG_LEVEL_ERROR )
 
   csignal_initialize()
