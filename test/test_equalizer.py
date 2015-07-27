@@ -94,7 +94,7 @@ class TestsEqualizer( unittest.TestCase ):
     self.bitDepth          = 16
     self.basebandAmplitude = 2 ** ( self.bitDepth - 2 ) - 1
     self.carrierFrequency  = 18000
-    self.symbolDuration    = 24000
+    self.symbolDuration    = 1500
     self.chipDuration      = 48
     self.testsPerChip      = 4
     self.samplesPerSymbol  = 1
@@ -150,12 +150,12 @@ class TestsEqualizer( unittest.TestCase ):
     self.generatorDegree  = 7
     self.codePeriod       = 2 ** self.generatorDegree - 1
 
-    #self.dataSequence = [ 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 ]
-    #self.dataSequence = [ 0,  0,  0,  0,  1,  1,  1,  1,  0,  1,  1,  0,  1,  1,  0,  0,  0,  0,  1,  0,  0,  1,  1,  1,  0,  1,  1,  0,  0,  1,  1,  0,  0,  0,  1,  0,  1,  1,  0,  1,  0,  0,  0,  1,  0,  0,  0,  1,  0,  0,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  1,  0,  1,  0,  0,  1,  0,  1,  0,  0,  1,  0,  1,  1,  1,  0,  1,  0,  1,  1,  1,  1,  0,  1,  1,  0,  0,  0,  0,  0,  1,  0,  1,  0,  0,  1  ]
-    self.dataSequence = None
+    self.dataSequence         = [ 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 ]
+    self.numberOfDataSymbols  = len( self.dataSequence )
+    #self.dataSequence = None
 
-    self.numberOfTrainingSymbols  = 1
-    self.numberOfDataSymbols      = 20
+    self.numberOfTrainingSymbols  = 32
+    #self.numberOfDataSymbols      = 20
     #self.numberOfTrainingSymbols =  \
       #int (
         #math.ceil (
@@ -947,7 +947,9 @@ class TestsEqualizer( unittest.TestCase ):
 
       signal = signal + part
 
-    signal = signal + [ 0.0 for i in range( int( 0.5 * self.sampleRate ) ) ]
+    synchronizationBuffer = self.numberOfTrainingSymbols * self.symbolDuration
+
+    signal = signal + [ 0.0 for i in range( synchronizationBuffer ) ]
 
     self.assertEquals (
       bit_stream_reset( self.spreadingSignalStream ),
@@ -1092,7 +1094,10 @@ class TestsEqualizer( unittest.TestCase ):
 
     self.assertEquals( len( chipSamples ), nTrainingSamples )
 
-    nTests    = int( math.ceil( 1.0 * self.sampleRate ) ) - len( chipSamples )
+    synchronizationPeriod = \
+      int( 2.0 * ( self.numberOfTrainingSymbols * self.symbolDuration ) )
+
+    nTests    = synchronizationPeriod - len( chipSamples )
     maxNTests = len( signal ) - len( chipSamples )
 
     if( nTests > maxNTests ):
@@ -1158,40 +1163,40 @@ class TestsEqualizer( unittest.TestCase ):
     print "Peak: ", offset
     print "Peak detection took %.04f seconds." %( runTime )
 
-    return( offset )
-
     #for offsets in ranges:
       #maxOffset = self.findMax( signal, chipSamples, offsets[ 0 ], offsets[ 1 ] )
 
       #print "Max offset between %d and %d is %d." \
         #%( offsets[ 0 ], offsets[ 1 ], maxOffset )
 
-    #maxOffset = 0
+    maxOffset = 0
 
-    #startTime = time.time()
+    startTime = time.time()
 
-    #for i in range( 0, nTests, self.chipDecimationFactor ):
+    for i in range( 0, nTests, self.chipDecimationFactor ):
     #for i in range( 0, nTests ):
-      #signalEnergy =  \
-        #self.calculateEnergy  (
-          #signal[ i : i + len( chipSamples ) ],
-          #chipSamples
-                              #)
+      signalEnergy =  \
+        self.calculateEnergy  (
+          signal[ i : i + len( chipSamples ) ],
+          chipSamples
+                              )
     
-      #energy.append( signalEnergy )
+      energy.append( signalEnergy )
 
-      #if( signalEnergy > energy[ maxOffset ] ):
-        #maxOffset = i / self.chipDecimationFactor
+      if( signalEnergy > energy[ maxOffset ] ):
+        maxOffset = i / self.chipDecimationFactor
         #maxOffset = i
 
-    #runTime = time.time() - startTime
+    runTime = time.time() - startTime
 
-    #self.outputSequence( datFileName, energy )
+    self.outputSequence( datFileName, energy )
 
-    #maxOffset = maxOffset * self.chipDecimationFactor
+    maxOffset = maxOffset * self.chipDecimationFactor
 
-    #print "Exhaustive peak: %d" %( maxOffset )
-    #print "Exhaustive peak detection took %.04f seconds." %( runTime )
+    print "Exhaustive peak: %d" %( maxOffset )
+    print "Exhaustive peak detection took %.04f seconds." %( runTime )
+
+    return( offset )
 
     #if( offset != maxOffset ):
       #print "ERROR: Mismatch offset detected!"
@@ -1621,8 +1626,8 @@ class TestsEqualizer( unittest.TestCase ):
         print "Max: %+.04f\tMin: %+.04f\tAverage: %+.04f" %( max( signal ), min( signal ), average )
         
         wav.close()
-    except wave.Error:
-      print "ERROR: Could not open '%s'." %( wavPath )
+    except wave.Error as e:
+      print "ERROR: Could not open '%s': %s" %( dataFile, str( e ) )
 
     return( signal )
 
@@ -1747,10 +1752,10 @@ class TestsEqualizer( unittest.TestCase ):
     if( pilotOffset ):
       print "Start offset: %d" %( pilotOffset )
 
-      dataStartOffset = \
-        widebandDelay + pilotOffset \
-        + ( self.numberOfTrainingSymbols * self.symbolDuration )  \
-        + ( int( 0.5 * self.sampleRate ) )
+      synchronizationPeriod = \
+        int( 2.0 * ( self.numberOfTrainingSymbols * self.symbolDuration ) )
+
+      dataStartOffset = widebandDelay + pilotOffset + synchronizationPeriod
 
       print "Data start offset is %d." %( dataStartOffset )
   
