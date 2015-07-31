@@ -134,8 +134,8 @@ python_calculate_FFT(
 
 PyObject*
 python_filter_signal(
-                     fir_passband_filter*  in_filter,
-                     PyObject*             in_signal
+                     fir_passband_filter*   in_filter,
+                     PyObject*              in_signal
                      )
 {
   PyObject* return_value  = NULL;
@@ -574,13 +574,117 @@ python_spread_signal(
 }
 
 CPC_BOOL
+python_write_LPCM_wav(
+                       PyObject*  in_file_name,
+                       USIZE      in_number_of_channels,
+                       UINT32     in_sample_rate,
+                       USIZE      in_number_of_samples,
+                       PyObject*  in_samples
+                       )
+{
+  FLOAT64** samples     = NULL;
+  CPC_BOOL return_value = CPC_TRUE;
+  
+  if(
+     0 >= in_number_of_channels
+     || 0 >= in_sample_rate
+     || 0 >= in_number_of_samples
+     )
+  {
+    CPC_ERROR(
+              "Number of channels: 0x%x, sample rate: 0x%x,"
+              " or number of samples: 0x%x is not positive",
+              in_number_of_channels,
+              in_sample_rate,
+              in_number_of_samples
+              );
+    
+    return_value = CPC_FALSE;
+  }
+  else
+  {
+    cpc_error_code result =
+    cpc_safe_malloc(
+                    ( void** )&samples,
+                    sizeof( FLOAT64* )* in_number_of_channels
+                    );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      for( USIZE i = 0; i < in_number_of_channels; i++ )
+      {
+        USIZE samples_length = 0;
+        
+        samples[ i ]  = NULL;
+        
+        result =
+        python_convert_list_to_array  (
+                                       PyList_GetItem( in_samples, i ),
+                                       &samples_length,
+                                       &( samples[ i ] )
+                                       );
+        
+        if( CPC_ERROR_CODE_NO_ERROR != result )
+        {
+          CPC_ERROR( "Could not set samples list for channel %d.", i );
+          
+          return_value = CPC_FALSE;
+          
+          break;
+        }
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not malloc samples array: 0x%x.", result );
+      
+      return_value = CPC_FALSE;
+    }
+  }
+  
+  if( return_value )
+  {
+    csignal_error_code result =
+    csignal_write_LPCM_wav(
+                           PyString_AsString( in_file_name ),
+                           in_number_of_channels,
+                           in_sample_rate,
+                           in_number_of_samples,
+                           samples
+                           );
+    
+    if( CPC_ERROR_CODE_NO_ERROR != result )
+    {
+      CPC_ERROR( "Could not write FLOAT WAV file: 0x%x.", result );
+      
+      return_value = CPC_FALSE;
+    }
+  }
+  
+  if( NULL != samples )
+  {
+    for( USIZE i = 0; i < in_number_of_channels; i++ )
+    {
+      if( NULL != samples[i] )
+      {
+        cpc_safe_free( ( void** )&( samples[i] ) );
+      }
+    }
+    
+    cpc_safe_free( ( void** )&samples );
+  }
+  
+  return( return_value );
+}
+
+CPC_BOOL
 python_write_FLOAT_wav(
-  PyObject* in_file_name,
-  size_t    in_number_of_channels,
-  int       in_sample_rate,
-  size_t    in_number_of_samples,
-  PyObject* in_samples
-)
+                       PyObject*  in_file_name,
+                       USIZE      in_number_of_channels,
+                       UINT32     in_sample_rate,
+                       USIZE      in_number_of_samples,
+                       PyObject*  in_samples
+                       )
 {
   FLOAT64** samples     = NULL;
   CPC_BOOL return_value = CPC_TRUE;

@@ -31,9 +31,9 @@ python_calculate_FFT(
  */
 PyObject*
 python_filter_signal(
-  fir_passband_filter*  in_filter,
-  PyObject*             in_signal
-);
+                     fir_passband_filter*   in_filter,
+                     PyObject*              in_signal
+                     );
 
 /*! \fn     fir_passband_filter* python_initialize_kaiser_filter (
               float in_first_stopband,
@@ -190,12 +190,20 @@ python_spread_signal(
 */
 CPC_BOOL
 python_write_FLOAT_wav(
-  PyObject* in_file_name,
-  size_t    in_number_of_channels,
-  int       in_sample_rate,
-  size_t    in_number_of_samples,
-  PyObject* in_samples
-);
+                       PyObject*  in_file_name,
+                       USIZE      in_number_of_channels,
+                       UINT32     in_sample_rate,
+                       USIZE      in_number_of_samples,
+                       PyObject*  in_samples
+                       );
+CPC_BOOL
+python_write_LPCM_wav(
+                       PyObject*  in_file_name,
+                       USIZE      in_number_of_channels,
+                       UINT32     in_sample_rate,
+                       USIZE      in_number_of_samples,
+                       PyObject*  in_samples
+                       );
 
 /*! \fn     PyObject* python_modulate_symbol  (
                unsigned int     in_symbol,

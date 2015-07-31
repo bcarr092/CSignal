@@ -685,7 +685,34 @@ detect_find_highest_energy_offset (
           
           if( offset >= 0 )
           {
-            *out_offset = offset;
+            SSIZE start_index = offset - in_exhaustive_decimation;
+            SSIZE end_index   = offset + in_exhaustive_decimation;
+            
+            CPC_LOG (
+                     CPC_LOG_LEVEL_ERROR,
+                     "Secondary exhaustive search between %d and %d.",
+                     start_index,
+                     end_index
+                     );
+            
+            return_value =
+              detect_exhaustive_find_max  (
+                                           in_signal_length,
+                                           in_signal,
+                                           in_spreading_signal_length,
+                                           in_spread_signal,
+                                           start_index,
+                                           end_index,
+                                           1,
+                                           in_narrowband_filter,
+                                           in_lowpass_filter,
+                                           &offset
+                                           );
+            
+            if( CPC_ERROR_CODE_NO_ERROR == return_value )
+            {
+              *out_offset = offset;
+            }
           }
           else
           {

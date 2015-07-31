@@ -80,11 +80,11 @@
 #define CSIGNAL_FLOAT_SAMPLE_SIZE               4
 
 /*! \fn     csignal_error_code csignal_write_LPCM_wav  (
-              CHAR*    in_file_name,
-              USIZE    in_number_of_channels,
-              UINT32   in_sample_rate,
-              USIZE    in_number_of_samples,
-              INT16**  in_samples
+              CHAR*     in_file_name,
+              USIZE     in_number_of_channels,
+              UINT32    in_sample_rate,
+              USIZE     in_number_of_samples,
+              FLOAT64** in_samples
             )
     \brief  Main entry point to create a WAV file. Will write the data stored 
             in in_samples to a file named in_file_name. The WAV file will have
@@ -118,11 +118,11 @@
  */
 csignal_error_code
 csignal_write_LPCM_wav  (
-                         CHAR*    in_file_name,
-                         USIZE    in_number_of_channels,
-                         UINT32   in_sample_rate,
-                         USIZE    in_number_of_samples,
-                         INT16**  in_samples
+                         CHAR*      in_file_name,
+                         USIZE      in_number_of_channels,
+                         UINT32     in_sample_rate,
+                         USIZE      in_number_of_samples,
+                         FLOAT64**  in_samples
                          );
 
 /*! \fn     csignal_error_code csignal_write_FLOAT_wav  (

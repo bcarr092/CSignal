@@ -122,7 +122,7 @@ csignal_modulate_BFSK_symbol  (
           ( in_symbol ? delta_frequency / 2.0 : -1.0 * delta_frequency / 2.0 );
         
         CPC_LOG (
-                 CPC_LOG_LEVEL_ERROR,
+                 CPC_LOG_LEVEL_TRACE,
                  "Symbol: %d\tFrequency: %.02f",
                  in_symbol,
                  frequency
@@ -132,15 +132,23 @@ csignal_modulate_BFSK_symbol  (
         {
           ( *out_signal_inphase )[ i ] =
           cos (
-               2.0 * M_PI * ( in_carrier_frequency + frequency )
+               2.0 * M_PI * in_carrier_frequency
                * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-               );
+               )
+          * cos (
+                 2.0 * M_PI * frequency
+                 * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+                 );
           
           ( *out_signal_quadrature )[ i ] =
-          sin ( 
-               2.0 * M_PI * ( in_carrier_frequency + frequency )
+          sin (
+               2.0 * M_PI * in_carrier_frequency
                * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-               );
+               )
+          * sin (
+                 2.0 * M_PI * frequency
+                 * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+                 );
         }
       }
       else

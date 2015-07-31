@@ -100,7 +100,7 @@ csignal_write_WAVE_header (
               FILE*    in_file_pointer,
               UINT16   in_number_of_channels,
               UINT32   in_number_of_samples,
-              INT16**  in_samples
+              FLOAT64**  in_samples
             )
     \brief  This function will write all the data in in_samples in interleaved
             form to the WAVE file pointed to in_file_pointer.
@@ -119,11 +119,11 @@ csignal_write_WAVE_header (
  */
 csignal_error_code
 csignal_write_LPCM_data (
-                    FILE*    in_file_pointer,
-                    UINT16   in_number_of_channels,
-                    UINT32   in_number_of_samples,
-                    INT16**  in_samples
-                    );
+                         FILE*      in_file_pointer,
+                         UINT16     in_number_of_channels,
+                         UINT32     in_number_of_samples,
+                         FLOAT64**  in_samples
+                         );
 
 /*! \fn     csignal_error_code csignal_write_FLOAT_data (
               FILE*     in_file_pointer,
@@ -196,13 +196,7 @@ csignal_write_FLOAT_wav  (
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
   
-  if( cpc_check_if_file_exists( in_file_name ) )
-  {
-    CPC_ERROR( "File (%s) exists, cannot overwrite.", in_file_name );
-    
-    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
-  }
-  else if (
+  if (
            in_number_of_channels > MAX_UINT16
            || in_number_of_samples > MAX_UINT32
            )
@@ -221,6 +215,17 @@ csignal_write_FLOAT_wav  (
   else
   {
     FILE* file_pointer = NULL;
+    
+    if( cpc_check_if_file_exists( in_file_name ) )
+    {
+      CPC_LOG (
+               CPC_LOG_LEVEL_WARN,
+               "File (%s) exists, overwriting.",
+               in_file_name
+               );
+      
+      return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    }
       
     CPC_FOPEN( file_pointer, in_file_name, "wb" );
     
@@ -282,22 +287,16 @@ csignal_write_FLOAT_wav  (
 
 csignal_error_code
 csignal_write_LPCM_wav  (
-                         CHAR*    in_file_name,
-                         USIZE    in_number_of_channels,
-                         UINT32   in_sample_rate,
-                         USIZE    in_number_of_samples,
-                         INT16**  in_samples
+                         CHAR*      in_file_name,
+                         USIZE      in_number_of_channels,
+                         UINT32     in_sample_rate,
+                         USIZE      in_number_of_samples,
+                         FLOAT64**  in_samples
                          )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
   
-  if( cpc_check_if_file_exists( in_file_name ) )
-  {
-    CPC_ERROR( "File (%s) exists, cannot overwrite.", in_file_name );
-    
-    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
-  }
-  else if (
+  if (
            in_number_of_channels > MAX_UINT16
            || in_number_of_samples > MAX_UINT32
            )
@@ -316,6 +315,17 @@ csignal_write_LPCM_wav  (
   else
   {
     FILE* file_pointer = NULL;
+    
+    if( cpc_check_if_file_exists( in_file_name ) )
+    {
+      CPC_LOG (
+               CPC_LOG_LEVEL_WARN,
+               "File (%s) exists, overwriting.",
+               in_file_name
+               );
+      
+      return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    }
       
     CPC_FOPEN( file_pointer, in_file_name, "wb" );
     
@@ -441,10 +451,10 @@ csignal_write_FLOAT_data (
 
 csignal_error_code
 csignal_write_LPCM_data (
-                         FILE*    in_file_pointer,
-                         UINT16   in_number_of_channels,
-                         UINT32   in_number_of_samples,
-                         INT16**  in_samples
+                         FILE*      in_file_pointer,
+                         UINT16     in_number_of_channels,
+                         UINT32     in_number_of_samples,
+                         FLOAT64**  in_samples
                          )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -480,8 +490,9 @@ csignal_write_LPCM_data (
       {
         for( UINT32 j = 0; j < in_number_of_channels; j++ )
         {
+          INT16 sample_value = ( INT16 ) MAX_INT16 * in_samples[ j ][ i ];
           INT16 sample =
-            csignal_convert_short_to_little_endian( in_samples[ j ][ i ] );
+            csignal_convert_short_to_little_endian( sample_value );
           
           if( 1 != fwrite( &sample, sizeof( INT16 ), 1, in_file_pointer ) )
           {

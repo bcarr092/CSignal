@@ -99,20 +99,8 @@ class TestsEqualizer( unittest.TestCase ):
     self.testsPerChip      = 4
     self.samplesPerSymbol  = 1
 
-    self.chipDecimationFactor  = int( self.chipDuration / self.testsPerChip )
+    self.chipDecimationFactor   = int( self.chipDuration / self.testsPerChip )
     self.symbolDecimationFactor = int( self.symbolDuration / self.samplesPerSymbol )
-
-    #self.threshold         = 8 * 10 ** 9
-    #self.SNR               = 20
-
-    #self.threshold         = 2.25 * 10 ** 10
-    #self.SNR               = 10 
-
-    #self.threshold         = 7.25 * 10 ** 10
-    #self.SNR               = 0 
-
-    #self.threshold         = 2.2 * 10 ** 11
-    #self.SNR               = -10 
 
     self.numberOfStartOffsets = 2
     self.threshold            = 2.0
@@ -479,7 +467,7 @@ class TestsEqualizer( unittest.TestCase ):
         CPC_ERROR_CODE_NO_ERROR
                         )
 
-      chipSequence.append( chipValue )
+      chipSequence.append( ( 1 if( chipValue ) else -1 ) )
 
     self.assertEquals (
       bit_stream_destroy( codeStream ),
