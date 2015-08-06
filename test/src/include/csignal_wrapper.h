@@ -8,12 +8,12 @@
 /*! \fn     PyObject* python_calculate_FFT  (
               PyObject* in_signal
             )
-    \brief  Calculates the FFT of in_signal and returns a list of complex
+    \brief  Calculates the FFT of in_signal and returns a list of Python complex
             values in the return value. See the function definition for
             csignal_calculated_FFT for more details on return codes.
 
     \return A list of Python Complex values is returned or None if an error
-             occurrs.
+            occurrs.
  */
 PyObject*
 python_calculate_FFT(
@@ -36,13 +36,13 @@ python_filter_signal(
                      );
 
 /*! \fn     fir_passband_filter* python_initialize_kaiser_filter (
-              float in_first_stopband,
-              float in_first_passband,
-              float in_second_passband,
-              float in_second_stopband,
-              float in_passband_attenuation,
-              float in_stopband_attenuation,
-              int   in_sampling_frequency
+              FLOAT32 in_first_stopband,
+              FLOAT32 in_first_passband,
+              FLOAT32 in_second_passband,
+              FLOAT32 in_second_stopband,
+              FLOAT32 in_passband_attenuation,
+              FLOAT32 in_stopband_attenuation,
+              UINT32  in_sampling_frequency
             )
     \brief  This is the python wrapper to create a Kaiser filter. Please see
             the documentation in kaiser_filter.h for a complete description of
@@ -50,62 +50,60 @@ python_filter_signal(
 */
 fir_passband_filter*
 python_initialize_kaiser_filter(
-                                float in_first_stopband,
-                                float in_first_passband,
-                                float in_second_passband,
-                                float in_second_stopband,
-                                float in_passband_attenuation,
-                                float in_stopband_attenuation,
-                                int   in_sampling_frequency
+                                FLOAT32 in_first_stopband,
+                                FLOAT32 in_first_passband,
+                                FLOAT32 in_second_passband,
+                                FLOAT32 in_second_stopband,
+                                FLOAT32 in_passband_attenuation,
+                                FLOAT32 in_stopband_attenuation,
+                                UINT32  in_sampling_frequency
                                 );
 
 /*! \fn     fir_passband_filter* python_initialize_kaiser_lowpass_filter (
-              float in_passband,
-              float in_stopband,
-              float in_passband_attenuation,
-              float in_stopband_attenuation,
-              int   in_sampling_frequency
+              FLOAT32 in_passband,
+              FLOAT32 in_stopband,
+              FLOAT32 in_passband_attenuation,
+              FLOAT32 in_stopband_attenuation,
+              UINT32  in_sampling_frequency
             )
-    \brief  This is the python wrapper to create a Kaiser low pass filter. 
+    \brief  This is the python wrapper to create a Kaiser low pass filter.
             Please see the documentation in kaiser_filter.h for a complete
             description of the permitted values.
 */
 fir_passband_filter*
 python_initialize_kaiser_lowpass_filter(
-                                        float in_passband,
-                                        float in_stopband,
-                                        float in_passband_attenuation,
-                                        float in_stopband_attenuation,
-                                        int   in_sampling_frequency
+                                        FLOAT32 in_passband,
+                                        FLOAT32 in_stopband,
+                                        FLOAT32 in_passband_attenuation,
+                                        FLOAT32 in_stopband_attenuation,
+                                        UINT32  in_sampling_frequency
                                         );
 
 /*! \fn     PyObject* python_get_gold_code (
-              gold_code*  in_gold_code,
-              size_t      in_number_of_bits
+              gold_code* in_gold_code,
+              USIZE      in_number_of_bits
             )
     \brief  Requests in_number_of_bits from the LFSRs defined by
             in_gold_code. For full documentation the parameters for this
-            function please see gold_code.h. The only additional check
-            done in this wrapper is to ensure in_number_of_bits is
-            non-negative.
+            function please see gold_code.h.
 
     \return Returns a python list of unsigned char values or None if an error
             occured.
  */
 PyObject*
 python_get_gold_code(
-                     gold_code*  in_gold_code,
-                     size_t      in_number_of_bits
+                     gold_code* in_gold_code,
+                     USIZE      in_number_of_bits
                      );
 
 /*! \fn     gold_code* python_initialize_gold_code  (
-              int in_degree,
-              unsigned long in_generator_polynomial_1,
-              unsigned long in_generator_polynomial_2,
-              unsigned long in_initial_state_1,
-              unsigned long in_initial_state_2
+              UINT32 in_degree,
+              UINT32 in_generator_polynomial_1,
+              UINT32 in_generator_polynomial_2,
+              UINT32 in_initial_state_1,
+              UINT32 in_initial_state_2
             )
-    \brief  Initializes gold code LFSRs generator polynomials and an intial
+    \brief  Initializes gold code LFSRs generator polynomials and intial
             states. Both the generators and initial states need to be
             configured properly for the gold code generator to function
             correctly. Please see the documentation in gold_code.h and
@@ -113,73 +111,71 @@ python_get_gold_code(
 */
 gold_code*
 python_initialize_gold_code(
-  unsigned int in_degree,
-  unsigned long in_generator_polynomial_1,
-  unsigned long in_generator_polynomial_2,
-  unsigned long in_initial_state_1,
-  unsigned long in_initial_state_2
-);
+                            UINT32 in_degree,
+                            UINT32 in_generator_polynomial_1,
+                            UINT32 in_generator_polynomial_2,
+                            UINT32 in_initial_state_1,
+                            UINT32 in_initial_state_2
+                            );
 
 /*! \fn     PyObject* python_get_spreading_code  (
               spreading_code* in_spreading_code,
-              size_t          in_number_of_bits
+              USIZE           in_number_of_bits
             )
     \brief  Requests in_number_of_bits from the LFSR defined by
             in_spreading_code. For full documentation the parameters for this
-            function please see spreading_code.h. The only additional check
-            done in this wrapper is to ensure in_number_of_bits is
-            non-negative.
+            function please see spreading_code.h.
 
     \return Returns a python list of unsigned char values or None if an error
             occured.
  */
 PyObject*
 python_get_spreading_code(
-  spreading_code* in_spreading_code,
-  size_t          in_number_of_bits
-);
+                          spreading_code* in_spreading_code,
+                          USIZE           in_number_of_bits
+                          );
 
 /*! \fn     spreading_code* python_initialize_spreading_code  (
-              int   in_degree,
-              unsigned long  in_generator_polynomial,
-              unsigned long  in_initial_state
+              UINT32 in_degree,
+              UINT32 in_generator_polynomial,
+              UINT32 in_initial_state
             )
     \brief  Initializes the LFSR with a generator polynomial and an intial
             state. Both the generator and initial state need to be configured
             properly for the LFSR to function. Please see the documentation
             in spreading_code.h and spreading_code.c
-*/
+ */
 spreading_code*
 python_initialize_spreading_code(
-  unsigned int in_degree,
-  unsigned long in_generator_polynomial,
-  unsigned long in_initial_state
-);
+                                 UINT32 in_degree,
+                                 UINT32 in_generator_polynomial,
+                                 UINT32 in_initial_state
+                                 );
 
 /*! \fn     PyObject* python_spread_signal (
-              gold_code*  io_gold_code,
-              size_t      in_chip_duration,
-              PyObject*   in_signal
+              gold_code* io_gold_code,
+              USIZE      in_chip_duration,
+              PyObject*  in_signal
             )
     \brief  Spreads the signal in in_signal by the code generated by
-            io_gold_code. See csiganl_spread_signal for all the details
+            io_gold_code. See csignal_spread_signal for all the details
             related to the implementation and valid parameter values.
 
     \return A Python list of signed short values.
  */
 PyObject*
 python_spread_signal(
-  gold_code*  io_gold_code,
-  size_t      in_chip_duration,
-  PyObject*   in_signal
-);
+                     gold_code* io_gold_code,
+                     USIZE      in_chip_duration,
+                     PyObject*  in_signal
+                     );
 
 /*! \fn     CPC_BOOL python_write_FLOAT_wav (
-              PyObject* in_file_name,
-              size_t    in_number_of_channels,
-              int       in_sample_rate,
-              size_t    in_number_of_samples,
-              PyObject* in_samples
+              PyObject*  in_file_name,
+              USIZE      in_number_of_channels,
+              UINT32     in_sample_rate,
+              USIZE      in_number_of_samples,
+              PyObject*  in_samples
             )
     \brief  The python wrapper for the csignal_write_FLOAT_wav function. For
             a complete description of the parameters please see the
@@ -196,6 +192,21 @@ python_write_FLOAT_wav(
                        USIZE      in_number_of_samples,
                        PyObject*  in_samples
                        );
+
+/*! \fn     CPC_BOOL python_write_LPCM_wav (
+              PyObject*  in_file_name,
+              USIZE      in_number_of_channels,
+              UINT32     in_sample_rate,
+              USIZE      in_number_of_samples,
+              PyObject*  in_samples
+            )
+    \brief  The python wrapper for the csignal_write_LPCM_wav function. For
+            a complete description of the parameters please see the
+            documentation for csignal_write_FLOAT_wav.
+
+    \return CPC_TRUE if the WAV file was successfully created, CPC_FALSE
+            otherwise.
+*/
 CPC_BOOL
 python_write_LPCM_wav(
                        PyObject*  in_file_name,
@@ -206,20 +217,15 @@ python_write_LPCM_wav(
                        );
 
 /*! \fn     PyObject* python_modulate_symbol  (
-               unsigned int     in_symbol,
-               unsigned int     in_constellation_size,
-               unsigned int     in_sample_rate,
-               size_t  in_symbol_duration,
-               int     in_baseband_pulse_amplitude,
-               unsigned float   in_carrier_frequency
+              UINT32 in_symbol,
+              UINT32 in_constellation_size
             )
-    \brief  Modulates in_symbol into a signal of length in_symbol_duration. For
+    \brief  Modulates in_symbol into an inphase and quadrature component that is
+            to be multiplied by an inphase and quadrature carrier. For
             a complete description of each parameter and the function please
             see the documentation for csignal_modulate_symbol.
 
-    \return Two arrarys of floats if no error occurs or None. One array for the
-            inphase components of the signal (index 0) and the other for the
-            quadrature components of the signal (index 1).
+    \return A tuple of two floats ( inphase, quadrature ) or None.
  */
 PyObject*
 python_modulate_symbol(
@@ -237,11 +243,20 @@ bit_packer*
 python_bit_packer_initialize( void );
 
 /*! \fn     bit_stream* python_bit_stream_initialize  (
+              PyObject*  in_circular,
               PyObject*  in_data
             )
     \brief  Instatiates a new bit stream and returns it. The data in in_data
-            is copied into the new bit_stream struct.
+            is copied into the new bit_stream struct. If in_circular is True
+            then the bit_stream will read the data provided to it circularly
+            (i.e., it will return to bit index 0 after returning bit index n,
+            where n is the number of bits in the bit stream). If False, the
+            the bit stream will return an error when attempting to read more
+            than n bits.
     
+    \param  in_circular A Python boolean. Data can indefinitely be read from
+                        the bit stream. If false, only n bits can be read where
+                        n is the number of bits in the stream.
     \param  in_data A PyString containing data to be buffered by the bit stream.
     \return None if an error occurrs or a valid bit_stream object.
  */
@@ -252,6 +267,7 @@ python_bit_stream_initialize  (
                                );
 
 /*! \fn     bit_stream* python_bit_stream_initialize_from_bit_packer (
+              PyObject*   in_circular,
               bit_packer* in_bit_packer
             )
     \brief  Creates a new bit_strem with a ->data pointer that points to the
@@ -259,7 +275,10 @@ python_bit_stream_initialize  (
             that points to the data buffer of bit_packer and therefore has its
             dirty_bit set. Please see the notes for the function
             bit_stream_initialize_from_bit_packer.
- 
+
+    \param  in_circular A Python boolean. Data can indefinitely be read from
+                        the bit stream. If false, only n bits can be read where
+                        n is the number of bits in the stream.
     \param  in_bit_packer The bit_packer whose data pointer and data_length
                           will be copied to the newly created bit_stream.
     \return A newly created bit_stream that points to the data pointer of
@@ -271,7 +290,7 @@ python_bit_stream_initialize_from_bit_packer (
                                               bit_packer* in_bit_packer
                                               );
 
-/*! \fn     csignal_error_code csignal_error_code (
+/*! \fn     csignal_error_code python_bit_packer_add_bytes (
               PyObject*     in_data,
               bit_packer*   io_bit_packer
             )
@@ -319,7 +338,7 @@ python_bit_packer_get_bytes (
     \brief  Extracts up to in_number of bits from io_bit_stream and returns
             a PyString containing the bytes.
  
-    \note The PyString returned is not NULL-terminated.
+    \note   The PyString returned is not NULL-terminated.
  
     \param  io_bit_stream The bit stream to extract bits from. The internal
                           pointers in the bit stream are modified.
@@ -355,8 +374,8 @@ python_convolve (
               PyObject* in_signal_one,
               PyObject* in_signal_two
             )
-    \brief  Multiplies signals one and two and returns a Python list containing
-            the result.
+    \brief  Component-wise multiplies signals one and two and returns a Python
+            list containing the result.
  
     \param  in_signal_one The first signal to multiply.
     \param  in_signal_two The second signal to multiply.
@@ -370,7 +389,7 @@ python_csignal_multiply_signals (
                                  );
 
 /*! \fn     PyObject* python_csignal_calculate_energy (
-              PyObject* in_signal_one
+              PyObject* in_signal
             )
     \brief  Calcualtes the energy in the signal. Energy is calculated as taking
             the sum of the square of the components of in_signal.
@@ -382,30 +401,6 @@ PyObject*
 python_csignal_calculate_energy (
                                  PyObject* in_signal
                                  );
-
-/*! \fn     PyObject* python_csignal_calculate_thresholds (
-              PyObject*            in_spreading_code,
-              fir_passband_filter* in_wideband_filter,
-              fir_passband_filter* in_narrowband_filter,
-              PyObject*            in_signal,
-              UINT32               in_decimation
-            )
-    \brief  See the description for cisignal_calcualte_thresholds in detect.h.
- 
-    \param  in_spreading_code The input signal containing the spreading code.
-    \param  in_wideband_filter  The wideband filter to apply to the whole signal.
-    \param  in_narrowband_filter  The filter to apply after despreading.
-    \param  in_signal The signal to despread and calculate the energy of.
-    \return A Python List of floats containing the despread energy at the 
-            specified offset. Note that the offset of the returned list is
-            i / in_decimation.
- */
-PyObject*
-python_csignal_calculate_thresholds (
-                                     PyObject*            in_spreading_code,
-                                     PyObject*            in_signal,
-                                     UINT32               in_decimation
-                                     );
 
 /*! \fn     PyObject* python_csignal_demodulate_binary_PAM (
              PyObject* in_signal
@@ -457,32 +452,41 @@ python_bit_stream_peak  (
                          bit_stream* in_bit_stream
                          );
 
-/*! \fn     PyObject* python_generate_carrier_signal  (
-              UINT32   in_sample_rate,
-              FLOAT32  in_carrier_frequency
+/*! \fn     PyObject* python_filter_get_group_delay (
+              fir_passband_filter*  in_filter
             )
-    \brief  Generates samples for a sinusoid with osciallatign frequency
-            in_carrier_frequency. See csignal_generate_carrier_signal for more
-            details.
+    \brief  Returns the group delay for the filter. See
+            csignal_filter_get_group_delay for details on the constraints of
+            this function.
  
-    \param  in_sample_rate  The rate to sample points of the sinusoid with
-                            frequency in_carrier_frequency.
-    \param  in_carrier_frequency  The oscillating frequency of the sinusoid
-                                  generated.
-    \return A Python list containing double samples of a sinusoid oscillating at
-            frequency in_carrier_frequency sampled at in_sample_rate.
+    \param  in_filter The filter whose group delay is to be returned.
+    \return A Python int with the filter group delay.
  */
-PyObject*
-python_generate_carrier_signal  (
-                                 UINT32   in_sample_rate,
-                                 FLOAT32  in_carrier_frequency
-                                 );
-
 PyObject*
 python_filter_get_group_delay (
                                fir_passband_filter*  in_filter
                                );
 
+/*! \fn     PyObject* python_csignal_modulate_BFSK_symbol  (
+              UINT32     in_symbol,
+              UINT32     in_samples_per_symbol,
+              UINT32     in_sample_rate,
+              FLOAT32    in_carrier_frequency
+            )
+    \brief  Modulates in_symbol into an array of samples. See
+            csignal_modulate_BFSK_symbol for details on how the returned signal
+            is returned.
+ 
+    \param  in_symbol The symbol to modulate (must be a 0 or 1)
+    \param  in_samples_per_symbol The number of samples used to represent a
+                                  symbol.
+    \param  in_sample_rate  The sampling rate the signal is to be generated at.
+    \param  in_carrier_frequency  The carrier frequency of the frequency shift
+                                  keyed signal.
+    \return A Python tuple containing two lists. The first list is the inphase
+            signal of the BFSK signal and the second list is the quadrature
+            signal. None is returned if an error occurrs.
+ */
 PyObject*
 python_csignal_modulate_BFSK_symbol  (
                                       UINT32     in_symbol,
@@ -491,6 +495,29 @@ python_csignal_modulate_BFSK_symbol  (
                                       FLOAT32    in_carrier_frequency
                                       );
 
+/*! \fn     PyObject* python_detect_calculate_energy (
+              PyObject*            in_signal,
+              PyObject*            in_spread_signal,
+              fir_passband_filter* in_narrowband_filter,
+              fir_passband_filter* in_lowpass_filter
+            )
+    \brief  Calculates the energy in in_signal by performing the following
+            algorithm:
+ 
+            a = multiply( in_signal, in_spread_signal )
+            b = filter( narrowband_filter, a )
+            c = multiply( b, b )
+            d = filter( lowpass_filter, c )
+            energy = sum( d )
+ 
+    \param  in_signal The signal whose energy is to be calculated after
+                      despreading.
+    \param  in_spread_signal  The signal to use to despread in_signal.
+    \param  in_narrowband_filter  A BPF used to filter the despread signal.
+    \param  in_lowpass_filter A LPF used to remove the double frequency term
+                              that appears after the squaring step.
+    \return The energy in the signal after despreading.
+ */
 PyObject*
 python_detect_calculate_energy (
                                 PyObject*            in_signal,
@@ -499,6 +526,62 @@ python_detect_calculate_energy (
                                 fir_passband_filter* in_lowpass_filter
                                 );
 
+/*! \fn     PyObject* python_detect_find_highest_energy_offset (
+              PyObject*            in_signal,
+              PyObject*            in_spread_signal,
+              USIZE                in_number_of_tests,
+              USIZE                in_step_size,
+              fir_passband_filter* in_narrowband_filter,
+              fir_passband_filter* in_lowpass_filter,
+              FLOAT64              in_exhaustive_difference,
+              UINT32               in_exhaustive_decimation,
+              FLOAT64
+            )
+    \brief  Searches through in_signal for the offset into the signal that
+            has the highest energy after being despread with in_spread_signal.
+            The search strategy uses a hill-climbing algorithm, i.e., this
+            algorithm will first search for the beginning/end of the hill (peak),
+            perform a hill-climbing algorithm until a certain point and then
+            exhaustive search.
+ 
+    \note   This function performs the following algorithm:
+ 
+            1)  Checks in_signal[ i ] for energy above threshold, where 0 <= i
+                <= in_number_of_tests and i jumps in_step_size between checks.
+            2)  Ranges where the energy is above threshold are created from the
+                results in step 1.
+            3)  A hill climbing algorithm is performed on each range.
+            4)  Once the hill climbing algorithm gets to a point where the energy
+                on both sides of the hill are within in_exhaustive_difference
+                percentage of each other the algorithm exhaustively checks
+                the indices for a peak.
+ 
+    \param  in_signal The signal to be searched for the offset with the highest
+                      energy after despreading.
+    \param  in_spread_signal  The signal to use to despread in_signal.
+    \param  in_number_of_tests  The number of offsets to check in in_signal,
+                                i.e., offsets 0 to in_number_of_tests in
+                                in_signal are checked, during the phase algorithm
+                                that searches for the beginning and end of hills.
+    \param  in_step_size  The number of offsets (smaples) to skip between
+                          each test (1 for exhaustive).
+    \param  in_narrowband_filter  A BPF used to filter the despread signal.
+    \param  in_lowpass_filter A LPF tiler used to remove the double frequency
+                              term that appears during the energy calculation.
+    \param  in_exhaustive_difference  When performing the hill climbing
+                                      algorithm the search strategy will switch
+                                      to exhaustive search when the energy on
+                                      both sides of the hill are within this
+                                      difference (note that this is a percentage
+                                      difference).
+    \param  in_exhaustive_decimation  The decimation factor (step size) to use
+                                      when the algorithm enters the exhaustive
+                                      search mode.
+    \param  in_threshold  When performing the initial phase of the algorithm that
+                          looks for hills evidence of a hill is determined if
+                          the energy at the specific offset is above in_threshold.
+    \return The offset into in_signal that has the highest energy.
+ */
 PyObject*
 python_detect_find_highest_energy_offset (
                                   PyObject*            in_signal,

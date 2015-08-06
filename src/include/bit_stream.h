@@ -70,6 +70,7 @@ bit_stream_get_number_of_remaining_bits (
                                          );
 
 /*! \fn     cpc_error_code bit_stream_initialize  (
+              CPC_BOOL      in_circular,
               UCHAR*        in_data,
               USIZE         in_data_length,
               bit_stream**  out_bit_stream
@@ -77,8 +78,12 @@ bit_stream_get_number_of_remaining_bits (
     \brief  Initializes the bit_stream struct with a data buffer and sets
             both bit and byte offsets to 0. If cicular is set to CPC_TRUE data is
             read from the packer in circular fashion (i.e., the read pointers
-            reset to zero when they reach the end of the packer's data).
-
+            reset to zero when they reach the end of the packer's data). If
+            in_circular is True then the bit_stream will read the data provided
+            to it circularly (i.e., it will return to bit index 0 after
+            returning bit index n, where n is the number of bits in the bit
+            stream). If False, the the bit stream will return an error when
+            attempting to read more than n bits.
  
     \param  in_circular If CPC_TRUE the read points reset to zero when they
                         reach the end of the packer's data.

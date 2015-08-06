@@ -207,40 +207,29 @@ python_filter_signal(
 
 fir_passband_filter*
 python_initialize_kaiser_lowpass_filter(
-                                        float in_passband,
-                                        float in_stopband,
-                                        float in_passband_attenuation,
-                                        float in_stopband_attenuation,
-                                        int   in_sampling_frequency
+                                        FLOAT32 in_passband,
+                                        FLOAT32 in_stopband,
+                                        FLOAT32 in_passband_attenuation,
+                                        FLOAT32 in_stopband_attenuation,
+                                        UINT32  in_sampling_frequency
                                         )
 {
-  fir_passband_filter* filter = NULL;
+  fir_passband_filter* filter     = NULL;
+  csignal_error_code return_value =
+    csignal_inititalize_kaiser_lowpass_filter(
+                                              in_passband,
+                                              in_stopband,
+                                              in_passband_attenuation,
+                                              in_stopband_attenuation,
+                                              in_sampling_frequency,
+                                              &filter
+                                              );
   
-  if( 0 >= in_sampling_frequency )
+  if( CPC_ERROR_CODE_NO_ERROR != return_value )
   {
-    CPC_ERROR(
-              "Sampling frequency (%d Hz) must be positive.",
-              in_sampling_frequency
-              );
-  }
-  else
-  {
-    csignal_error_code return_value =
-      csignal_inititalize_kaiser_lowpass_filter(
-                                                in_passband,
-                                                in_stopband,
-                                                in_passband_attenuation,
-                                                in_stopband_attenuation,
-                                                in_sampling_frequency,
-                                                &filter
-                                                );
+    CPC_ERROR( "Could not initialize kaiser filter: 0x%x.", return_value );
     
-    if( CPC_ERROR_CODE_NO_ERROR != return_value )
-    {
-      CPC_ERROR( "Could not initialize kaiser filter: 0x%x.", return_value );
-      
-      filter = NULL;
-    }
+    filter = NULL;
   }
   
   return( filter );
@@ -248,44 +237,33 @@ python_initialize_kaiser_lowpass_filter(
 
 fir_passband_filter*
 python_initialize_kaiser_filter(
-                                float in_first_stopband,
-                                float in_first_passband,
-                                float in_second_passband,
-                                float in_second_stopband,
-                                float in_passband_attenuation,
-                                float in_stopband_attenuation,
-                                int   in_sampling_frequency
+                                FLOAT32 in_first_stopband,
+                                FLOAT32 in_first_passband,
+                                FLOAT32 in_second_passband,
+                                FLOAT32 in_second_stopband,
+                                FLOAT32 in_passband_attenuation,
+                                FLOAT32 in_stopband_attenuation,
+                                UINT32  in_sampling_frequency
                                 )
 {
-  fir_passband_filter* filter = NULL;
+  fir_passband_filter* filter     = NULL;
+  csignal_error_code return_value =
+    csignal_initialize_kaiser_filter(
+                                     in_first_stopband,
+                                     in_first_passband,
+                                     in_second_passband,
+                                     in_second_stopband,
+                                     in_passband_attenuation,
+                                     in_stopband_attenuation,
+                                     in_sampling_frequency,
+                                     &filter
+                                     );
 
-  if( 0 >= in_sampling_frequency )
+  if( CPC_ERROR_CODE_NO_ERROR != return_value )
   {
-    CPC_ERROR(
-      "Sampling frequency (%d Hz) must be positive.",
-      in_sampling_frequency
-      );
-  }
-  else
-  {
-    csignal_error_code return_value =
-      csignal_initialize_kaiser_filter(
-                                       in_first_stopband,
-                                       in_first_passband,
-                                       in_second_passband,
-                                       in_second_stopband,
-                                       in_passband_attenuation,
-                                       in_stopband_attenuation,
-                                       in_sampling_frequency,
-                                       &filter
-                                       );
+    CPC_ERROR( "Could not initialize kaiser filter: 0x%x.", return_value );
 
-    if( CPC_ERROR_CODE_NO_ERROR != return_value )
-    {
-      CPC_ERROR( "Could not initialize kaiser filter: 0x%x.", return_value );
-
-      filter = NULL;
-    }
+    filter = NULL;
   }
 
   return( filter );
@@ -293,8 +271,8 @@ python_initialize_kaiser_filter(
 
 PyObject*
 python_get_gold_code(
-                     gold_code*  in_gold_code,
-                     size_t      in_number_of_bits
+                     gold_code* in_gold_code,
+                     USIZE      in_number_of_bits
                      )
 {
   PyObject* return_value = NULL;
@@ -357,11 +335,11 @@ python_get_gold_code(
 
 gold_code*
 python_initialize_gold_code(
-                            unsigned int in_degree,
-                            unsigned long in_generator_polynomial_1,
-                            unsigned long in_generator_polynomial_2,
-                            unsigned long in_initial_state_1,
-                            unsigned long in_initial_state_2
+                            UINT32 in_degree,
+                            UINT32 in_generator_polynomial_1,
+                            UINT32 in_generator_polynomial_2,
+                            UINT32 in_initial_state_1,
+                            UINT32 in_initial_state_2
                             )
 {
   gold_code* shift_registers = NULL;
@@ -472,9 +450,9 @@ python_get_spreading_code(
 
 spreading_code*
 python_initialize_spreading_code(
-                                 unsigned int in_degree,
-                                 unsigned long in_generator_polynomial,
-                                 unsigned long in_initial_state
+                                 UINT32 in_degree,
+                                 UINT32 in_generator_polynomial,
+                                 UINT32 in_initial_state
                                  )
 {
   spreading_code* shift_register = NULL;
@@ -1304,123 +1282,6 @@ python_csignal_multiply_signals (
 }
 
 PyObject*
-python_csignal_calculate_thresholds (
-                                     PyObject*            in_spreading_code,
-                                     PyObject*            in_signal,
-                                     UINT32               in_decimation
-                                     )
-{
-  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
-  
-  FLOAT64* spreading_code  = NULL;
-  FLOAT64* signal         = NULL;
-  FLOAT64* thresholds     = NULL;
-  
-  USIZE spreading_code_length = 0;
-  USIZE signal_length         = 0;
-  USIZE thresholds_length     = 0;
-  
-  PyObject* list = NULL;
-  
-  if  (
-       NULL == in_spreading_code
-       || Py_None == in_spreading_code
-       || NULL == in_signal
-       || Py_None == in_signal
-       )
-  {
-    result = CPC_ERROR_CODE_NULL_POINTER;
-    
-    CPC_ERROR (
-               "Spreading code (0x%x) or signal (0x%x) are null or Python None.",
-               in_spreading_code,
-               in_signal
-               );
-  }
-  else
-  {
-    result =
-    python_convert_list_to_array  (
-                                   in_spreading_code,
-                                   &spreading_code_length,
-                                   &spreading_code
-                                   );
-    
-    CPC_LOG (
-             CPC_LOG_LEVEL_TRACE,
-             "Spreading code (0x%x) is %d long.",
-             spreading_code,
-             spreading_code_length
-             );
-    
-    if( CPC_ERROR_CODE_NO_ERROR == result )
-    {
-      result =
-      python_convert_list_to_array  (
-                                     in_signal,
-                                     &signal_length,
-                                     &signal
-                                     );
-      
-      CPC_LOG (
-               CPC_LOG_LEVEL_TRACE,
-               "Signal (0x%x) is %d long.",
-               signal,
-               signal_length
-               );
-      
-      if( CPC_ERROR_CODE_NO_ERROR == result )
-      {
-        result =
-          csignal_calculate_thresholds  (
-                                         spreading_code_length,
-                                         spreading_code,
-                                         signal_length,
-                                         signal,
-                                         in_decimation,
-                                         &thresholds_length,
-                                         &thresholds
-                                         );
-        
-        if( CPC_ERROR_CODE_NO_ERROR == result )
-        {
-          result =
-          python_convert_array_to_list  (
-                                         thresholds_length,
-                                         thresholds,
-                                         &list
-                                         );
-        }
-      }
-    }
-  }
-  
-  if( NULL != spreading_code )
-  {
-    cpc_safe_free( ( void** ) &spreading_code );
-  }
-  
-  if( NULL != signal )
-  {
-    cpc_safe_free( ( void** ) &signal );
-  }
-  
-  if( NULL != thresholds )
-  {
-    cpc_safe_free( ( void** ) &thresholds );
-  }
-  
-  if( CPC_ERROR_CODE_NO_ERROR == result )
-  {
-    return( list );
-  }
-  else
-  {
-    Py_RETURN_NONE;
-  }
-}
-
-PyObject*
 python_csignal_calculate_energy (
                                  PyObject* in_signal
                                  )
@@ -1937,109 +1798,6 @@ python_bit_stream_peak  (
   }
   else
   {
-    Py_RETURN_NONE;
-  }
-}
-
-PyObject*
-python_generate_carrier_signal  (
-                                 UINT32   in_sample_rate,
-                                 FLOAT32  in_carrier_frequency
-                                 )
-{
-  USIZE signal_length = 0;
-  
-  FLOAT64* signal_inphase     = NULL;
-  FLOAT64* signal_quadrature  = NULL;
-  
-  PyObject* inphase       = NULL;
-  PyObject* quadrature    = NULL;
-  PyObject* return_value  = NULL;
-  
-  csignal_error_code result =
-    csignal_generate_carrier_signal (
-                                     in_sample_rate,
-                                     in_carrier_frequency,
-                                     &signal_length,
-                                     &signal_inphase,
-                                     &signal_quadrature
-                                     );
-  
-  if( CPC_ERROR_CODE_NO_ERROR == result )
-  {
-    result =
-      python_convert_array_to_list( signal_length, signal_inphase, &inphase );
-    
-    if( CPC_ERROR_CODE_NO_ERROR == result )
-    {
-      result =
-        python_convert_array_to_list  (
-                                       signal_length,
-                                       signal_quadrature,
-                                       &quadrature
-                                       );
-      
-      if( CPC_ERROR_CODE_NO_ERROR == result )
-      {
-        return_value = PyTuple_New( 2 );
-        
-        if( NULL != return_value && PyTuple_Check( return_value ) )
-        {
-          if  (
-               0 != PyTuple_SetItem( return_value, 0, inphase )
-               || 0 != PyTuple_SetItem( return_value, 1, quadrature )
-               )
-          {
-            CPC_LOG_STRING  (
-                             CPC_LOG_LEVEL_ERROR,
-                             "Could not add items to tuple."
-                             );
-            
-            return_value = NULL;
-          }
-        }
-        else
-        {
-          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create tuple." );
-          
-          return_value = NULL;
-        }
-      }
-      else
-      {
-        CPC_ERROR( "Could not convert quadrature array to list: 0x%x.", result );
-      }
-    }
-    else
-    {
-      CPC_ERROR( "Could not convert inphase array to list: 0x%x.", result );
-    }
-  }
-  else
-  {
-    CPC_ERROR( "Could not generate carrier: 0x%x.", result );
-  }
-  
-  if( NULL != signal_inphase )
-  {
-    cpc_safe_free( ( void** ) &signal_inphase );
-  }
-  
-  if( NULL != signal_quadrature )
-  {
-    cpc_safe_free( ( void** ) &signal_quadrature );
-  }
-  
-  if( CPC_ERROR_CODE_NO_ERROR == result )
-  {
-    return( return_value );
-  }
-  else
-  {
-    Py_XDECREF( inphase );
-    Py_XDECREF( quadrature );
-    Py_XDECREF( return_value );
-    
     Py_RETURN_NONE;
   }
 }

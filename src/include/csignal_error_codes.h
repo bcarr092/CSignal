@@ -15,9 +15,15 @@
       Used to indicate that no data is left in a buffer
  \var CSIGNAL_ERROR_CODE_WRITE_ERROR
       Used to indicate an error occurred when writing to a WAV file
- \var CSIGNAL_ERROR_CODE_MISMATCH
+ \var CSIGNAL_ERROR_CODE_LENGTH_MISMATCH
       Used to indidate that when generating a sequence of gold codes the
       component LFSRs did not generate the same number of bits.
+ \var CSIGNAL_ERROR_CODE_INVALID_TYPE
+      Used to indicate that the wrong type has been passed to the Python wrapper
+      for the library.
+ \var CSIGNAL_ERROR_CODE_NO_RESULT
+      Used to indicate to the caller that the error that occurred is that there
+      is no result.
  */
 enum csignal_error_codes
 {
