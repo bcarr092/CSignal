@@ -55,9 +55,9 @@ typedef struct bit_packer_t
     \brief  Initializes the bit_packer struct with an empty data buffer and sets
             both bit and byte offsets to 0.
  
-    \param  out_symbol_tracker  If this function successfully completes this
-                                parameter will point to a newly created
-                                bit_packer. It will be NULL otherwise.
+    \param  out_bit_packer  If this function successfully completes this
+                            parameter will point to a newly created
+                            bit_packer. It will be NULL otherwise.
     \return Returns NO_ERROR upon succesful execution or one of these errors
             (see cpc_safe_malloc for other possible errors):
  
@@ -121,7 +121,7 @@ bit_packer_add_bytes (
             io_bit_packer.
  
     \param  in_data The data buffer that contains the bits to store.
-    \param  in_data_length  The number of LSBs in in_data to store.
+    \param  in_num_bits  The number of LSBs in in_data to store.
     \param  io_bit_packer  The bit packer struct to add the bits to.
     \return Returns NO_ERROR upon succesful execution or one of these errors
             (see cpc_safe_realloc for other possible errors):

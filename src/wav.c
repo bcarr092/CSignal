@@ -1,4 +1,4 @@
-/*! \file   cwav.c
+/*! \file   wav.c
     \brief  This file contains the implementation of the read/write methods for
             WAV files.
  
@@ -34,8 +34,7 @@ csignal_write_fact_header (
   UINT32 in_number_of_samples
                           );
 
-/*! \fn     csignal_error_code
-              csignal_write_RIFF_header (
+/*! \fn     csignal_error_code csignal_write_RIFF_header (
               FILE*  in_file_pointer,
               UINT16 in_number_of_channels,
               UINT32 in_number_of_samples,
@@ -96,14 +95,15 @@ csignal_write_WAVE_header (
                            UINT32 in_sample_size
                            );
 
-/*! \fn     csignal_error_code csignal_write_data (
-              FILE*    in_file_pointer,
-              UINT16   in_number_of_channels,
-              UINT32   in_number_of_samples,
-              FLOAT64**  in_samples
+/*! \fn     csignal_error_code csignal_write_LPCM_data (
+             FILE*      in_file_pointer,
+             UINT16     in_number_of_channels,
+             UINT32     in_number_of_samples,
+             FLOAT64**  in_samples
             )
-    \brief  This function will write all the data in in_samples in interleaved
-            form to the WAVE file pointed to in_file_pointer.
+    \brief  This function will write all the PCM data in in_samples in
+            interleaved form to the file pointed to in_file_pointer. The format
+            of the output file is the WAV format (LPCM samples).
  
     \param  in_file_pointer A valid file pointer opened for write.
     \param  in_number_of_channels The number of channels in the LPCM WAV file

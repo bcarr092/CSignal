@@ -58,7 +58,7 @@ detect_calculate_energy (
 /*! \fn     csignal_error_code  detect_find_highest_energy_offset (
               USIZE                in_signal_length,
               FLOAT64*             in_signal,
-              USIZE                in_spread_signal_length,
+              USIZE                in_spreading_signal_length,
               FLOAT64*             in_spread_signal,
               USIZE                in_number_of_tests,
               USIZE                in_step_size,
@@ -83,7 +83,7 @@ detect_calculate_energy (
  
     \param  in_signal_length  The number of elements in in_signal.
     \param  in_signal The signal whose energy is to be calculated.
-    \param  in_spread_signal_length The number of elements in in_spread_signal.
+    \param  in_spreading_signal_length The number of elements in in_spread_signal.
     \param  in_spread_signal  The signal used to despread in_signal.
     \param  in_number_of_tests  The number of offsets to check in in_signal,
                                 i.e., offsets 0 to in_number_of_tests in
@@ -120,7 +120,7 @@ csignal_error_code
 detect_find_highest_energy_offset (
                                USIZE                in_signal_length,
                                FLOAT64*             in_signal,
-                               USIZE                in_spread_signal_length,
+                               USIZE                in_spreading_signal_length,
                                FLOAT64*             in_spread_signal,
                                USIZE                in_number_of_tests,
                                USIZE                in_step_size,

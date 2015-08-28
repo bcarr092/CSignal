@@ -105,7 +105,7 @@
                                   Must be smaller than or equal to a UINT32.
     \param  in_samples  The samples array it is an in_number_of_channels X
                         in_samples data buffer.
-    \param  Returns NO_ERROR upon succesful execution or one of these errors:
+    \return Returns NO_ERROR upon succesful execution or one of these errors:
 
             CPC_ERROR_CODE_INVALID_PARAMETER  If a file with the name
                                               in_file_name already exists or
@@ -156,15 +156,15 @@ csignal_write_LPCM_wav  (
                                   Must be smaller than or equal to a UINT32.
     \param  in_samples  The samples array it is an in_number_of_channels X
                         in_samples data buffer.
-    \param  Returns NO_ERROR upon succesful execution or one of these errors:
+    \return  Returns NO_ERROR upon succesful execution or one of these errors:
 
-    CPC_ERROR_CODE_INVALID_PARAMETER  If a file with the name
-                                      in_file_name already exists or
-                                      could not be created. If the
-                                      number of channels or the number
-                                      of samples is larger than a UINT16
-                                      or UINT32, respectively.
-    CSIGNAL_ERROR_CODE_WRITE_ERROR  If data could not be written to
+            CPC_ERROR_CODE_INVALID_PARAMETER  If a file with the name
+                                              in_file_name already exists or
+                                              could not be created. If the
+                                              number of channels or the number
+                                              of samples is larger than a UINT16
+                                              or UINT32, respectively.
+            CSIGNAL_ERROR_CODE_WRITE_ERROR  If data could not be written to
                                     the WAV file.
     */
 csignal_error_code

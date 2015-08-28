@@ -34,7 +34,7 @@ enum csignal_error_codes
   CSIGNAL_ERROR_CODE_NO_RESULT                = -104,
 };
 
-/*! \var    csignal_error_codes
+/*! \var    csignal_error_code
     \brief  Type definition for the CSignal library errors
  */
 typedef INT32 csignal_error_code;

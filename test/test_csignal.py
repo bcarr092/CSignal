@@ -41,7 +41,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_fft_of_lowpass_filter( self ):
-    bits_per_symbol     = 8
+    bits_per_symbol     = 1
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32767
@@ -71,21 +71,19 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( numberOfBits, bits_per_symbol )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( symbol, None )
 
     signal = []
 
     while( symbol != None ):
-      signal_components = csignal_tests.python_modulate_symbol (
-          symbol,
-          constellation_size,
-          sample_rate,
-          symbol_duration,
-          baseband_amplitude,
-          carrier_frequency
-                                                            )
+      signal_components = csignal_tests.python_csignal_modulate_BFSK_symbol (
+        symbol,
+        symbol_duration,
+        sample_rate,
+        carrier_frequency
+                                                              )
 
       self.assertNotEquals( signal_components, None )
       self.assertEquals( len( signal_components ), 2 )
@@ -127,7 +125,7 @@ class TestsCSignal( unittest.TestCase ):
       if( 0 == numberOfBits ):
         symbol = None
       else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     carrierSignal = []
 
@@ -207,7 +205,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( csignal_tests.csignal_destroy_gold_code( quadrature_gold_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_fft_of_spread_signal( self ):
-    bits_per_symbol     = 8
+    bits_per_symbol     = 1
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32767
@@ -239,21 +237,19 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( numberOfBits, bits_per_symbol )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( symbol, None )
 
     signal = []
 
     while( symbol != None ):
-      signal_components = csignal_tests.python_modulate_symbol (
-          symbol,
-          constellation_size,
-          sample_rate,
-          symbol_duration,
-          baseband_amplitude,
-          carrier_frequency
-                                                            )
+      signal_components = csignal_tests.python_csignal_modulate_BFSK_symbol (
+        symbol,
+        symbol_duration,
+        sample_rate,
+        carrier_frequency
+                                                              )
 
       self.assertNotEquals( signal_components, None )
       self.assertEquals( len( signal_components ), 2 )
@@ -295,7 +291,7 @@ class TestsCSignal( unittest.TestCase ):
       if( 0 == numberOfBits ):
         symbol = None
       else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     signal = csignal_tests.python_filter_signal( filter, signal )
 
@@ -426,7 +422,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( csignal_tests.csignal_destroy_passband_filter( filter ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_filter_signal( self ): 
-    bits_per_symbol     = 8
+    bits_per_symbol     = 1
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32767 
@@ -450,7 +446,7 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertNotEquals( filter, None )
 
-    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
     
     symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
@@ -461,7 +457,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( numberOfBits, bits_per_symbol )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( symbol, None )
 
@@ -474,14 +470,12 @@ class TestsCSignal( unittest.TestCase ):
     signal = []
 
     while( symbol != None ):
-      signal_components = csignal_tests.python_modulate_symbol (
-          symbol,
-          constellation_size,
-          sample_rate,
-          symbol_duration,
-          baseband_amplitude,
-          carrier_frequency
-                                                                )
+      signal_components = csignal_tests.python_csignal_modulate_BFSK_symbol (
+        symbol,
+        symbol_duration,
+        sample_rate,
+        carrier_frequency
+                                                              )
   
       self.assertNotEquals( signal_components, None )
       self.assertEquals( len( signal_components ), 2 )
@@ -527,7 +521,7 @@ class TestsCSignal( unittest.TestCase ):
       if( 0 == numberOfBits ):
         symbol = None
       else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( signal, None )
 
@@ -566,7 +560,7 @@ class TestsCSignal( unittest.TestCase ):
       os.unlink( file_name )
 
   def test_write_wav_basic( self ):
-    bits_per_symbol     = 8
+    bits_per_symbol     = 1
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32000
@@ -583,18 +577,16 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( numberOfBits, bits_per_symbol )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( symbol, None )
 
-    signal_components = csignal_tests.python_modulate_symbol (
-        symbol,
-        constellation_size,
-        sample_rate,
-        sample_rate,
-        baseband_amplitude,
-        carrier_frequency
-                                                              )
+    signal_components = csignal_tests.python_csignal_modulate_BFSK_symbol (
+      symbol,
+      sample_rate,
+      sample_rate,
+      carrier_frequency
+                                                            )
 
     self.assertNotEquals( signal_components, None )
     self.assertEquals( len( signal_components ), 2 )
@@ -607,10 +599,6 @@ class TestsCSignal( unittest.TestCase ):
 
     for index in range( sample_rate ):
       sampleValue = signal_components[ 0 ][ index ] - signal_components[ 1 ][ index ]
-
-      self.assertTrue( abs( sampleValue ) <= baseband_amplitude )
-
-      sampleValue /= baseband_amplitude
 
       self.assertTrue( abs( sampleValue ) <= 1.0 )
 
@@ -648,7 +636,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_spread_signal( self ):
-    bits_per_symbol     = 8
+    bits_per_symbol     = 1
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32000
@@ -660,7 +648,7 @@ class TestsCSignal( unittest.TestCase ):
 
     file_handle.close()
 
-    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
    
     symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
@@ -671,7 +659,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( numberOfBits, bits_per_symbol )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( symbol, None )
 
@@ -684,13 +672,11 @@ class TestsCSignal( unittest.TestCase ):
     signal = []
 
     while( symbol != None ):
-      signal_components = csignal_tests.python_modulate_symbol (
-          symbol,
-          constellation_size,
-          sample_rate,
-          symbol_duration,
-          baseband_amplitude,
-          carrier_frequency
+      signal_components = csignal_tests.python_csignal_modulate_BFSK_symbol (
+        symbol,
+        symbol_duration,
+        sample_rate,
+        carrier_frequency
                                                               )
 
       self.assertNotEquals( signal_components, None )
@@ -732,7 +718,7 @@ class TestsCSignal( unittest.TestCase ):
       if( 0 == numberOfBits ):
         symbol = None
       else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( signal, None )
 
@@ -841,7 +827,7 @@ class TestsCSignal( unittest.TestCase ):
         result = re.match( expression, line )
 
         if( result ):
-          self.assertEquals( codes[ index ], int( result.group( 1 ) ) )
+          self.assertEquals( ord( codes[ index ] ), int( result.group( 1 ) ) )
 
           index += 1
 
@@ -1101,7 +1087,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( csignal_tests.csignal_destroy_spreading_code( spreading_code ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_write_wav_random( self ):
-    bits_per_symbol     = 8
+    bits_per_symbol     = 1
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32000
@@ -1122,20 +1108,18 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( numberOfBits, bits_per_symbol )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( symbol, None )
 
     signal = []
 
     while( symbol != None ):
-      signal_components = csignal_tests.python_modulate_symbol (
-          symbol,
-          constellation_size,
-          sample_rate,
-          sample_rate,
-          baseband_amplitude,
-          carrier_frequency
+      signal_components = csignal_tests.python_csignal_modulate_BFSK_symbol (
+        symbol,
+        sample_rate,
+        sample_rate,
+        carrier_frequency
                                                               )
   
       self.assertNotEquals( signal_components, None )
@@ -1157,7 +1141,7 @@ class TestsCSignal( unittest.TestCase ):
       if( 0 == numberOfBits ):
         symbol = None
       else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     samples = [ signal, signal ]
 
@@ -1174,7 +1158,7 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_write_wav( self ):
-    bits_per_symbol     = 8
+    bits_per_symbol     = 1
     constellation_size  = 2 ** bits_per_symbol
     sample_rate         = 48000
     baseband_amplitude  = 32000
@@ -1195,18 +1179,16 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( numberOfBits, bits_per_symbol )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> ( 8 - bits_per_symbol )
 
     self.assertNotEquals( symbol, None )
 
-    signal_components = csignal_tests.python_modulate_symbol (
-        symbol,
-        constellation_size,
-        sample_rate,
-        sample_rate,
-        baseband_amplitude,
-        carrier_frequency
-                                                              )
+    signal_components = csignal_tests.python_csignal_modulate_BFSK_symbol (
+      symbol,
+      sample_rate,
+      sample_rate,
+      carrier_frequency
+                                                            )
 
     self.assertNotEquals( signal_components, None )
     self.assertEquals( len( signal_components ), 2 )
@@ -1238,73 +1220,68 @@ class TestsCSignal( unittest.TestCase ):
     self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_generate_signal_random( self ):
-    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 100 ) )
+    data = ''.join( random.choice( string.ascii_lowercase ) for _ in range( 10 ) )
 
     symbol_tracker = csignal_tests.python_bit_stream_initialize( False, data )
 
     self.assertNotEquals( symbol_tracker, None )
 
-    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 8 ) 
+    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 1 ) 
 
-    self.assertEquals( numberOfBits, 8 )
+    self.assertEquals( numberOfBits, 1 )
     self.assertNotEquals( buffer, None )
 
-    symbol = struct.unpack( "B", buffer )[ 0 ]
+    symbol = struct.unpack( "B", buffer )[ 0 ] >> 7
 
     self.assertNotEquals( symbol, None )
 
     while( symbol != None ):
-      signal = csignal_tests.python_modulate_symbol (
+      signal = csignal_tests.python_csignal_modulate_BFSK_symbol (
         symbol,
-        2**8,
-        48000,
         100,
-        16000,
+        48000,
         22000
-                                                    )
+                                                              )
 
       self.assertNotEquals( signal, None )
       self.assertEquals( len( signal ), 2 )
       self.assertNotEquals( signal[ 0 ], None )
       self.assertNotEquals( signal[ 1 ], None )
+      self.assertEquals( len( signal[ 0 ] ), 100 )
+      self.assertEquals( len( signal[ 1 ] ), 100 )
 
-      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 8 ) 
+      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 1 ) 
 
       if( 0 == numberOfBits ):
         symbol = None
       else:
-        symbol = struct.unpack( "B", buffer )[ 0 ]
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> 7
 
     self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_generate_signal( self ):
     self.assertEquals (
-      csignal_tests.python_modulate_symbol( 1, 0, 48000, 10, 16000, 22000 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 2, 10, 48000, 22000 ),
       None
                       )
 
     self.assertEquals (
-      csignal_tests.python_modulate_symbol( 1, 8, 0, 10, 16000, 22000 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 0, 48000, 22000 ),
       None
                       )
 
     self.assertEquals (
-      csignal_tests.python_modulate_symbol( 1, 8, 48000, 10, 16000, -1 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 0, 22000 ),
       None
                       )
 
-    self.assertEquals (
-      csignal_tests.python_modulate_symbol( 1, 8, 48000, 10, 16000, 0 ),
+    self.assertNotEquals (
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 48000, 0 ),
       None
                       )
 
-    self.assertEquals (
-      csignal_tests.python_modulate_symbol( 4, 2, 48000, 10, 16000, 0 ),
-      None
-                      )
-
-    self.assertEquals (
-      csignal_tests.python_modulate_symbol( 2, 2, 48000, 10, 16000, 0 ),
+    self.assertNotEquals (
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 48000, -22000 ),
       None
                       )
 
@@ -1315,38 +1292,39 @@ class TestsCSignal( unittest.TestCase ):
 
     self.assertNotEquals( symbol_tracker, None )
 
-    ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 4 ) 
+    ( numberOfBits, buffer ) =  \
+      csignal_tests.python_bit_stream_get_bits( symbol_tracker, 1 ) 
 
-    self.assertEquals( numberOfBits, 4 )
+    self.assertEquals( numberOfBits, 1 )
     self.assertNotEquals( buffer, None )
 
     symbol = struct.unpack( "B", buffer )[ 0 ]
 
     self.assertNotEquals( symbol, None )
 
-    symbol >>= 4
+    symbol >>= 7
 
     while( symbol != None ):
-      signal = csignal_tests.python_modulate_symbol (
-        symbol,
-        2**4,
-        48000,
-        10,
-        16000,
-        22000
-                                                    )
+      signal = \
+        csignal_tests.python_csignal_modulate_BFSK_symbol (
+          symbol,
+          10,
+          48000,
+          22000
+                                                          )
 
       self.assertNotEquals( signal, None )
       self.assertEquals( len( signal ), 2 )
       self.assertNotEquals( signal[ 0 ], None )
       self.assertNotEquals( signal[ 1 ], None )
 
-      ( numberOfBits, buffer )  = csignal_tests.python_bit_stream_get_bits( symbol_tracker, 4 ) 
+      ( numberOfBits, buffer ) =  \
+        csignal_tests.python_bit_stream_get_bits( symbol_tracker, 1 ) 
 
       if( 0 == numberOfBits ):
         symbol = None
       else:
-        symbol = struct.unpack( "B", buffer )[ 0 ] >> 4
+        symbol = struct.unpack( "B", buffer )[ 0 ] >> 7
 
     self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 

@@ -8,15 +8,15 @@
 
 #include "csignal_error_codes.h"
 
-/*! \def    csignal_error_code convolve  (
-              USIZE       in_signal_one_length,
-              FLOAT64*    in_signal_one,
-              USIZE       in_signal_two_length,
-              FLOAT64*    in_signal_two,
-              USIZE*      out_signal_length,
-              FLOAT64**   out_signal
+/*! \fn     csignal_error_code convolve  (
+             USIZE       in_signal_one_length,
+             FLOAT64*    in_signal_one,
+             USIZE       in_signal_two_length,
+             FLOAT64*    in_signal_two,
+             USIZE*      out_signal_length,
+             FLOAT64**   out_signal
             )
-    \brief  Perforsm the convolution of signal one and two, stores the output
+    \brief  Perfors the convolution of signal one and two, stores the output
             in a newly created array, out_signal. Performs the operation
             out_signal = in_signal_one * in_signal_two (where * is convolution).
  

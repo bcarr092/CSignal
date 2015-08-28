@@ -39,7 +39,7 @@ typedef struct detect_range_t
  
     \param  in_signal_length  The number of elements in in_signal.
     \param  in_signal The signal whose energy is to be calculated.
-    \param  in_spread_signal_length The number of elements in in_spread_signal.
+    \param  in_spreading_signal_length The number of elements in in_spread_signal.
     \param  in_spread_signal  The signal used to despread in_signal.
     \param  in_start_index  The index to begin the search at (the first index
                             in the range to search).
@@ -100,7 +100,7 @@ detect_exhaustive_find_max  (
  
     \param  in_signal_length  The number of elements in in_signal.
     \param  in_signal The signal whose energy is to be calculated.
-    \param  in_spread_signal_length The number of elements in in_spread_signal.
+    \param  in_spreading_signal_length The number of elements in in_spread_signal.
     \param  in_spread_signal  The signal used to despread in_signal.
     \param  in_start_index  The index to begin the search at (the first index
                             in the range to search).

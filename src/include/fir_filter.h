@@ -18,7 +18,7 @@
 
 #include "csignal_error_codes.h"
 
-/*! \var    firt_passband_filter
+/*! \var    fir_passband_filter
     \brief  This is the struct for a passband filter. It contains the relevant
             information regarding the filter, i.e. passband info and sampling
             frequency, and also contains the actual filter tap weights.
@@ -115,6 +115,8 @@ typedef struct fir_passband_filter_t
                                 first_passband. Units are Hz.
     \param  in_sampling_frequency The sampling frequency used to generate the
                                   filter. Units are Hz.
+    \param  in_number_of_taps The number of taps in the filter. This is the
+                              number of coefficients used for the filter.
     \param  out_filter  The populated filter struct with the coefficients array
                         malloc'd and initialized to zero.
     \return Returns NO_ERROR upon succesful execution or one of these errors

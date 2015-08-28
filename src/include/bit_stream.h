@@ -89,9 +89,9 @@ bit_stream_get_number_of_remaining_bits (
                         reach the end of the packer's data.
     \param  in_data The data buffer that contains the bits to read.
     \param  in_data_length  The length of in_data
-    \param  out_symbol_tracker  If this function successfully completes this
-                                parameter will point to a newly created
-                                bit_stream. It will be NULL otherwise.
+    \param  out_bit_stream  If this function successfully completes this
+                            parameter will point to a newly created
+                            bit_stream. It will be NULL otherwise.
     \return Returns NO_ERROR upon succesful execution or one of these errors
             (see cpc_safe_malloc for other possible errors):
  
@@ -207,11 +207,11 @@ bit_stream_get_bits (
                      );
 
 /*! \fn     csignal_error_code bit_stream_peak (
-              bit_stream*  in_bit_stream,
-              UCHAR*       out_read_bit_offset,
-              UCHAR*       out_write_bit_offset,
-              USIZE*       out_buffer_length,
-              UCHAR*       out_buffer
+                 bit_stream*  in_bit_stream,
+                 UCHAR*       out_read_bit_offset,
+                 UCHAR*       out_write_bit_offset,
+                 USIZE*       out_buffer_length,
+                 UCHAR**      out_buffer
             )
     \brief  Provides visibility into the position of the bit stream without
             modifying the read and write pointers.

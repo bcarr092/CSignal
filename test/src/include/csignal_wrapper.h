@@ -224,6 +224,10 @@ python_write_LPCM_wav(
             to be multiplied by an inphase and quadrature carrier. For
             a complete description of each parameter and the function please
             see the documentation for csignal_modulate_symbol.
+ 
+    \param  in_symbol The symbol to modulate. Must be a value in the range
+                      [ 0, in_constellation_size ).
+    \parma  in_constellation_size The number of possible symbols supported.
 
     \return A tuple of two floats ( inphase, quadrature ) or None.
  */
@@ -401,21 +405,6 @@ PyObject*
 python_csignal_calculate_energy (
                                  PyObject* in_signal
                                  );
-
-/*! \fn     PyObject* python_csignal_demodulate_binary_PAM (
-             PyObject* in_signal
-            )
-    \brief  Demodultes in_signal into the values [ -1, 1 ] using a correlator
-            demodulator. See csignal_demodulate_binary_PAM for a complete
-            description of the behaviour of the function.
- 
-    \param  in_signal The signal to be demodulated.
-    \return None if an error occurs or a PyInt containing one of [ -1, 1 ].
- */
-PyObject*
-python_csignal_demodulate_binary_PAM (
-                                      PyObject* in_signal
-                                      );
 
 /*! \fn     PyObject* python_csignal_sum_signal (
               PyObject*  in_signal,

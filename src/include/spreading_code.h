@@ -12,7 +12,16 @@
 
 #include "csignal_error_codes.h"
 
+/*! \def    SPREADING_WAVEFORM_POSITIVE
+    \brief  Float value used to represent a code chip value of 1 when expanding
+            the spreading binary sequence into a sampled waveform.
+ */
 #define SPREADING_WAVEFORM_POSITIVE 1.0
+
+/*! \def    SPREADING_WAVEFORM_NEGATIVE
+    \brief  Float value used to represent a code chip value of 0 when expanding
+            the spreading binary sequence into a sampled waveform.
+ */
 #define SPREADING_WAVEFORM_NEGATIVE -1.0
 
 /*! \var    spreading_code
@@ -96,10 +105,10 @@ typedef struct spreading_code_t
 } spreading_code;
 
 /*! \fn     csignal_error_code csignal_initialize_spreading_code (
-              UCHAR             in_degree
-              UINT32            in_generator_polynomial,
-              UINT32            in_initial_state,
-              spreading_code**  out_spreading_code
+             UCHAR            in_degree,
+             UINT32           in_generator_polynomial,
+             UINT32           in_initial_state,
+             spreading_code** out_spreading_code
             )
     \brief  Initializes the sequence generator struct, spreading_code. It
             also ensures that the generator polynomial is valid.
@@ -133,10 +142,10 @@ csignal_initialize_spreading_code (
                                    );
 
 /*! \fn     csignal_error_code csignal_get_spreading_code  (
-              spreading_code*  io_spreading_code,
-              UINT32           in_number_of_code_bits,
-              UINT32*          out_size,
-              UCHAR**          out_code
+             spreading_code*  in_spreading_code,
+             USIZE            in_number_of_code_bits,
+             USIZE*           out_size,
+             UCHAR**          out_code
             )
     \brief  Gets the next in_number_of_bits from the sequence generator
             configured in in_spreading_code. The generated bits are returned
@@ -147,8 +156,8 @@ csignal_initialize_spreading_code (
             of each byte, i.e., if one bit is requested it will be stored in
             the MSB of out_spreading_code[ 0 ].
  
-    \param  io_spreading_code The generator and initial state of the LFSR.
-    \param  in_number_of_bits The number of code bits to get from the LFSR.
+    \param  in_spreading_code The generator and initial state of the LFSR.
+    \param  in_number_of_code_bits The number of code bits to get from the LFSR.
     \param  out_size  The size of the byte array containing the code bits (in
                       bytes).
     \param  out_code  The code bits generated
@@ -162,16 +171,16 @@ csignal_initialize_spreading_code (
  */
 csignal_error_code
 csignal_get_spreading_code  (
-                             spreading_code*  io_spreading_code,
+                             spreading_code*  in_spreading_code,
                              USIZE            in_number_of_code_bits,
                              USIZE*           out_size,
                              UCHAR**          out_code
                              );
 
 /*! \fn     csignal_error_code csignal_set_spreading_signal  (
-              UCHAR     in_bit,
-              UINT32    in_signal_size,
-              FLOAT64*  out_signal
+             UCHAR    in_bit,
+             USIZE    in_signal_size,
+             FLOAT64* out_signal
             )
     \brief  Generates a spreading signal based on in_bit. If in_bit is non-zero
             than a signal consisting of +1 values is generated, otherwise
@@ -209,6 +218,17 @@ csignal_destroy_spreading_code(
                                 spreading_code* io_spreading_code
                               );
 
+/*! \fn     csignal_error_code csignal_reset_spreading_code (
+             spreading_code* io_spreading_code
+            )
+    \brief  Resets the code sequence generator to its intiai values (i.e.,
+            its initial state).
+ 
+    \param  io_spreading_code  The code generator to reset.
+    \return Returns NO_ERROR upon succesful execution or one of these errors:
+        
+            CPC_ERROR_CODE_NULL_POINTER If io_spreading_code is NULL.
+ */
 csignal_error_code
 csignal_reset_spreading_code  (
                                spreading_code* io_spreading_code

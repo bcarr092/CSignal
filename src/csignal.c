@@ -1,6 +1,6 @@
-/*! \fn     csignal.c
-    \breif  This file contains the implementation for generating data modulated
-            audio signals. Currently, implementations for QPSK and DSSS are
+/*! \file   csignal.c
+    \brief  This file contains the implementation for generating data modulated
+            audio signals. Currently, implementations for BFSK and DSSS are
             supported.
  
     \author Brent Carrara
@@ -95,6 +95,17 @@ csignal_modulate_BFSK_symbol  (
     return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
     
     CPC_ERROR( "Symbol (%d) must be 0 or 1.", in_symbol );
+  }
+  else if( 0 == in_samples_per_symbol || 0 == in_sample_rate )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Samples per symbol (%d) and sample rate (%d) must"
+               " be greater than zero.",
+               in_samples_per_symbol,
+               in_sample_rate
+               );
   }
   else
   {
@@ -472,83 +483,6 @@ csignal_calculate_energy  (
 }
 
 csignal_error_code
-csignal_demodulate_binary_PAM (
-                               USIZE    in_signal_length,
-                               FLOAT64* in_signal,
-                               INT32*   out_decision
-                               )
-{
-  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
-  
-  if( NULL == in_signal || NULL == out_decision )
-  {
-    return_value = CPC_ERROR_CODE_NULL_POINTER;
-    
-    CPC_ERROR (
-               "Signal (0x%x) or decision (0x%x) are null.",
-               in_signal,
-               out_decision
-               );
-  }
-  else if( 0 == in_signal_length )
-  {
-    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
-    
-    CPC_LOG_STRING( CPC_ERROR_CODE_NO_ERROR, "Length must be greater than 0." );
-  }
-  else
-  {
-    FLOAT64 correlator_one        = 0.0;
-    FLOAT64 correlator_minus_one  = 0.0;
-    
-    *out_decision = 0;
-    
-    return_value =
-      csignal_sum_signal  (
-                           in_signal_length,
-                           in_signal,
-                           1.0,
-                           &correlator_one
-                           );
-    
-    if( CPC_ERROR_CODE_NO_ERROR == return_value )
-    {
-      return_value =
-        csignal_sum_signal  (
-                             in_signal_length,
-                             in_signal,
-                             -1.0,
-                             &correlator_minus_one
-                             );
-      
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
-      {
-        CPC_LOG (
-                 CPC_LOG_LEVEL_TRACE,
-                 "1: %.04f\t-1: %.04f",
-                 correlator_one,
-                 correlator_minus_one
-                 );
-        
-        *out_decision = ( correlator_one >= correlator_minus_one ? 1 : -1 );
-        
-        CPC_LOG( CPC_LOG_LEVEL_TRACE, "Decision: %d", *out_decision );
-      }
-      else
-      {
-        CPC_ERROR( "Could not sum signal: 0x%x.", return_value );
-      }
-    }
-    else
-    {
-      CPC_ERROR( "Could not sum signal: 0x%x.", return_value );
-    }
-  }
-  
-  return( return_value );
-}
-
-csignal_error_code
 csignal_sum_signal(
                    USIZE    in_signal_length,
                    FLOAT64* in_signal,
@@ -571,127 +505,6 @@ csignal_sum_signal(
     for( UINT32 i = 0; i < in_signal_length; i++ )
     {
       *out_sum += in_scalar * in_signal[ i ];
-    }
-  }
-  
-  return( return_value );
-}
-
-csignal_error_code
-csignal_generate_carrier_signal (
-                                 UINT32     in_sample_rate,
-                                 FLOAT32    in_carrier_frequency,
-                                 USIZE*     out_signal_length,
-                                 FLOAT64**  out_signal_inphase,
-                                 FLOAT64**  out_signal_quadrature
-                                 )
-{
-  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
-  
-  if  (
-       NULL == out_signal_length
-       || NULL == out_signal_inphase
-       || NULL == out_signal_quadrature
-       )
-  {
-    return_value = CPC_ERROR_CODE_NULL_POINTER;
-    
-    CPC_ERROR (
-               "Signal inphase (0x%x), quadrature (0x%x)"
-               " or length (0x%x) are null.",
-               out_signal_inphase,
-               out_signal_quadrature,
-               out_signal_length
-               );
-  }
-  else if( 0 >= in_carrier_frequency )
-  {
-    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
-    
-    CPC_ERROR (
-               "Carrier frequency (%.02f) must be strictly positive.",
-               in_carrier_frequency
-               );
-  }
-  else
-  {
-    UINT32 gcd =
-      csignal_greatest_common_divisor (
-                                       in_sample_rate,
-                                       ( UINT32 ) in_carrier_frequency
-                                       );
-    
-    UINT64 signal_length =
-      ( UINT64 )
-      ( 1.0 * in_sample_rate * in_carrier_frequency ) / ( 1.0 * gcd );
-    
-    if( ( UINT64 ) MAX_UINT32 < signal_length )
-    {
-      return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
-      
-      CPC_ERROR (
-                 "Signal length is too large (%d,%d), %lld.",
-                 in_sample_rate,
-                 ( UINT32 ) in_carrier_frequency,
-                 signal_length
-                 );
-    }
-    else
-    {
-      *out_signal_length = ( UINT32 ) signal_length;
-      
-      CPC_LOG (
-               CPC_LOG_LEVEL_TRACE,
-               "GCD(%d,%d)=%d\tSignal length is %lld (%d).",
-               in_sample_rate,
-               ( UINT32 ) in_carrier_frequency,
-               gcd,
-               signal_length,
-               *out_signal_length
-               );
-      
-      return_value =
-        cpc_safe_malloc (
-                         ( void** ) out_signal_inphase,
-                         sizeof( FLOAT64 ) * *out_signal_length
-                         );
-      
-      if( CPC_ERROR_CODE_NO_ERROR == return_value )
-      {
-        return_value =
-          cpc_safe_malloc (
-                           ( void** ) out_signal_quadrature,
-                           sizeof( FLOAT64 ) * *out_signal_length
-                           );
-        
-        if( CPC_ERROR_CODE_NO_ERROR == return_value )
-        {
-          for( UINT32 i = 0; i < *out_signal_length; i++ )
-          {
-            ( *out_signal_inphase )[ i ] =
-            cos (
-                 2.0 * M_PI * in_carrier_frequency
-                 * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-                 );
-            
-            ( *out_signal_quadrature )[ i ] =
-              sin (
-                   2.0 * M_PI * in_carrier_frequency
-                   * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-                   );
-          }
-        }
-        else
-        {
-          CPC_ERROR( "Could not malloc quadrature signa: 0x%x.", return_value );
-          
-          cpc_safe_free( ( void** ) out_signal_inphase );
-        }
-      }
-      else
-      {
-        CPC_ERROR( "Could not malloc inphase signal: 0x%x.", return_value );
-      }
     }
   }
   

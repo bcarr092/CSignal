@@ -66,10 +66,10 @@ typedef struct gold_code_t
     \param  in_degree The degree of the generator polynomials.
     \param  in_generator_polynomial_1 The generator polynomial for the first
             LFSR.
-    \param  in_generator_polynomial_1 The generator polynomial for the second
+    \param  in_generator_polynomial_2 The generator polynomial for the second
             LFSR.
-    \param  in_initial_state  The initial state of the first LFSR.
-    \param  in_initial_state  The initial state of the second LFSR.
+    \param  in_initial_state_1  The initial state of the first LFSR.
+    \param  in_initial_state_2  The initial state of the second LFSR.
     \param  out_gold_code If no errors are detected a new spreading_code
                           struct will be created and returned. The caller
                           must free this structure.
@@ -106,7 +106,7 @@ csignal_destroy_gold_code (
                            );
 
 /*! \fn     csignal_error_code csignal_get_gold_code  (
-              gold_code*  io_gold_code,
+              gold_code*  in_gold_code,
               USIZE       in_number_of_code_bits,
               USIZE*      out_size,
               UCHAR**     out_code
@@ -116,9 +116,9 @@ csignal_destroy_gold_code (
             returned as a byte array in out_code. The size of the byte array is
             in out_size.
  
-    \param  io_gold_code  The generator and initial state of the gold code
+    \param  in_gold_code  The generator and initial state of the gold code
                           sequence generator.
-    \param  in_number_of_bits The number of code bits to get from the LFSRs.
+    \param  in_number_of_code_bits The number of code bits to get from the LFSRs.
     \param  out_size  The size of the byte array containing the code bits (in
                       bytes).
     \param  out_code  The code bits generated
@@ -132,12 +132,24 @@ csignal_destroy_gold_code (
  */
 csignal_error_code
 csignal_get_gold_code  (
-                        gold_code*  io_gold_code,
+                        gold_code*  in_gold_code,
                         USIZE       in_number_of_code_bits,
                         USIZE*      out_size,
                         UCHAR**     out_code
                         );
 
+/*! \fn     csignal_error_code csignal_reset_gold_code (
+             gold_code* io_gold_code
+            )
+    \brief  Resets the gold code sequence generator to its intiai values (i.e.,
+            its initial state).
+ 
+    \param  io_gold_code  The Gold code generator to reset.
+    \return Returns NO_ERROR upon succesful execution or one of these errors:
+        
+            CPC_ERROR_CODE_NULL_POINTER If io_gold_code or either of its
+                                        generators is NULL.
+ */
 csignal_error_code
 csignal_reset_gold_code (
                          gold_code* io_gold_code
