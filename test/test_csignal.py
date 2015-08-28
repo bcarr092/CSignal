@@ -623,16 +623,6 @@ class TestsCSignal( unittest.TestCase ):
     if( os.path.exists( file_name ) ):
       os.unlink( file_name )
 
-    error = csignal_tests.python_write_FLOAT_wav (
-      '/test.WAV',
-      len( samples ),
-      sample_rate,
-      len( signal ),
-      samples
-                                                )
-
-    self.assertEquals( error, csignal_tests.CPC_FALSE )
-
     self.assertEquals( csignal_tests.bit_stream_destroy( symbol_tracker ), csignal_tests.CPC_ERROR_CODE_NO_ERROR )
 
   def test_spread_signal( self ):
