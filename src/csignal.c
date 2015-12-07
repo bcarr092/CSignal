@@ -130,12 +130,15 @@ csignal_modulate_BFSK_symbol  (
         FLOAT64 delta_frequency =
           ( in_sample_rate / in_samples_per_symbol );
         FLOAT64 frequency       =
-          ( in_symbol ? delta_frequency / 2.0 : -1.0 * delta_frequency / 2.0 );
+          in_symbol ? 0.0 : delta_frequency;
+//          delta_frequency
+//          ( in_symbol ? delta_frequency / 2.0 : -1.0 * delta_frequency / 2.0 );
         
         CPC_LOG (
-                 CPC_LOG_LEVEL_TRACE,
-                 "Symbol: %d\tFrequency: %.02f",
+                 CPC_LOG_LEVEL_ERROR,
+                 "Symbol: %d\tDelta: %.02f\tFrequency: %.02f",
                  in_symbol,
+                 delta_frequency,
                  frequency
                  );
         
