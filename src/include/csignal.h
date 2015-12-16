@@ -262,4 +262,14 @@ csignal_modulate_BFSK_symbol  (
                                FLOAT64**  out_signal_quadrature
                                );
 
+csignal_error_code
+csignal_BFSK_determine_frequencies  (
+                                     UINT32   in_samples_per_symbol,
+                                     UINT32   in_sample_rate,
+                                     FLOAT32  in_carrier_frequency,
+                                     FLOAT64* out_symbol_0_frequency,
+                                     FLOAT64* out_symbol_1_frequency,
+                                     FLOAT64* out_delta_frequency
+                                     );
+
 #endif  /*  __CSIGNAL_H__ */

@@ -63,6 +63,70 @@ csignal_terminate( void )
 }
 
 csignal_error_code
+csignal_BFSK_determine_frequencies  (
+                                     UINT32   in_samples_per_symbol,
+                                     UINT32   in_sample_rate,
+                                     FLOAT32  in_carrier_frequency,
+                                     FLOAT64* out_symbol_0_frequency,
+                                     FLOAT64* out_symbol_1_frequency,
+                                     FLOAT64* out_delta_frequency
+                                     )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if  (
+       NULL == out_symbol_0_frequency
+       || NULL == out_symbol_1_frequency
+       || NULL == out_delta_frequency
+       )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Symbol 0 (0x%x), 1 (0x%x), or delta (0x%x) are null.",
+               out_symbol_0_frequency,
+               out_symbol_1_frequency,
+               out_delta_frequency
+               );
+  }
+  else if( 0 == in_samples_per_symbol || 0 == in_sample_rate )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Samples per symbol (%d) and sample rate (%d) must"
+               " be greater than zero.",
+               in_samples_per_symbol,
+               in_sample_rate
+               );
+  }
+  else
+  {
+    FLOAT64 integer_part = 0.0;
+    
+    *out_delta_frequency =
+      ( in_sample_rate / in_samples_per_symbol );
+    
+    modf( ( in_carrier_frequency / *out_delta_frequency ), &integer_part );
+    
+    *out_symbol_0_frequency =
+      ( integer_part * *out_delta_frequency ) - in_carrier_frequency;
+    *out_symbol_1_frequency = *out_symbol_0_frequency + *out_delta_frequency;
+    
+    CPC_LOG (
+             CPC_LOG_LEVEL_DEBUG,
+             "Symbol 0 frequency is %.02f. Symbol 1 frequency is %.02f."
+             " Delta frequency is %.02f",
+             *out_symbol_0_frequency,
+             *out_symbol_1_frequency,
+             *out_delta_frequency
+             );
+  }
+  
+  return( return_value );
+}
+
+csignal_error_code
 csignal_modulate_BFSK_symbol  (
                                UINT32     in_symbol,
                                UINT32     in_samples_per_symbol,
@@ -127,42 +191,58 @@ csignal_modulate_BFSK_symbol  (
       
       if( CPC_ERROR_CODE_NO_ERROR == return_value )
       {
-        FLOAT64 delta_frequency =
-          ( in_sample_rate / in_samples_per_symbol );
-        FLOAT64 frequency       =
-          in_symbol ? 0.0 : delta_frequency;
-//          delta_frequency
-//          ( in_symbol ? delta_frequency / 2.0 : -1.0 * delta_frequency / 2.0 );
+        FLOAT64 symbol_0_frequency  = 0.0;
+        FLOAT64 symbol_1_frequency  = 0.0;
+        FLOAT64 delta_frequency     = 0.0;
         
-        CPC_LOG (
-                 CPC_LOG_LEVEL_ERROR,
-                 "Symbol: %d\tDelta: %.02f\tFrequency: %.02f",
-                 in_symbol,
-                 delta_frequency,
-                 frequency
-                 );
+        return_value =
+          csignal_BFSK_determine_frequencies  (
+                                               in_samples_per_symbol,
+                                               in_sample_rate,
+                                               in_carrier_frequency,
+                                               &symbol_0_frequency,
+                                               &symbol_1_frequency,
+                                               &delta_frequency
+                                               );
         
-        for( UINT32 i = 0; i < *out_signal_length; i++ )
+        if( CPC_ERROR_CODE_NO_ERROR == return_value )
         {
-          ( *out_signal_inphase )[ i ] =
-          cos (
-               2.0 * M_PI * in_carrier_frequency
-               * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-               )
-          * cos (
-                 2.0 * M_PI * frequency
-                 * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-                 );
+          FLOAT64 frequency =
+            ( in_symbol ? symbol_1_frequency : symbol_0_frequency );
           
-          ( *out_signal_quadrature )[ i ] =
-          sin (
-               2.0 * M_PI * in_carrier_frequency
-               * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-               )
-          * sin (
-                 2.0 * M_PI * frequency
+          CPC_LOG (
+                   CPC_LOG_LEVEL_ERROR,
+                   "Symbol: %d\tFrequency: %.02f",
+                   in_symbol,
+                   frequency
+                   );
+          
+          for( UINT32 i = 0; i < *out_signal_length; i++ )
+          {
+            ( *out_signal_inphase )[ i ] =
+            cos (
+                 2.0 * M_PI * in_carrier_frequency
                  * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
-                 );
+                 )
+            * cos (
+                   2.0 * M_PI * frequency
+                   * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+                   );
+            
+            ( *out_signal_quadrature )[ i ] =
+            sin (
+                 2.0 * M_PI * in_carrier_frequency
+                 * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+                 )
+            * sin (
+                   2.0 * M_PI * frequency
+                   * ( i * 1.0 ) / ( in_sample_rate * 1.0 )
+                   );
+          }
+        }
+        else
+        {
+          CPC_ERROR( "Could not determine frequencies: 0x%x.", return_value );
         }
       }
       else

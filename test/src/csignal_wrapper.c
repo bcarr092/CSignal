@@ -526,8 +526,7 @@ python_spread_signal(
 
       if( CPC_ERROR_CODE_NO_ERROR == result )
       {
-        result =
-          python_convert_array_to_list( signal_length, signal, &return_value );
+        python_convert_array_to_list( signal_length, signal, &return_value );
       }
       else
       {
@@ -1061,6 +1060,97 @@ python_bit_packer_get_bytes (
   else
   {
     CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Packer is null." );
+    
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
+python_BFSK_determine_frequencies  (
+                                     UINT32   in_samples_per_symbol,
+                                     UINT32   in_sample_rate,
+                                     FLOAT32  in_carrier_frequency
+                                     )
+{
+  FLOAT64 symbol_0_frequency = 0.0;
+  FLOAT64 symbol_1_frequency = 0.0;
+  FLOAT64 delta_frequency    = 0.0;
+  
+  PyObject* python_symbol_0 = NULL;
+  PyObject* python_symbol_1 = NULL;
+  PyObject* python_delta    = NULL;
+  PyObject* return_value    = NULL;
+  
+  csignal_error_code result =
+    csignal_BFSK_determine_frequencies  (
+                                         in_samples_per_symbol,
+                                         in_sample_rate,
+                                         in_carrier_frequency,
+                                         &symbol_0_frequency,
+                                         &symbol_1_frequency,
+                                         &delta_frequency
+                                         );
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    python_symbol_0 = PyFloat_FromDouble( symbol_0_frequency );
+    python_symbol_1 = PyFloat_FromDouble( symbol_1_frequency );
+    python_delta    = PyFloat_FromDouble( delta_frequency );
+    
+    if  (
+         NULL != python_symbol_0 && PyFloat_Check( python_symbol_0 )
+         && NULL != python_symbol_1 && PyFloat_Check( python_symbol_1 )
+         && NULL != python_delta && PyFloat_Check( python_delta )
+         )
+    {
+      return_value = PyTuple_New( 3 );
+      
+      if( NULL != return_value && PyTuple_Check( return_value ) )
+      {
+        if  (
+             0 != PyTuple_SetItem( return_value, 0, python_symbol_0 )
+             || 0 != PyTuple_SetItem( return_value, 1, python_symbol_1 )
+             || 0 != PyTuple_SetItem( return_value, 2, python_delta )
+             )
+        {
+          CPC_LOG_STRING  (
+                           CPC_LOG_LEVEL_ERROR,
+                           "Could not add items to tuple."
+                           );
+          
+          return_value = NULL;
+        }
+      }
+      else
+      {
+        CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create tuple." );
+        
+        return_value = NULL;
+      }
+    }
+    else
+    {
+      CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Could not create floats." );
+        
+      return_value = NULL;
+    }
+  }
+  else
+  {
+    CPC_ERROR( "Could not get BFSK frequencies: 0x%x.", result );
+        
+    return_value = NULL;
+  }
+  
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_XDECREF( python_symbol_0 );
+    Py_XDECREF( python_symbol_1 );
+    Py_XDECREF( python_delta );
     
     Py_RETURN_NONE;
   }

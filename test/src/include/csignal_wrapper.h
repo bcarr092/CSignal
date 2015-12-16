@@ -584,4 +584,11 @@ python_detect_find_highest_energy_offset (
                                   FLOAT64              in_threshold
                                           );
 
+PyObject*
+python_BFSK_determine_frequencies  (
+                                     UINT32   in_samples_per_symbol,
+                                     UINT32   in_sample_rate,
+                                     FLOAT32  in_carrier_frequency
+                                     );
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */
