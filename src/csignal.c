@@ -110,8 +110,8 @@ csignal_BFSK_determine_frequencies  (
     modf( ( in_carrier_frequency / *out_delta_frequency ), &integer_part );
     
     *out_symbol_0_frequency =
-      ( integer_part * *out_delta_frequency ) - in_carrier_frequency;
-    *out_symbol_1_frequency = *out_symbol_0_frequency + *out_delta_frequency;
+      ( ( integer_part - 2 )* *out_delta_frequency ) - in_carrier_frequency;
+    *out_symbol_1_frequency = *out_symbol_0_frequency + 4.0 * *out_delta_frequency;
     
     CPC_LOG (
              CPC_LOG_LEVEL_DEBUG,
@@ -173,7 +173,7 @@ csignal_modulate_BFSK_symbol  (
   }
   else
   {
-    *out_signal_length = in_samples_per_symbol;
+    *out_signal_length = 3 * in_samples_per_symbol;
     
     return_value =
       cpc_safe_malloc (
@@ -217,7 +217,7 @@ csignal_modulate_BFSK_symbol  (
                    frequency
                    );
           
-          for( UINT32 i = 0; i < *out_signal_length; i++ )
+          for( UINT32 i = 0; i < in_samples_per_symbol; i++ )
           {
             ( *out_signal_inphase )[ i ] =
             cos (

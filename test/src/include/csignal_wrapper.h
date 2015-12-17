@@ -591,4 +591,9 @@ python_BFSK_determine_frequencies  (
                                      FLOAT32  in_carrier_frequency
                                      );
 
+PyObject*
+python_filter_get_filter_length (
+                                 fir_passband_filter*  in_filter
+                                 );
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

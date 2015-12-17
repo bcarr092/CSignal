@@ -213,7 +213,7 @@ csignal_initialize_kaiser_filter  (
   else
   {
     CPC_LOG (
-             CPC_LOG_LEVEL_TRACE,
+             CPC_LOG_LEVEL_ERROR,
              "First stopband is %.2f, first passband is %.2f,"
              " second passband is %.2f, second stop band is %.2f."
              " Passband attenuation is %.2f and stopband attenuation is %.2f."

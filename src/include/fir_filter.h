@@ -225,4 +225,10 @@ csignal_filter_get_group_delay  (
                                  UINT32*              out_group_delay
                                  );
 
+csignal_error_code
+csignal_filter_get_filter_length  (
+                                   fir_passband_filter*  in_filter,
+                                   UINT32* in_filter_length
+                                   );
+
 #endif  /*  __FIR_FILTER_H__  */

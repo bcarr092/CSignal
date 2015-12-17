@@ -1826,6 +1826,52 @@ python_bit_stream_peak  (
 }
 
 PyObject*
+python_filter_get_filter_length (
+                               fir_passband_filter*  in_filter
+                               )
+{
+  csignal_error_code result = CPC_ERROR_CODE_NO_ERROR;
+  UINT32 length             = 0;
+  PyObject* py_length       = NULL;
+  
+  if( NULL == in_filter )
+  {
+    result = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "Filter is null." );
+  }
+  else
+  {
+    result = csignal_filter_get_filter_length( in_filter, &length );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      py_length = PyInt_FromLong( length );
+      
+      if( ! PyInt_Check( py_length ) )
+      {
+        result = CPC_ERROR_CODE_API_ERROR;
+        
+        CPC_ERROR( "Could not create a Python int from %d.", length );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not get filter length: 0x%x.", result );
+    }
+  }
+  
+  if( CPC_ERROR_CODE_NO_ERROR == result )
+  {
+    return( py_length );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
 python_filter_get_group_delay (
                                fir_passband_filter*  in_filter
                                )

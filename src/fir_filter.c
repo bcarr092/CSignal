@@ -184,3 +184,29 @@ csignal_filter_get_group_delay  (
   
   return( return_value );
 }
+
+csignal_error_code
+csignal_filter_get_filter_length  (
+                                   fir_passband_filter*  in_filter,
+                                   UINT32*               in_filter_length
+                                   )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if( NULL == in_filter || NULL == in_filter_length )
+  {
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+    
+    CPC_ERROR (
+               "Filter (0x%x) or length (0x%x) are null.",
+               in_filter,
+               in_filter_length
+               );
+  }
+  else
+  {
+    *in_filter_length = in_filter->number_of_taps;
+  }
+  
+  return( return_value );
+}
