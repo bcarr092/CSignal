@@ -1069,41 +1069,48 @@ PyObject*
 python_BFSK_determine_frequencies  (
                                      UINT32   in_samples_per_symbol,
                                      UINT32   in_sample_rate,
-                                     FLOAT32  in_carrier_frequency
+                                     FLOAT32  in_carrier_frequency,
+                                     UINT32   in_separation_intervals
                                      )
 {
   FLOAT64 symbol_0_frequency = 0.0;
   FLOAT64 symbol_1_frequency = 0.0;
   FLOAT64 delta_frequency    = 0.0;
+  FLOAT64 bandwidth          = 0.0;
   
-  PyObject* python_symbol_0 = NULL;
-  PyObject* python_symbol_1 = NULL;
-  PyObject* python_delta    = NULL;
-  PyObject* return_value    = NULL;
+  PyObject* python_symbol_0   = NULL;
+  PyObject* python_symbol_1   = NULL;
+  PyObject* python_delta      = NULL;
+  PyObject* python_bandwidth  = NULL;
+  PyObject* return_value      = NULL;
   
   csignal_error_code result =
     csignal_BFSK_determine_frequencies  (
                                          in_samples_per_symbol,
                                          in_sample_rate,
                                          in_carrier_frequency,
+                                         in_separation_intervals,
                                          &symbol_0_frequency,
                                          &symbol_1_frequency,
-                                         &delta_frequency
+                                         &delta_frequency,
+                                         &bandwidth
                                          );
   
   if( CPC_ERROR_CODE_NO_ERROR == result )
   {
-    python_symbol_0 = PyFloat_FromDouble( symbol_0_frequency );
-    python_symbol_1 = PyFloat_FromDouble( symbol_1_frequency );
-    python_delta    = PyFloat_FromDouble( delta_frequency );
+    python_symbol_0   = PyFloat_FromDouble( symbol_0_frequency );
+    python_symbol_1   = PyFloat_FromDouble( symbol_1_frequency );
+    python_delta      = PyFloat_FromDouble( delta_frequency );
+    python_bandwidth  = PyFloat_FromDouble( bandwidth );
     
     if  (
          NULL != python_symbol_0 && PyFloat_Check( python_symbol_0 )
          && NULL != python_symbol_1 && PyFloat_Check( python_symbol_1 )
          && NULL != python_delta && PyFloat_Check( python_delta )
+         && NULL != python_bandwidth && PyFloat_Check( python_bandwidth )
          )
     {
-      return_value = PyTuple_New( 3 );
+      return_value = PyTuple_New( 4 );
       
       if( NULL != return_value && PyTuple_Check( return_value ) )
       {
@@ -1111,6 +1118,7 @@ python_BFSK_determine_frequencies  (
              0 != PyTuple_SetItem( return_value, 0, python_symbol_0 )
              || 0 != PyTuple_SetItem( return_value, 1, python_symbol_1 )
              || 0 != PyTuple_SetItem( return_value, 2, python_delta )
+             || 0 != PyTuple_SetItem( return_value, 3, python_bandwidth )
              )
         {
           CPC_LOG_STRING  (
@@ -1151,6 +1159,7 @@ python_BFSK_determine_frequencies  (
     Py_XDECREF( python_symbol_0 );
     Py_XDECREF( python_symbol_1 );
     Py_XDECREF( python_delta );
+    Py_XDECREF( python_bandwidth );
     
     Py_RETURN_NONE;
   }
@@ -1922,7 +1931,9 @@ python_csignal_modulate_BFSK_symbol  (
                                       UINT32     in_symbol,
                                       UINT32     in_samples_per_symbol,
                                       UINT32     in_sample_rate,
-                                      FLOAT32    in_carrier_frequency
+                                      FLOAT32    in_carrier_frequency,
+                                      UINT32     in_separation_intervals,
+                                      UINT32     in_symbol_expansion_factor
                                       )
 {
   USIZE signal_length = 0;
@@ -1940,6 +1951,8 @@ python_csignal_modulate_BFSK_symbol  (
                                    in_samples_per_symbol,
                                    in_sample_rate,
                                    in_carrier_frequency,
+                                   in_separation_intervals,
+                                   in_symbol_expansion_factor,
                                    &signal_length,
                                    &signal_inphase,
                                    &signal_quadrature

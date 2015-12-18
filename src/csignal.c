@@ -67,9 +67,11 @@ csignal_BFSK_determine_frequencies  (
                                      UINT32   in_samples_per_symbol,
                                      UINT32   in_sample_rate,
                                      FLOAT32  in_carrier_frequency,
+                                     UINT32   in_separation_intervals,
                                      FLOAT64* out_symbol_0_frequency,
                                      FLOAT64* out_symbol_1_frequency,
-                                     FLOAT64* out_delta_frequency
+                                     FLOAT64* out_delta_frequency,
+                                     FLOAT64* out_bandwidth
                                      )
 {
   csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
@@ -78,26 +80,34 @@ csignal_BFSK_determine_frequencies  (
        NULL == out_symbol_0_frequency
        || NULL == out_symbol_1_frequency
        || NULL == out_delta_frequency
+       || NULL == out_bandwidth
        )
   {
     return_value = CPC_ERROR_CODE_NULL_POINTER;
     
     CPC_ERROR (
-               "Symbol 0 (0x%x), 1 (0x%x), or delta (0x%x) are null.",
+               "Symbol 0 (0x%x), 1 (0x%x), delta (0x%x),"
+               " or bandwidth (0x%x are null.",
                out_symbol_0_frequency,
                out_symbol_1_frequency,
-               out_delta_frequency
+               out_delta_frequency,
+               out_bandwidth
                );
   }
-  else if( 0 == in_samples_per_symbol || 0 == in_sample_rate )
+  else if (
+           0 == in_samples_per_symbol
+           || 0 == in_sample_rate
+           || 0 == in_separation_intervals
+           )
   {
     return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
     
     CPC_ERROR (
-               "Samples per symbol (%d) and sample rate (%d) must"
-               " be greater than zero.",
+               "Samples per symbol (%d), sample rate (%d) must"
+               " and separation intervals (%d) be greater than zero.",
                in_samples_per_symbol,
-               in_sample_rate
+               in_sample_rate,
+               in_separation_intervals
                );
   }
   else
@@ -105,21 +115,42 @@ csignal_BFSK_determine_frequencies  (
     FLOAT64 integer_part = 0.0;
     
     *out_delta_frequency =
-      ( in_sample_rate / in_samples_per_symbol );
+      ( ( in_sample_rate * 1.0 ) / ( in_samples_per_symbol * 1.0 ) );
     
     modf( ( in_carrier_frequency / *out_delta_frequency ), &integer_part );
     
+    CPC_LOG( CPC_LOG_LEVEL_DEBUG, "Integral part: %.02f", integer_part );
+    
+    FLOAT64 steps =
+      CPC_FLOOR_FLOAT64( ( in_separation_intervals * 1.0 ) / 2.0 );
+    
+    CPC_LOG (
+             CPC_LOG_LEVEL_DEBUG,
+             "Steps (%d): %.02f",
+             in_separation_intervals,
+             steps
+             );
+    
     *out_symbol_0_frequency =
-      ( ( integer_part - 2 )* *out_delta_frequency ) - in_carrier_frequency;
-    *out_symbol_1_frequency = *out_symbol_0_frequency + 4.0 * *out_delta_frequency;
+      ( ( integer_part - steps )* *out_delta_frequency )
+      - in_carrier_frequency;
+    
+    *out_symbol_1_frequency =
+      *out_symbol_0_frequency
+      + ( in_separation_intervals * *out_delta_frequency );
+    
+    *out_bandwidth =
+      ( 2.0 * ( in_separation_intervals * *out_delta_frequency ) )
+      + ( 2.0 * ( *out_delta_frequency / 2.0 ) );
     
     CPC_LOG (
              CPC_LOG_LEVEL_DEBUG,
              "Symbol 0 frequency is %.02f. Symbol 1 frequency is %.02f."
-             " Delta frequency is %.02f",
+             " Delta frequency is %.02f. Bandwidth is %.02f.",
              *out_symbol_0_frequency,
              *out_symbol_1_frequency,
-             *out_delta_frequency
+             *out_delta_frequency,
+             *out_bandwidth
              );
   }
   
@@ -132,6 +163,8 @@ csignal_modulate_BFSK_symbol  (
                                UINT32     in_samples_per_symbol,
                                UINT32     in_sample_rate,
                                FLOAT32    in_carrier_frequency,
+                               UINT32     in_separation_intervals,
+                               UINT32     in_symbol_expansion_factor,
                                USIZE*     out_signal_length,
                                FLOAT64**  out_signal_inphase,
                                FLOAT64**  out_signal_quadrature
@@ -160,20 +193,25 @@ csignal_modulate_BFSK_symbol  (
     
     CPC_ERROR( "Symbol (%d) must be 0 or 1.", in_symbol );
   }
-  else if( 0 == in_samples_per_symbol || 0 == in_sample_rate )
+  else if (
+           0 == in_samples_per_symbol
+           || 0 == in_sample_rate
+           || 0 == in_separation_intervals
+           )
   {
     return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
     
     CPC_ERROR (
-               "Samples per symbol (%d) and sample rate (%d) must"
-               " be greater than zero.",
+               "Samples per symbol (%d), sample rate (%d) must"
+               " and separation intervals (%d) be greater than zero.",
                in_samples_per_symbol,
-               in_sample_rate
+               in_sample_rate,
+               in_separation_intervals
                );
   }
   else
   {
-    *out_signal_length = 3 * in_samples_per_symbol;
+    *out_signal_length = in_symbol_expansion_factor * in_samples_per_symbol;
     
     return_value =
       cpc_safe_malloc (
@@ -194,15 +232,18 @@ csignal_modulate_BFSK_symbol  (
         FLOAT64 symbol_0_frequency  = 0.0;
         FLOAT64 symbol_1_frequency  = 0.0;
         FLOAT64 delta_frequency     = 0.0;
+        FLOAT64 bandwidth           = 0.0;
         
         return_value =
           csignal_BFSK_determine_frequencies  (
                                                in_samples_per_symbol,
                                                in_sample_rate,
                                                in_carrier_frequency,
+                                               in_separation_intervals,
                                                &symbol_0_frequency,
                                                &symbol_1_frequency,
-                                               &delta_frequency
+                                               &delta_frequency,
+                                               &bandwidth
                                                );
         
         if( CPC_ERROR_CODE_NO_ERROR == return_value )
@@ -211,7 +252,7 @@ csignal_modulate_BFSK_symbol  (
             ( in_symbol ? symbol_1_frequency : symbol_0_frequency );
           
           CPC_LOG (
-                   CPC_LOG_LEVEL_ERROR,
+                   CPC_LOG_LEVEL_DEBUG,
                    "Symbol: %d\tFrequency: %.02f",
                    in_symbol,
                    frequency

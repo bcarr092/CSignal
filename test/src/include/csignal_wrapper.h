@@ -481,7 +481,9 @@ python_csignal_modulate_BFSK_symbol  (
                                       UINT32     in_symbol,
                                       UINT32     in_samples_per_symbol,
                                       UINT32     in_sample_rate,
-                                      FLOAT32    in_carrier_frequency
+                                      FLOAT32    in_carrier_frequency,
+                                      UINT32     in_separation_intervals,
+                                      UINT32     in_symbol_expansion_factor
                                       );
 
 /*! \fn     PyObject* python_detect_calculate_energy (
@@ -588,8 +590,9 @@ PyObject*
 python_BFSK_determine_frequencies  (
                                      UINT32   in_samples_per_symbol,
                                      UINT32   in_sample_rate,
-                                     FLOAT32  in_carrier_frequency
-                                     );
+                                     FLOAT32  in_carrier_frequency,
+                                     UINT32   in_separation_intervals
+                                    );
 
 PyObject*
 python_filter_get_filter_length (
