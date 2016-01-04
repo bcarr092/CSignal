@@ -138,10 +138,17 @@ csignal_BFSK_determine_frequencies  (
     *out_symbol_1_frequency =
       *out_symbol_0_frequency
       + ( in_separation_intervals * *out_delta_frequency );
-    
+
+    FLOAT64 max_deviation =
+      -1.0
+      * CPC_MIN (
+        FLOAT64,
+        -1.0 * fabs( *out_symbol_0_frequency ),
+        -1.0 * fabs( *out_symbol_1_frequency )
+                );
+
     *out_bandwidth =
-      ( 2.0 * ( in_separation_intervals * *out_delta_frequency ) )
-      + ( 2.0 * ( *out_delta_frequency / 2.0 ) );
+      2.0 * ( in_separation_intervals + 1.0 ) * max_deviation;
     
     CPC_LOG (
              CPC_LOG_LEVEL_DEBUG,
