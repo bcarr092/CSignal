@@ -48,6 +48,8 @@ class TestsCSignal( unittest.TestCase ):
     carrier_frequency   = 21000
     symbol_duration     = 24000
     chip_duration       = 24 
+    symbolExpansionFactor = 1
+    separationInterval    = 1
 
     passband = sample_rate / chip_duration
     stopband = passband + 1000
@@ -82,7 +84,9 @@ class TestsCSignal( unittest.TestCase ):
         symbol,
         symbol_duration,
         sample_rate,
-        carrier_frequency
+        carrier_frequency,
+        separationInterval,
+        symbolExpansionFactor
                                                               )
 
       self.assertNotEquals( signal_components, None )
@@ -212,6 +216,8 @@ class TestsCSignal( unittest.TestCase ):
     carrier_frequency   = 21000
     symbol_duration     = 24000
     chip_duration       = 24 
+    symbolExpansionFactor = 1
+    separationInterval    = 1
 
     first_stopband  = 19000
     first_passband  = 20000
@@ -248,7 +254,9 @@ class TestsCSignal( unittest.TestCase ):
         symbol,
         symbol_duration,
         sample_rate,
-        carrier_frequency
+        carrier_frequency,
+        separationInterval,
+        symbolExpansionFactor
                                                               )
 
       self.assertNotEquals( signal_components, None )
@@ -429,6 +437,8 @@ class TestsCSignal( unittest.TestCase ):
     carrier_frequency   = 12000
     symbol_duration     = 1000
     chip_duration       = 10
+    symbolExpansionFactor = 1
+    separationInterval    = 1
 
     first_stopband  = 10000
     first_passband  = 11000
@@ -474,7 +484,9 @@ class TestsCSignal( unittest.TestCase ):
         symbol,
         symbol_duration,
         sample_rate,
-        carrier_frequency
+        carrier_frequency,
+        separationInterval,
+        symbolExpansionFactor
                                                               )
   
       self.assertNotEquals( signal_components, None )
@@ -565,6 +577,8 @@ class TestsCSignal( unittest.TestCase ):
     sample_rate         = 48000
     baseband_amplitude  = 32000
     carrier_frequency   = 2000
+    symbolExpansionFactor = 1
+    separationInterval    = 1
 
     data = '\x12'
     
@@ -585,7 +599,9 @@ class TestsCSignal( unittest.TestCase ):
       symbol,
       sample_rate,
       sample_rate,
-      carrier_frequency
+      carrier_frequency,
+      separationInterval,
+      symbolExpansionFactor
                                                             )
 
     self.assertNotEquals( signal_components, None )
@@ -633,6 +649,8 @@ class TestsCSignal( unittest.TestCase ):
     carrier_frequency   = 12000
     symbol_duration     = 1000
     chip_duration       = 10
+    symbolExpansionFactor = 1
+    separationInterval    = 1
 
     ( file_handle, file_name ) = touch_random_file()
 
@@ -666,7 +684,9 @@ class TestsCSignal( unittest.TestCase ):
         symbol,
         symbol_duration,
         sample_rate,
-        carrier_frequency
+        carrier_frequency,
+        separationInterval,
+        symbolExpansionFactor
                                                               )
 
       self.assertNotEquals( signal_components, None )
@@ -1082,6 +1102,8 @@ class TestsCSignal( unittest.TestCase ):
     sample_rate         = 48000
     baseband_amplitude  = 32000
     carrier_frequency   = 22000
+    symbolExpansionFactor = 1
+    separationInterval    = 1
 
     ( file_handle, file_name ) = touch_random_file()
 
@@ -1109,7 +1131,9 @@ class TestsCSignal( unittest.TestCase ):
         symbol,
         sample_rate,
         sample_rate,
-        carrier_frequency
+        carrier_frequency,
+        separationInterval,
+        symbolExpansionFactor
                                                               )
   
       self.assertNotEquals( signal_components, None )
@@ -1153,6 +1177,8 @@ class TestsCSignal( unittest.TestCase ):
     sample_rate         = 48000
     baseband_amplitude  = 32000
     carrier_frequency   = 22000
+    symbolExpansionFactor = 1
+    separationInterval    = 1
 
     ( file_handle, file_name ) = touch_random_file()
 
@@ -1177,7 +1203,9 @@ class TestsCSignal( unittest.TestCase ):
       symbol,
       sample_rate,
       sample_rate,
-      carrier_frequency
+      carrier_frequency,
+      separationInterval,
+      symbolExpansionFactor
                                                             )
 
     self.assertNotEquals( signal_components, None )
@@ -1230,7 +1258,9 @@ class TestsCSignal( unittest.TestCase ):
         symbol,
         100,
         48000,
-        22000
+        22000,
+        1,
+        1
                                                               )
 
       self.assertNotEquals( signal, None )
@@ -1251,27 +1281,27 @@ class TestsCSignal( unittest.TestCase ):
 
   def test_generate_signal( self ):
     self.assertEquals (
-      csignal_tests.python_csignal_modulate_BFSK_symbol( 2, 10, 48000, 22000 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 2, 10, 48000, 22000, 1, 1 ),
       None
                       )
 
     self.assertEquals (
-      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 0, 48000, 22000 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 0, 48000, 22000, 1, 1 ),
       None
                       )
 
     self.assertEquals (
-      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 0, 22000 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 0, 22000, 1, 1 ),
       None
                       )
 
     self.assertNotEquals (
-      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 48000, 0 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 48000, 0, 1, 1 ),
       None
                       )
 
     self.assertNotEquals (
-      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 48000, -22000 ),
+      csignal_tests.python_csignal_modulate_BFSK_symbol( 1, 10, 48000, -22000, 1, 1 ),
       None
                       )
 
@@ -1300,7 +1330,9 @@ class TestsCSignal( unittest.TestCase ):
           symbol,
           10,
           48000,
-          22000
+          22000,
+          1,
+          1
                                                           )
 
       self.assertNotEquals( signal, None )
