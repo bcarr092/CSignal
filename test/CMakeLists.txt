@@ -10,6 +10,12 @@ message( STATUS "Project directory: ${PROJECT_SOURCE_DIR}" )
 set( SOURCE_DIR "${PROJECT_SOURCE_DIR}/src" )
 set( INCLUDE_DIR "${SOURCE_DIR}/include" )
 set( INSTALL_DIR "${CMAKE_INSTALL_PREFIX}" )
+set( INSTALL_TEST_DIR "${INSTALL_DIR}/tests/${PROJECT_NAME}" )
+set( INSTALL_TEST_LIB_DIR "${INSTALL_TEST_DIR}/lib" )
+set (
+    INSTALL_TEST_PLATFORM_LIB_DIR
+    "${INSTALL_TEST_DIR}/lib/${PLATFORM}/${TARGET}/${ARCHITECTURE}"
+    )
 
 message( STATUS "Source directory: ${SOURCE_DIR}" )
 message( STATUS "Include directory: ${INCLUDE_DIR}" )
@@ -106,11 +112,6 @@ swig_add_module (
 swig_link_libraries( ${PROJECT_NAME} ${PYTHON_LIBRARIES} cpcommon csignal )
 
 set( SCRIPTS "${PROJECT_SOURCE_DIR}/test_driver.py" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_csignal.py" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_bit_packer.py" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_bit_stream.py" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_conv.py" )
-list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/test_signal_operations.py" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_2_7_1.dat" )
 list( APPEND SCRIPTS "${PROJECT_SOURCE_DIR}/PNSequenceTestVector_7_89_20.dat" )
 list  (
@@ -124,9 +125,16 @@ list  (
   "${PROJECT_SOURCE_DIR}/GoldSequenceTestVector_7_89_8F_20_20.dat"
       )
 
+set( LIBS "${PROJECT_SOURCE_DIR}/test_csignal.py" )
+list( APPEND LIBS "${PROJECT_SOURCE_DIR}/test_bit_packer.py" )
+list( APPEND LIBS "${PROJECT_SOURCE_DIR}/test_bit_stream.py" )
+list( APPEND LIBS "${PROJECT_SOURCE_DIR}/test_conv.py" )
+list( APPEND LIBS "${PROJECT_SOURCE_DIR}/test_signal_operations.py" )
+
 set( WRAPPERS "${PROJECT_BINARY_DIR}/${PROJECT_NAME}.py" )
 
 message( STATUS "Copying scripts: ${SCRIPTS}" )
+message( STATUS "Copying libs: ${LIBS}" )
 message( STATUS "Copying wrappers: ${WRAPPERS}" )
 
 foreach( FILE_TO_COPY IN ITEMS ${SCRIPTS} )
@@ -139,11 +147,13 @@ foreach( FILE_TO_COPY IN ITEMS ${SCRIPTS} )
 endforeach( FILE_TO_COPY )
 
 install(  TARGETS "_${PROJECT_NAME}" DESTINATION
-          "${INSTALL_DIR}/tests/${PROJECT_NAME}" )
+          "${INSTALL_TEST_PLATFORM_LIB_DIR}" )
 install(  PROGRAMS ${SCRIPTS} DESTINATION
-          "${INSTALL_DIR}/tests/${PROJECT_NAME}" )
+          "${INSTALL_TEST_DIR}" )
+install(  FILES ${LIBS} DESTINATION
+          "${INSTALL_TEST_LIB_DIR}" )
 install(  FILES ${WRAPPERS} DESTINATION
-          "${INSTALL_DIR}/tests/${PROJECT_NAME}" )
+          "${INSTALL_TEST_PLATFORM_LIB_DIR}" )
 
 enable_testing()
 
