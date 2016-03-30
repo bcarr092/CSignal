@@ -1,31 +1,17 @@
 Synopsis
 ========
-This is a signal processing library written in c (hence csignal) in a cross-platform fashion.
+This is a signal processing library written in C (hence CSignal).
 
-The goal of this project is to provide signal processing functionality to external applications in a cross-platform (e.g. Windows, Mac OS X, iOS, and Android) and cross-architecture (e.g. x86, x64, ARM, ARM64) fashion.
+The goal of this project is to provide signal processing functionality in a library that external applications can linked to in order to create cross-platform (e.g., Windows, Mac OS X, iOS, and Android) applications that can run on multiple architectures (e.g., x86, x64, ARM, ARM64).
 
-It should be noted that while this project is marked as created and authored (at least initially) by Brent Carrara, most of the algorithms in this project are implemented from other sources, which are referenced in the header files where their API prototypes are defined.
-
-Code Example
+Dependencies
 ============
 
-Motivation
-==========
+This project requires the following GitHub projects:
+* [CPCommon](https://github.com/bcarr092/CPCommon)
+* [DarwinHelper](https://github.com/bcarr092) (If you are building on Mac OS X)
 
-Installation
-============
-Cmake is required to build this project and furthermore the following other libraries are required as well:
-
-- cpcommon
-- darwinhelper
-
-API Reference
-=============
-Using Cmake Doxygen style documentation can be generate by executing the 'make doc' command.
-
-Tests
-=====
-Full API tests are available on all platforms and are supported using Python and the unittest framework. To execute tests run the 'make test' command in the build directory.
+To use an application that uses this library see [pyCovertAudio][https://github.com/bcarr092/pyCovertAudio].
 
 Contributors
 ============
@@ -33,4 +19,17 @@ Brent Carrara (bcarr092@uottawa.ca)
 
 License
 =======
-A licensing model needs to be established for this library.
+
+   Copyright 2016 Brent Carrara 
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
