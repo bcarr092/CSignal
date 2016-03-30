@@ -11,7 +11,7 @@ This project requires the following GitHub projects:
 * [CPCommon](https://github.com/bcarr092/CPCommon)
 * [DarwinHelper](https://github.com/bcarr092) (If you are building on Mac OS X)
 
-To use an application that uses this library see [pyCovertAudio][https://github.com/bcarr092/pyCovertAudio].
+To use an application that uses this library see [pyCovertAudio](https://github.com/bcarr092/pyCovertAudio).
 
 Contributors
 ============
