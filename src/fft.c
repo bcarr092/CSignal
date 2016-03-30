@@ -188,6 +188,115 @@ csignal_calculate_FFT (
   return( return_value );
 }
 
+csignal_error_code
+csignal_calculate_IFFT (
+                       USIZE      in_fft_length,
+                       FLOAT64*   in_fft,
+                       USIZE*     out_signal_length,
+                       FLOAT64**  out_signal
+                        )
+{
+  csignal_error_code return_value = CPC_ERROR_CODE_NO_ERROR;
+  
+  if  (
+       NULL == in_fft
+       || NULL == out_signal_length
+       || NULL == out_signal
+       )
+  {
+    CPC_ERROR (
+               "FFT (0x%x), signal length (0x%x), or signal (0x%x) are null.",
+               in_fft,
+               out_signal_length,
+               out_signal
+               );
+    
+    return_value = CPC_ERROR_CODE_NULL_POINTER;
+  }
+  else if (
+           *out_signal_length != 0
+           && (
+               csignal_calculate_closest_power_of_two( in_fft_length ) * 2
+               ) > *out_signal_length
+           )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Out signal length (%d) must be greater or equal to the length of"
+               " twiceout_signal_lengththe next power of two larger than fft length (%d).",
+               *out_signal_length,
+               csignal_calculate_closest_power_of_two( in_fft_length )
+               );
+  }
+  else if( *out_signal_length != 0 && NULL == *out_signal )
+  {
+    return_value = CPC_ERROR_CODE_INVALID_PARAMETER;
+    
+    CPC_ERROR (
+               "Out signal length (%d) is set, but out signal (0x%x) is null.",
+               *out_signal_length,
+               *out_signal
+               );
+  }
+  else
+  {
+    *out_signal_length =
+      csignal_calculate_closest_power_of_two( in_fft_length ) * 2;
+    
+    CPC_LOG (
+             CPC_LOG_LEVEL_TRACE,
+             "Power of 2 is %d (%d), length is %d.",
+             csignal_calculate_closest_power_of_two( in_fft_length ),
+             in_fft_length,
+             *out_signal_length
+             );
+    
+    if( NULL == *out_signal )
+    {
+      return_value =
+        cpc_safe_malloc (
+                         ( void** ) out_signal,
+                         sizeof( FLOAT64 ) * *out_signal_length
+                         );
+    }
+    
+    if( CPC_ERROR_CODE_NO_ERROR == return_value )
+    {
+      return_value =
+        csignal_convert_real_array_to_complex_array (
+                                                     in_fft_length,
+                                                     in_fft,
+                                                     *out_signal_length,
+                                                     *out_signal
+                                                     );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == return_value )
+      {
+        CPC_LOG_BUFFER_FLOAT64  (
+                                 CPC_LOG_LEVEL_TRACE,
+                                 "Complex signal:",
+                                 *out_signal,
+                                 200,
+                                 8
+                                 );
+        
+        CPC_LOG( CPC_LOG_LEVEL_TRACE, "Length is %d.", *out_signal_length );
+        
+        //  The -1 is required for the first parameter because of the way the
+        //  fft algorithm was written in Numerical Recipes.
+        csignal_fft( *out_signal - 1, *out_signal_length / 2, CALCULATE_IFFT );
+      }
+    }
+    else
+    {
+      CPC_ERROR( "Could not malloc fft: 0x%x.", return_value );
+    }
+  }
+  
+  return( return_value );
+}
+
 void
 csignal_fft (
              FLOAT64* io_data,

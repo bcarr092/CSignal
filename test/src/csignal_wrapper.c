@@ -56,6 +56,83 @@ python_convert_array_to_list  (
                                );
 
 PyObject*
+python_calculate_IFFT(
+                     PyObject* in_fft
+                     )
+{
+  PyObject* return_value = NULL;
+
+  FLOAT64* signal   = NULL;
+  FLOAT64* fft      = NULL;
+  
+  USIZE signal_length = 0;
+  USIZE fft_length    = 0;
+
+  if( !PyList_Check( in_fft ) || PyList_Size( in_fft ) == 0 )
+  {
+    CPC_LOG_STRING(
+      CPC_LOG_LEVEL_ERROR,
+      "FFT must be a list with elements."
+      );
+  }
+  else
+  {
+    csignal_error_code result =
+      python_convert_list_to_array( in_fft, &fft_length, &fft );
+    
+    if( CPC_ERROR_CODE_NO_ERROR == result )
+    {
+      result =
+        csignal_calculate_IFFT( fft_length, fft, &signal_length, &signal );
+      
+      if( CPC_ERROR_CODE_NO_ERROR == result )
+      {
+        PyObject* signal_list = PyList_New( signal_length / 2 );
+        
+        for( USIZE i = 0; i < signal_length; i += 2 )
+        {
+          PyObject* realPart =
+            PyFloat_FromDouble( signal[ i ] );
+          
+          if( 0 != PyList_SetItem( signal_list, ( i / 2 ), realPart ) )
+          {
+            PyErr_Print( );
+          }
+        }
+        
+        if( PyList_Check( signal_list ) )
+        {
+          return_value = signal_list;
+        }
+        else
+        {
+          CPC_LOG_STRING( CPC_LOG_LEVEL_ERROR, "List not created." );
+        }
+      }
+    }
+  }
+
+  if( NULL != signal )
+  {
+    cpc_safe_free( ( void** )&signal );
+  }
+
+  if( NULL != fft )
+  {
+    cpc_safe_free( ( void** )&fft );
+  }
+
+  if( NULL != return_value )
+  {
+    return( return_value );
+  }
+  else
+  {
+    Py_RETURN_NONE;
+  }
+}
+
+PyObject*
 python_calculate_FFT(
                      PyObject* in_signal
                      )

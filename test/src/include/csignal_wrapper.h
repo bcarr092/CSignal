@@ -599,4 +599,10 @@ python_filter_get_filter_length (
                                  fir_passband_filter*  in_filter
                                  );
 
+
+PyObject*
+python_calculate_IFFT(
+                     PyObject* in_fft
+                     );
+
 #endif  /*  __CSIGNAL_WRAPPER_H__ */

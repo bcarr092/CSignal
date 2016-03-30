@@ -67,5 +67,13 @@ csignal_calculate_FFT (
                        FLOAT64**  out_fft
                        );
 
+csignal_error_code
+csignal_calculate_IFFT (
+                       USIZE      in_fft_length,
+                       FLOAT64*   in_fft,
+                       USIZE*     out_signal_length,
+                       FLOAT64**  out_signal
+                       );
+
 
 #endif  /*  __FFT_H__ */
