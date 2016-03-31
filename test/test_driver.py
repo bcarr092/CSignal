@@ -2,6 +2,7 @@
 
 import csignal_tests                                                              
 import unittest                                                                 
+import sys
                                                                                 
 from test_csignal import TestsCSignal
 from test_bit_packer import TestsBitPacker
@@ -22,6 +23,11 @@ alltests = unittest.TestSuite ( [                                               
 
                                 ] )
 
-unittest.TextTestRunner( verbosity=2 ).run( alltests )
+result = unittest.TextTestRunner( verbosity=2 ).run( alltests )
 
 csignal_tests.csignal_terminate()
+
+if( len( result.errors ) == 0 and len( result.failures ) == 0 ):
+    sys.exit( 0 )
+else:
+    sys.exit( -1 )

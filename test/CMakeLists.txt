@@ -137,7 +137,9 @@ message( STATUS "Copying scripts: ${SCRIPTS}" )
 message( STATUS "Copying libs: ${LIBS}" )
 message( STATUS "Copying wrappers: ${WRAPPERS}" )
 
-foreach( FILE_TO_COPY IN ITEMS ${SCRIPTS} )
+set( ALL_FILES ${SCRIPTS} ${LIBS} )
+
+foreach( FILE_TO_COPY IN ITEMS ${ALL_FILES} )
     message( STATUS "Copying script ${FILE_TO_COPY} to ${PROJECT_BINARY_DIR}" )
     
     add_custom_command( TARGET "_${PROJECT_NAME}" PRE_BUILD
